@@ -53,12 +53,11 @@
                     <span class="ml-3 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Online</span>
                 </div>
                 
-                <div class="flex-1 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 flex flex-col">
+                <div class="flex-1 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
                     <zapier-interfaces-chatbot-embed 
                         is-popup='false' 
                         chatbot-id='cmkpsh9h5001bobaanf41g3v6' 
-                        height='100%' 
-                        width='100%'>
+                        style='width: 100%; height: 100%; min-height: 600px; display: block;'>
                     </zapier-interfaces-chatbot-embed>
                 </div>
             </main>
@@ -104,7 +103,6 @@
         const SUPABASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo'; 
 
-        // VIKTIGT: Namnet är bytt från 'supabase' till 'supabaseClient' för att inte krocka!
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // UI Element
