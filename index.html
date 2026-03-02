@@ -16,7 +16,7 @@
                 <div class="w-16 h-16 bg-[#06B4E4] rounded-full flex items-center justify-center text-white font-bold text-2xl">EK</div>
             </div>
             
-            <h1 class="text-xl font-bold text-gray-800 mb-2 text-center">Personalintranät</h1>
+            <h1 class="text-xl font-bold text-gray-800 mb-2 text-center">Kunskapskretsen</h1>
             <p class="text-sm text-gray-500 mb-6 text-center">Logga in för att få tillgång till dokument och ELvis.</p>
             
             <form id="login-form" class="space-y-4">
@@ -161,11 +161,15 @@
             showUploadStatus('Laddar upp...', 'text-[#06B4E4]');
             uploadBtn.disabled = true;
 
+            // Sätt rätt content-type så att HTML renderas korrekt i webbläsaren
+            const contentType = file.name.endsWith('.html') ? 'text/html' : file.type;
+
             const { data, error } = await supabaseClient.storage
                 .from(BUCKET_NAME)
                 .upload(file.name, file, {
                     cacheControl: '3600',
-                    upsert: true // Skriver över om filen redan finns
+                    upsert: true, // Skriver över om filen redan finns
+                    contentType: contentType
                 });
 
             uploadBtn.disabled = false;
