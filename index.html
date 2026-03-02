@@ -140,11 +140,26 @@
                 const li = document.createElement('li');
                 li.className = 'doc-item';
                 li.innerHTML = `
-                    <a href="${publicUrlData.publicUrl}" target="_blank" class="flex items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-gray-700 hover:text-[#06B4E4] group">
+                    <a class="flex items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-gray-700 hover:text-[#06B4E4] group cursor-pointer">
                         <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-[#06B4E4] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         <span class="font-medium text-sm truncate">${file.name}</span>
                     </a>
                 `;
+
+                // Öppna HTML-filer via Blob så att de renderas korrekt i webbläsaren
+                li.querySelector('a').addEventListener('click', async () => {
+                    const fileUrl = publicUrlData.publicUrl;
+                    if (file.name.endsWith('.html')) {
+                        const response = await fetch(fileUrl);
+                        const html = await response.text();
+                        const blob = new Blob([html], { type: 'text/html' });
+                        const blobUrl = URL.createObjectURL(blob);
+                        window.open(blobUrl, '_blank');
+                    } else {
+                        window.open(fileUrl, '_blank');
+                    }
+                });
+
                 documentList.appendChild(li);
             });
         }
