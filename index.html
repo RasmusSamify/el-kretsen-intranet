@@ -7,18 +7,146 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script async type='module' src='https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js'></script>
+    <!-- React + Babel för KRETSKAMPEN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Tab-navigation ── */
+        .nav-tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 14px 20px; font-size: 14px; font-weight: 600;
+            border-bottom: 3px solid transparent; color: #6B7280;
+            background: none; border-top: none; border-left: none; border-right: none;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .nav-tab:hover { color: #06B4E4; border-bottom-color: #BAE6FD; }
+        .nav-tab.active { color: #06B4E4; border-bottom-color: #06B4E4; }
+        .nav-tab .tab-badge {
+            background: linear-gradient(135deg, #06B4E4, #0891B2);
+            color: white; font-size: 10px; font-weight: 800;
+            padding: 1px 7px; border-radius: 20px;
+            font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.5px;
+        }
+
+        /* ── KRETSKAMPEN Quiz Styles ── */
+        .kk-screen { font-family: 'Barlow', sans-serif; }
+
+        .kk-home-bg {
+            background: linear-gradient(150deg, #f0f9ff 0%, #e0f2fe 40%, #f8fafc 100%);
+            min-height: 100%; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 32px 16px;
+        }
+        .kk-card {
+            background: white; border-radius: 20px; padding: 32px 28px;
+            box-shadow: 0 8px 40px rgba(6,180,228,0.12), 0 2px 8px rgba(0,0,0,0.06);
+            width: 100%; max-width: 460px;
+        }
+        .kk-logo-circle {
+            width: 56px; height: 56px; border-radius: 14px;
+            background: linear-gradient(135deg, #06B4E4 0%, #0891B2 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; box-shadow: 0 4px 16px rgba(6,180,228,0.35);
+        }
+        .kk-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .kk-label {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 11px; font-weight: 700; color: #9CA3AF;
+            letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;
+        }
+        .kk-input {
+            width: 100%; padding: 12px 14px; border-radius: 12px;
+            border: 2px solid #E5E7EB; font-size: 15px; font-family: 'Barlow', sans-serif;
+            outline: none; box-sizing: border-box; transition: border-color 0.2s;
+            background: #FAFAFA;
+        }
+        .kk-input:focus { border-color: #06B4E4; background: white; }
+        .kk-cat-btn {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 11px 14px; border-radius: 12px; border: 2px solid #E5E7EB;
+            cursor: pointer; transition: all 0.18s; font-family: 'Barlow', sans-serif;
+            font-size: 14px; font-weight: 600; background: #FAFAFA; color: #374151;
+            margin-bottom: 8px;
+        }
+        .kk-cat-btn.selected {
+            background: #06B4E4; color: white; border-color: #06B4E4;
+            box-shadow: 0 4px 12px rgba(6,180,228,0.25);
+        }
+        .kk-cat-btn:hover:not(.selected) { border-color: #06B4E4; color: #06B4E4; background: #F0FAFF; }
+        .kk-qcount-btn {
+            flex: 1; padding: 12px 0; border: 2px solid #E5E7EB; border-radius: 12px;
+            cursor: pointer; font-weight: 700; font-size: 16px; font-family: 'Barlow Condensed', sans-serif;
+            transition: all 0.18s; background: white; color: #374151;
+        }
+        .kk-qcount-btn.selected { background: #06B4E4; color: white; border-color: #06B4E4; box-shadow: 0 4px 12px rgba(6,180,228,0.25); }
+        .kk-qcount-btn:hover:not(.selected) { border-color: #06B4E4; color: #06B4E4; }
+
+        .kk-primary-btn {
+            width: 100%; padding: 15px 0; background: linear-gradient(135deg, #06B4E4 0%, #0891B2 100%);
+            color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+            cursor: pointer; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px;
+            box-shadow: 0 6px 20px rgba(6,180,228,0.35); transition: all 0.2s;
+        }
+        .kk-primary-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(6,180,228,0.45); }
+        .kk-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .kk-ghost-btn {
+            background: none; border: 2px solid #E5E7EB; border-radius: 12px;
+            padding: 10px 18px; font-family: 'Barlow', sans-serif; font-size: 14px;
+            font-weight: 600; color: #6B7280; cursor: pointer; transition: all 0.2s;
+        }
+        .kk-ghost-btn:hover { border-color: #06B4E4; color: #06B4E4; }
+
+        /* Answer buttons */
+        .kk-answer-btn {
+            padding: 18px 14px; border-radius: 14px; border: none; color: white;
+            cursor: pointer; text-align: left; transition: all 0.25s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        .kk-answer-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .kk-answer-btn:disabled { cursor: default; }
+
+        /* Timer ring animation */
+        @keyframes kk-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+        @keyframes kk-spin { to{transform:rotate(360deg)} }
+        @keyframes kk-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes kk-pop { 0%{transform:scale(0.85)} 60%{transform:scale(1.08)} 100%{transform:scale(1)} }
+        .kk-fadein { animation: kk-fadein 0.35s ease forwards; }
+
+        /* Leaderboard */
+        .kk-score-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border-radius: 14px; background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.15s;
+        }
+        .kk-score-row:hover { transform: translateX(3px); }
+        .kk-score-row.me {
+            background: linear-gradient(135deg, #06B4E4 0%, #0891B2 100%);
+            box-shadow: 0 6px 20px rgba(6,180,228,0.3);
+        }
+
+        /* Loading dots */
+        .kk-dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#06B4E4; animation: kk-dot-bounce 1.4s infinite; }
+        .kk-dot:nth-child(2){animation-delay:.2s} .kk-dot:nth-child(3){animation-delay:.4s}
+        @keyframes kk-dot-bounce { 0%,80%,100%{transform:scale(0.7);opacity:0.5} 40%{transform:scale(1.1);opacity:1} }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col">
 
+    <!-- ════════════════════════════════════════
+         INLOGGNINGSSKÄRM
+    ════════════════════════════════════════ -->
     <div id="login-screen" class="flex flex-col items-center justify-center h-full">
         <div class="bg-white p-10 rounded-xl shadow-lg w-96 border border-gray-100">
             <div class="flex justify-center mb-6">
                 <div class="w-16 h-16 bg-[#06B4E4] rounded-full flex items-center justify-center text-white font-bold text-2xl">EK</div>
             </div>
-            
             <h1 class="text-xl font-bold text-gray-800 mb-2 text-center">Kunskapskretsen</h1>
             <p class="text-sm text-gray-500 mb-6 text-center">Logga in för att få tillgång till dokument och ELvis.</p>
-            
             <form id="login-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">E-post / Användarnamn</label>
@@ -36,8 +164,13 @@
         </div>
     </div>
 
+    <!-- ════════════════════════════════════════
+         INTRANÄTSKÄRM
+    ════════════════════════════════════════ -->
     <div id="intranet-screen" class="hidden h-full flex flex-col">
-        <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
+
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm flex-shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-[#06B4E4] rounded flex items-center justify-center text-white font-bold text-xs">EK</div>
                 <h1 class="text-lg font-semibold text-gray-800 border-l border-gray-300 pl-3">Intranät</h1>
@@ -49,7 +182,6 @@
                 </button>
                 <button id="logout-btn" class="text-sm text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-1.5 rounded-lg transition-colors font-medium">Logga ut</button>
             </div>
-
             <!-- Feedback Modal -->
             <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
                 <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
@@ -62,18 +194,30 @@
             </div>
         </header>
 
-        <div class="flex flex-1 overflow-hidden">
-            
+        <!-- ── Fliknavigation ── -->
+        <nav class="bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+            <button id="tab-elvis" class="nav-tab active" onclick="switchTab('elvis')">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"></path></svg>
+                Fråga ELvis
+            </button>
+            <button id="tab-kretskampen" class="nav-tab" onclick="switchTab('kretskampen')">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Kretskampen
+                <span class="tab-badge">NYTT</span>
+            </button>
+        </nav>
+
+        <!-- ════ FLIK 1: ELvis ════ -->
+        <div id="content-elvis" class="flex flex-1 overflow-hidden">
             <main class="flex-1 bg-gray-50 p-6 flex flex-col">
                 <div class="flex items-center mb-4">
                     <h2 class="text-xl font-bold text-gray-800">Fråga ELvis</h2>
                     <span class="ml-3 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Online</span>
                 </div>
-                
                 <div class="flex-1 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 relative" style="min-height: 0;">
-                    <zapier-interfaces-chatbot-embed 
-                        is-popup='false' 
-                        chatbot-id='cmkpsh9h5001bobaanf41g3v6' 
+                    <zapier-interfaces-chatbot-embed
+                        is-popup='false'
+                        chatbot-id='cmkpsh9h5001bobaanf41g3v6'
                         style='width: 100%; height: 100%; display: block;'>
                     </zapier-interfaces-chatbot-embed>
                 </div>
@@ -82,139 +226,128 @@
             <aside class="w-1/3 max-w-sm bg-white p-6 border-l border-gray-200 overflow-y-auto shadow-inner flex flex-col">
                 <h2 class="text-lg font-bold mb-2 text-gray-800">Dokument & Rutiner</h2>
                 <p class="text-sm text-gray-500 mb-4">Sök bland filer som ELvis hänvisar till.</p>
-                
                 <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <h3 class="text-sm font-semibold text-gray-700 mb-2">Ladda upp nytt dokument</h3>
                     <input type="file" id="file-upload" class="block w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#06B4E4] file:text-white hover:file:bg-blue-500 cursor-pointer mb-2">
                     <button id="upload-btn" class="w-full bg-white border border-[#06B4E4] text-[#06B4E4] text-xs font-medium py-1.5 rounded hover:bg-[#06B4E4] hover:text-white transition">Skicka till kunskapsbanken</button>
                     <p id="upload-status" class="text-xs mt-2 hidden text-center"></p>
                 </div>
-
                 <div class="mb-4">
                     <div class="relative">
                         <input type="text" id="search-input" placeholder="Sök dokument..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#06B4E4] focus:border-transparent text-sm">
                         <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                 </div>
-
                 <ul class="space-y-2 flex-1 overflow-y-auto" id="document-list">
                     <li class="text-sm text-gray-500 text-center py-4">Laddar dokument...</li>
                 </ul>
             </aside>
-            
         </div>
-    </div>
 
+        <!-- ════ FLIK 2: KRETSKAMPEN ════ -->
+        <div id="content-kretskampen" class="hidden flex-1 overflow-auto kk-screen">
+            <div id="quiz-root" style="min-height: 100%;"></div>
+        </div>
+
+    </div><!-- /intranet-screen -->
+
+
+    <!-- ════════════════════════════════════════
+         VANILLA JS – BEFINTLIG LOGIK
+    ════════════════════════════════════════ -->
     <script>
-        // 1. SUPABASE UPPGIFTER
+        // ── Supabase ──
         const SUPABASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo'; 
-        const BUCKET_NAME = 'intranet-dokument'; // VIKTIGT: Måste matcha mappen i Supabase exakt!
-
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo';
+        const BUCKET_NAME = 'intranet-dokument';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // UI Element
-        const loginScreen = document.getElementById('login-screen');
+        // ── UI-element ──
+        const loginScreen    = document.getElementById('login-screen');
         const intranetScreen = document.getElementById('intranet-screen');
-        const loginForm = document.getElementById('login-form');
-        const errorMsg = document.getElementById('error-message');
-        const logoutBtn = document.getElementById('logout-btn');
-        const documentList = document.getElementById('document-list');
-        const searchInput = document.getElementById('search-input');
-        
-        // Uppladdnings-element
-        const fileUpload = document.getElementById('file-upload');
-        const uploadBtn = document.getElementById('upload-btn');
-        const uploadStatus = document.getElementById('upload-status');
+        const loginForm      = document.getElementById('login-form');
+        const errorMsg       = document.getElementById('error-message');
+        const logoutBtn      = document.getElementById('logout-btn');
+        const documentList   = document.getElementById('document-list');
+        const searchInput    = document.getElementById('search-input');
+        const fileUpload     = document.getElementById('file-upload');
+        const uploadBtn      = document.getElementById('upload-btn');
+        const uploadStatus   = document.getElementById('upload-status');
 
-        // Ladda in dokument från Supabase
+        // ── Flikbyte ──
+        let quizMounted = false;
+        function switchTab(tab) {
+            const tabs    = ['elvis', 'kretskampen'];
+            const tabBtns = { elvis: document.getElementById('tab-elvis'), kretskampen: document.getElementById('tab-kretskampen') };
+            const contents = { elvis: document.getElementById('content-elvis'), kretskampen: document.getElementById('content-kretskampen') };
+
+            tabs.forEach(t => {
+                tabBtns[t].classList.toggle('active', t === tab);
+                tabBtns[t].classList.toggle('tab-inactive', t !== tab);
+                contents[t].classList.toggle('hidden', t !== tab);
+            });
+
+            // Montera React-quizet första gången fliken öppnas
+            if (tab === 'kretskampen' && !quizMounted) {
+                quizMounted = true;
+                const container = document.getElementById('quiz-root');
+                const root = ReactDOM.createRoot(container);
+                root.render(React.createElement(window.KretskampenApp));
+            }
+        }
+
+        // ── Dokument-hantering ──
         async function loadDocuments() {
             documentList.innerHTML = '<li class="text-sm text-gray-500 py-2">Hämtar filer från Supabase...</li>';
-            
-            // Hämta listan med filer
             const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list();
-
             if (error) {
-                documentList.innerHTML = '<li class="text-sm text-red-500 py-2">Kunde inte hämta dokument. Se till att Bucketen finns!</li>';
-                console.error(error);
+                documentList.innerHTML = '<li class="text-sm text-red-500 py-2">Kunde inte hämta dokument.</li>';
                 return;
             }
-
-            documentList.innerHTML = ''; // Rensa listan
-
+            documentList.innerHTML = '';
             if (!data || data.length === 0) {
                 documentList.innerHTML = '<li class="text-sm text-gray-400 py-2">Inga dokument uppladdade ännu.</li>';
                 return;
             }
-
-            // Loopa igenom och skapa HTML för varje fil
             data.forEach(file => {
-                if (file.name === '.emptyFolderPlaceholder') return; // Ignorera dolda systemfiler
-
-                // Hämta URL till filen
+                if (file.name === '.emptyFolderPlaceholder') return;
                 const { data: publicUrlData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(file.name);
-                
                 const li = document.createElement('li');
                 li.className = 'doc-item';
                 li.innerHTML = `
                     <a class="flex items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-gray-700 hover:text-[#06B4E4] group cursor-pointer">
                         <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-[#06B4E4] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         <span class="font-medium text-sm truncate">${file.name}</span>
-                    </a>
-                `;
-
-                // Öppna HTML-filer via Blob så att de renderas korrekt i webbläsaren
+                    </a>`;
                 li.querySelector('a').addEventListener('click', async () => {
                     const fileUrl = publicUrlData.publicUrl;
                     if (file.name.endsWith('.html')) {
                         const response = await fetch(fileUrl);
                         const html = await response.text();
                         const blob = new Blob([html], { type: 'text/html' });
-                        const blobUrl = URL.createObjectURL(blob);
-                        window.open(blobUrl, '_blank');
+                        window.open(URL.createObjectURL(blob), '_blank');
                     } else {
                         window.open(fileUrl, '_blank');
                     }
                 });
-
                 documentList.appendChild(li);
             });
         }
 
-        // Hantera Fil-uppladdning
         uploadBtn.addEventListener('click', async () => {
             const file = fileUpload.files[0];
-            
-            if (!file) {
-                showUploadStatus('Välj en fil först!', 'text-red-500');
-                return;
-            }
-
+            if (!file) { showUploadStatus('Välj en fil först!', 'text-red-500'); return; }
             showUploadStatus('Laddar upp...', 'text-[#06B4E4]');
             uploadBtn.disabled = true;
-
-            // Sätt rätt content-type så att HTML renderas korrekt i webbläsaren
             const contentType = file.name.endsWith('.html') ? 'text/html' : file.type;
-
-            const { data, error } = await supabaseClient.storage
-                .from(BUCKET_NAME)
-                .upload(file.name, file, {
-                    cacheControl: '3600',
-                    upsert: true, // Skriver över om filen redan finns
-                    contentType: contentType
-                });
-
+            const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(file.name, file, { cacheControl: '3600', upsert: true, contentType });
             uploadBtn.disabled = false;
-
-            if (error) {
-                showUploadStatus('Fel: ' + error.message, 'text-red-500');
-            } else {
+            if (error) { showUploadStatus('Fel: ' + error.message, 'text-red-500'); }
+            else {
                 showUploadStatus('Uppladdning lyckades!', 'text-green-500');
-                fileUpload.value = ''; // Rensa fältet
-                loadDocuments(); // Ladda om listan direkt!
-                
-                // Göm success-meddelandet efter 3 sekunder
-                setTimeout(() => { uploadStatus.classList.add('hidden'); }, 3000);
+                fileUpload.value = '';
+                loadDocuments();
+                setTimeout(() => uploadStatus.classList.add('hidden'), 3000);
             }
         });
 
@@ -223,59 +356,736 @@
             uploadStatus.className = `text-xs mt-2 block ${colorClass}`;
         }
 
-        // Dynamisk Sök-logik
         searchInput.addEventListener('input', function(e) {
             const term = e.target.value.toLowerCase();
-            const docItems = document.querySelectorAll('.doc-item'); // Måste leta upp dem på nytt varje gång eftersom vi bygger listan dynamiskt
-            
-            docItems.forEach(function(item) {
-                const text = item.textContent.toLowerCase();
-                item.style.display = text.includes(term) ? 'block' : 'none';
+            document.querySelectorAll('.doc-item').forEach(item => {
+                item.style.display = item.textContent.toLowerCase().includes(term) ? 'block' : 'none';
             });
         });
 
-        // Kolla inloggning och ladda dokument
         async function checkSession() {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                showIntranet();
-            }
+            if (session) showIntranet();
         }
         checkSession();
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             errorMsg.classList.add('hidden');
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
             });
-
             if (error) {
                 errorMsg.textContent = 'Fel e-post eller lösenord. Försök igen.';
                 errorMsg.classList.remove('hidden');
-            } else {
-                showIntranet();
-            }
+            } else { showIntranet(); }
         });
 
         logoutBtn.addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
             loginScreen.classList.remove('hidden');
             intranetScreen.classList.add('hidden');
-            document.getElementById('password').value = ''; 
+            document.getElementById('password').value = '';
         });
 
         function showIntranet() {
             loginScreen.classList.add('hidden');
             intranetScreen.classList.remove('hidden');
-            loadDocuments(); // Hämta filerna från Supabase direkt när man loggar in!
+            loadDocuments();
         }
+    </script>
+
+
+    <!-- ════════════════════════════════════════
+         REACT / JSX – KRETSKAMPEN QUIZ
+         ⚠️  BYTA UT: Lägg in din Anthropic API-nyckel nedan
+    ════════════════════════════════════════ -->
+    <script type="text/babel" data-presets="react">
+
+        // ╔══════════════════════════════════╗
+        // ║  🔑  KONFIGURATION               ║
+        // ║  Ersätt med din Anthropic-nyckel ║
+        // ╚══════════════════════════════════╝
+        const GEMINI_API_KEY = 'DIN_NYA_GEMINI_NYCKEL_HÄR'; // ← Byt ut mot din NYA nyckel!
+
+        // ── Konstanter ──
+        const KNOWLEDGE_BASE = `
+# El-kretsen – Samlad Kunskapsbas (Quizoptimerad version)
+
+SEKTION 1 | KATEGORI C – EU & Reglering – EU:s Batteriförordning (2023/1542)
+- Bärbart batteri: max 5 kg, förseglat, ej fordons- eller industribatteri.
+- LMT-batteri (lätta transportmedel): max 25 kg, t.ex. elcyklar/elsparkcyklar.
+- Elfordonsbatteri (EV): över 25 kg, hybrid/elfordon.
+- Industribatteri: industriellt bruk eller >5 kg, ej annan kategori.
+- Producent: tillverkare/importör/distributör som FÖRSTA GÅNGEN tillhandahåller batteri på marknaden.
+- Insamlingsmål bärbara: 45% (31 dec 2023), 63% (31 dec 2027), 73% (31 dec 2030).
+- Insamlingsmål LMT: 51% (31 dec 2028), 61% (31 dec 2031).
+- Märkning "Överkryssad soptunna" obligatorisk från 18 augusti 2025.
+- QR-kod obligatorisk på batterier från 18 februari 2027.
+- Batteripass obligatoriskt från 18 februari 2027 för LMT, industribatterier >2 kWh och EV.
+- Batteriförordningen (2023/1542) trädde i kraft 17 augusti 2023.
+- Gamla batteridirektivet (2006/66/EC) upphävs 2025.
+
+SEKTION 2 | KATEGORI C – EU & Reglering – WEEE-direktivet (2012/19/EU)
+- Insamlingsmål WEEE från 2019: 65% av EEE sålt senaste 3 åren, alternativt 85% av genererat WEEE.
+- Finansieringsansvar för produkter sålda efter 13 augusti 2005.
+- Solceller producentansvar för paneler sålda efter 13 augusti 2012.
+- Öppet scope gäller produkter från 15 augusti 2018.
+- Ändringsdirektiv 2024/884 i nationell lag senast 9 oktober 2025.
+- WEEE-retur kostnadsfritt för hushåll; förbjudet i hushållssopor.
+
+SEKTION 3 | KATEGORI C – EU & Reglering – EU-kommissionen Batterier Översikt
+- Batteriefterfrågan förväntas öka 14 gånger till 2030.
+- EU förväntas stå för ca 17% av global batteriefterfrågan.
+- Nya regler för beräkning av återvinningsgrad träder i kraft 24 juli 2025.
+- Undantagsansökan (Art.11 bärbara) stängde 30 april 2025.
+
+SEKTION 4 | KATEGORI D – Juridik – Miljöbalk (1998:808)
+- Max fängelse för miljöbrott (29 kap. 1§): 2 år.
+- Avfallshierarkin (5 steg): 1=Förebyggande, 2=Återanvändning, 3=Materialåtervinning, 4=Annan återvinning, 5=Bortskaffande/deponi.
+- Bevisbörda (2:1): den som bedriver verksamheten visar att hänsynsreglerna följs.
+- Förorenaren betalar: 2 kap. 8§. Grunden för El-kretsens existens: 15 kap. 21§.
+- Tillsynsmyndigheter: Naturvårdsverket, Länsstyrelsen, Kommunerna.
+- Miljösanktionsavgift kräver INTE uppsåt – strikt ansvar.
+
+SEKTION 5 | KATEGORI D – Juridik – Avfallsförordning (2020:614)
+- Farligt avfall: asterisk (*) i avfallskatalogen.
+- Rapportering till avfallsregistret: senast 2 arbetsdagar efter händelsen.
+- Tillstånd transport farligt avfall: >100 kg/år från egen verksamhet.
+- EWC-koder: Kyl/frys 16 02 11*, Blybatteri 16 06 01*, NiCd 16 06 02*, Kvicksilverhaltigt batteri 16 06 03*, Alkaliskt batteri 16 06 04 (EJ farligt), Lysrör 20 01 21*.
+- 7 sorteringskategorier: Bioavfall, Förpackningar, Elavfall, Farligt avfall, Returpapper, Textilavfall, Restavfall.
+
+SEKTION 6 | KATEGORI D – Juridik – Miljötillsynsförordning (2011:13)
+- Tillsynsmyndighet producentansvar batterier/elavfall: Naturvårdsverket.
+- Tillsynsmyndighet lokal butiksinsamling: Kommunen.
+- Tillsynsmyndighet RoHS/farliga ämnen i elektronik: Kemikalieinspektionen.
+- Tillsynsmyndighet tillståndspliktiga återvinningsanläggningar: Länsstyrelsen.
+- Behovsutredning: period om 3 år. Max tid mellan tillsynsbesök normal risk: 3 år, hög risk: 1 år. Tillsynsplan görs varje år.
+
+SEKTION 7 | KATEGORI A – Ekonomi – Förordning (2022:1276) om producentansvar för elutrustning
+- Rapporteringsdatum producenter: 31 mars varje år.
+- Registrering i EE-registret INNAN försäljning (§28).
+- Butiker >400 m² elektronikyta: ta emot smått elavfall (<25 cm) gratis utan nyköp (§71).
+- Återvinningsmål: Kat 1&4 (Kyla/Stor) 85% (80% material), Kat 2 (Skärmar) 80% (70% material), Kat 3 (Lampor) 80% material, Kat 5&6 (Liten/IT) 75% (55% material).
+- Spänningsgräns undantag: 1000V AC / 1500V DC. PRO-krav konsumentelutrustning: obligatoriskt §39.
+- En-mot-en: säljare tar gratis emot gammal utrustning av samma typ §70. 6 elutrustningskategorier.
+
+SEKTION 8 | KATEGORI A – Ekonomi – Miljösanktionsavgifter (SFS 2012:259)
+- Sen rapportering elutrustning till NV: 10 000 kr. Sen rapportering batterier till NV: 10 000 kr.
+- Försenad rapportering farligt avfall till avfallsregistret: 5 000 kr.
+- Transport farligt avfall utan korrekt dokument: 5 000 kr.
+- Saknad CE-märkning (RoHS): 20 000 kr. Saknad teknisk RoHS-dokumentation: 10 000 kr.
+- Dubbel avgift vid upprepad överträdelse inom 2 år (max 1 miljon kr). Kräver INTE uppsåt.
+
+SEKTION 9 | KATEGORI A – Ekonomi – NFS 2022:12 Naturvårdsverkets föreskrifter
+- NFS 2022:12 gäller från 5 januari 2023. Rättslig grund: §46 förordningen 2022:1276.
+- Avgiftsdifferentiering baseras på REACH Kandidatförteckning (Art. 59, förordning 1907/2006).
+- Produkt med farliga ämnen (REACH): högre avgift. Utan: lägre avgift.
+
+SEKTION 10 | KATEGORI D – Juridik – Lag om viten (1985:206)
+- Vite: tvinga fram FRAMTIDA rättelse (skiljer sig från sanktionsavgift för redan begånget fel).
+- Vitesbelopp bestäms utifrån adressatens ekonomiska förmåga §3.
+- Löpande vite: per tidsperiod (t.ex. varje månad) §4.
+- Vitet döms ut av Förvaltningsrätten (på myndighetens ansökan) §6.
+- Vite faller bort om ej ansökt inom 2 år från överträdelsen §9. Kan jämkas vid särskilda skäl §9.
+
+SEKTION 11 | KATEGORI B – Teknik – Interna Riktlinjer Batterikoder och Deklaration
+- B=Bärbara, L=Lätta transportmedel (LMT), S=Startbatteri, I=Industribatteri, E=Elfordonsbatteri.
+- LCO=Litium Kobolt Oxid, NMC=Nickel Mangan Kobolt, NCA=Nickel Kobolt Aluminium, LFP=Litium Järnfosfat, LMO=Manganoxid, LTO=Titanoxid. LCO och NMC vanligast.
+- Samlingskod B77 för bärbara utan kemispec, kan användas t.o.m. 2026. Från 2027 krävs specifik kemikod.
+- Bärbara NiCd och blybatterier saknar kod – FÖRBJUDNA att sälja.
+- AR = Authorized Representative (Producentombud) för utländska producenter.
+- Månadsdeklaration senast 10:e i efterföljande månad. Kvartalsdeklaration: 2% ränta/mellanmånad.
+- Förseningsavgift: 300 kr per missad deklaration. Noll-deklaration måste alltid skickas.
+
+SEKTION 12 | KATEGORI B – Teknik – Produktkoder 2026
+- Elcykelbatteri (LMT Li-jon portabelt): 12.7. NiMH bärbara: 11.4. NiCd: 11.1. Alkaliska bärbara: 11.5. Li-jon bärbart uppladdningsbart: 11.7.
+- Kyl och frys (konsument): 1.1. Mobiltelefon: 3.5. Laptop: 3.2.1. Solcellspaneler >50cm (konsument): 4.4.
+- Brandvarnare optisk: 9.2. Laddningsstation elbil (professionell): P26. Lampor >7cm: 5.2. Lampor <7cm: 5.3. Surfplattor/e-bokläsare: 3.3.1.
+- Totalt antal produktkoder i El-kretsens lista 2026: 1 738.
+        `;
+
+        const CATEGORIES = [
+            { id: 'all', label: 'Alla kategorier', emoji: '⚡' },
+            { id: 'C', label: 'EU & Reglering',      emoji: '🇪🇺' },
+            { id: 'A', label: 'Ekonomi & Deklaration',emoji: '💰' },
+            { id: 'B', label: 'Teknik & Produkter',   emoji: '🔧' },
+            { id: 'D', label: 'Juridik & Sanktioner', emoji: '⚖️' },
+        ];
+        const ANSWER_COLORS  = ['#EF4444','#3B82F6','#22C55E','#F59E0B'];
+        const ANSWER_ICONS   = ['▲','◆','●','✦'];
+        const TIME_PER_Q     = 20;
+
+        // ── Supabase highscores – delad tabell för hela organisationen ──
+        // Tabellen 'kretskampen_scores' skapas via SQL i Supabase (se instruktioner).
+        async function loadScores() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('kretskampen_scores')
+                    .select('*')
+                    .order('score', { ascending: false })
+                    .limit(50);
+                if (error) throw error;
+                return data || [];
+            } catch (e) {
+                console.error('Kunde inte hämta highscores:', e);
+                return [];
+            }
+        }
+        async function saveScore(entry) {
+            try {
+                const { error } = await supabaseClient
+                    .from('kretskampen_scores')
+                    .insert([{
+                        name:     entry.name,
+                        score:    entry.score,
+                        correct:  entry.correct,
+                        total:    entry.total,
+                        category: entry.category,
+                        played_at: entry.date,
+                    }]);
+                if (error) throw error;
+            } catch (e) {
+                console.error('Kunde inte spara highscore:', e);
+            }
+        }
+
+        // ── Gemini API ──
+        async function generateQuestions(category, count) {
+            const catLabel = category === 'all'
+                ? 'alla kategorier (EU & Reglering, Ekonomi, Teknik, Juridik)'
+                : CATEGORIES.find(c => c.id === category)?.label;
+
+            const prompt = `Du är quizmaster för El-kretsen (Sveriges ledande producentansvarssystem för el-avfall och batterier).
+
+Kunskapsbas:
+${KNOWLEDGE_BASE}
+
+Generera exakt ${count} flervalsfrågor på SVENSKA om kategori: ${catLabel}.
+Regler:
+- Exakt 4 svarsalternativ (A, B, C, D). Bara ETT korrekt svar.
+- Faktabaserade frågor direkt från kunskapsbasen. Inga dubbletter.
+- Blanda svårighetsgrad. Fokus på konkreta siffror, datum, lagar, paragrafer och koder.
+
+Svara ENBART med JSON (inga backticks, ingen förklaring):
+{
+  "questions": [
+    {
+      "question": "Frågetext?",
+      "answers": ["Svar A","Svar B","Svar C","Svar D"],
+      "correct": 0,
+      "explanation": "Kort förklaring av rätt svar."
+    }
+  ]
+}
+"correct" är index (0-3) för rätt svar.`;
+
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 4000,
+                        },
+                    }),
+                }
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || 'Gemini API-fel');
+            const text  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const clean = text.replace(/```json|```/g, '').trim();
+            return JSON.parse(clean).questions;
+        }
+
+        function calcScore(timeLeft, correct) {
+            return correct ? Math.round(500 + (timeLeft / TIME_PER_Q) * 500) : 0;
+        }
+        function fmtDate(iso) {
+            return new Date(iso).toLocaleDateString('sv-SE', { day:'numeric', month:'short', year:'numeric' });
+        }
+
+        // ──────────────────────────────────────
+        // TimerRing
+        // ──────────────────────────────────────
+        function TimerRing({ timeLeft, total }) {
+            const { useId } = React;
+            const r = 34, cx = 42, cy = 42, circ = 2 * Math.PI * r;
+            const offset = circ * (1 - timeLeft / total);
+            const color  = timeLeft > 10 ? '#06B4E4' : timeLeft > 5 ? '#F59E0B' : '#EF4444';
+            return (
+                <div style={{ position:'relative', width:84, height:84, flexShrink:0 }}>
+                    <svg width="84" height="84" style={{ transform:'rotate(-90deg)' }}>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={6}/>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={6}
+                            strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+                            style={{ transition:'stroke-dashoffset 1s linear, stroke 0.3s' }}/>
+                    </svg>
+                    <div style={{
+                        position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:20, fontWeight:900, color,
+                        fontFamily:"'Barlow Condensed', sans-serif",
+                    }}>{timeLeft}</div>
+                </div>
+            );
+        }
+
+        // ──────────────────────────────────────
+        // HomeScreen
+        // ──────────────────────────────────────
+        function HomeScreen({ onStart, onLeaderboard }) {
+            const [name,     setName]     = React.useState('');
+            const [category, setCategory] = React.useState('all');
+            const [qCount,   setQCount]   = React.useState(10);
+
+            return (
+                <div className="kk-home-bg">
+                    {/* Hero-banner */}
+                    <div style={{
+                        width:'100%', maxWidth:460,
+                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
+                        borderRadius:'20px 20px 0 0', padding:'28px 28px 24px',
+                        color:'white', position:'relative', overflow:'hidden',
+                    }}>
+                        <div style={{
+                            position:'absolute', top:-30, right:-30, width:120, height:120,
+                            borderRadius:'50%', background:'rgba(255,255,255,0.08)',
+                        }}/>
+                        <div style={{
+                            position:'absolute', bottom:-20, right:20, width:80, height:80,
+                            borderRadius:'50%', background:'rgba(255,255,255,0.06)',
+                        }}/>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                            <div>
+                                <div style={{
+                                    fontFamily:"'Barlow Condensed', sans-serif",
+                                    fontSize:32, fontWeight:900, letterSpacing:3,
+                                    lineHeight:1, marginBottom:4,
+                                }}>⚡ KRETSKAMPEN</div>
+                                <div style={{ fontSize:14, opacity:0.85, fontWeight:500 }}>
+                                    Testa dina kunskaper om El-kretsen
+                                </div>
+                            </div>
+                            <button onClick={onLeaderboard} style={{
+                                background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)',
+                                borderRadius:10, padding:'8px 14px', color:'white',
+                                cursor:'pointer', fontSize:13, fontWeight:600,
+                                fontFamily:"'Barlow', sans-serif", backdropFilter:'blur(4px)',
+                                flexShrink:0,
+                            }}>🏆 Highscore</button>
+                        </div>
+                    </div>
+
+                    {/* Formulär */}
+                    <div className="kk-card" style={{ borderRadius:'0 0 20px 20px', paddingTop:24 }}>
+                        <div style={{ marginBottom:20 }}>
+                            <div className="kk-label">Ditt namn</div>
+                            <input className="kk-input" placeholder="Skriv ditt namn..."
+                                value={name} onChange={e => setName(e.target.value)} maxLength={30}/>
+                        </div>
+                        <div style={{ marginBottom:20 }}>
+                            <div className="kk-label">Välj kategori</div>
+                            {CATEGORIES.map(cat => (
+                                <button key={cat.id}
+                                    className={`kk-cat-btn ${category === cat.id ? 'selected' : ''}`}
+                                    onClick={() => setCategory(cat.id)}>
+                                    <span style={{ fontSize:16 }}>{cat.emoji}</span>
+                                    <span>{cat.label}</span>
+                                    {category === cat.id && <span style={{ marginLeft:'auto', opacity:0.8 }}>✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <div style={{ marginBottom:24 }}>
+                            <div className="kk-label">Antal frågor</div>
+                            <div style={{ display:'flex', gap:10 }}>
+                                {[5,10,15].map(n => (
+                                    <button key={n}
+                                        className={`kk-qcount-btn ${qCount === n ? 'selected' : ''}`}
+                                        onClick={() => setQCount(n)}>{n} st</button>
+                                ))}
+                            </div>
+                        </div>
+                        <button className="kk-primary-btn"
+                            disabled={!name.trim()}
+                            onClick={() => name.trim() && onStart(name.trim(), category, qCount)}>
+                            ⚡ Starta quiz
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ──────────────────────────────────────
+        // LoadingScreen
+        // ──────────────────────────────────────
+        function LoadingScreen({ category, count }) {
+            const cat = CATEGORIES.find(c => c.id === category);
+            return (
+                <div style={{
+                    display:'flex', flexDirection:'column', alignItems:'center',
+                    justifyContent:'center', minHeight:'100%', padding:32,
+                    background:'linear-gradient(150deg, #f0f9ff 0%, #e0f2fe 100%)',
+                }}>
+                    <div style={{
+                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
+                        borderRadius:20, padding:'40px 48px', textAlign:'center',
+                        color:'white', boxShadow:'0 20px 60px rgba(6,180,228,0.25)',
+                    }}>
+                        <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:24 }}>
+                            <div className="kk-dot"/>
+                            <div className="kk-dot"/>
+                            <div className="kk-dot"/>
+                        </div>
+                        <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:24, fontWeight:800, marginBottom:8 }}>
+                            AI genererar {count} frågor
+                        </div>
+                        <div style={{ opacity:0.8, fontSize:15 }}>
+                            {cat?.emoji} {cat?.label}
+                        </div>
+                        <div style={{ opacity:0.6, fontSize:13, marginTop:4 }}>
+                            Tar ungefär 10–15 sekunder...
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ──────────────────────────────────────
+        // QuizScreen
+        // ──────────────────────────────────────
+        function QuizScreen({ questions, playerName, onFinish }) {
+            const [qIdx,     setQIdx]     = React.useState(0);
+            const [selected, setSelected] = React.useState(null);
+            const [timeLeft, setTimeLeft] = React.useState(TIME_PER_Q);
+            const [score,    setScore]    = React.useState(0);
+            const [history,  setHistory]  = React.useState([]);
+            const [streak,   setStreak]   = React.useState(0);
+            const [showExpl, setShowExpl] = React.useState(false);
+            const timerRef = React.useRef();
+
+            const q      = questions[qIdx];
+            const isLast = qIdx === questions.length - 1;
+
+            const handleSelect = React.useCallback((idx) => {
+                if (selected !== null) return;
+                clearInterval(timerRef.current);
+                setSelected(idx);
+                const correct = idx === q.correct;
+                const gained  = calcScore(timeLeft, correct);
+                const newStr  = correct ? streak + 1 : 0;
+                setStreak(newStr);
+                setScore(s => s + gained);
+                setHistory(h => [...h, { gained, correct, timeLeft }]);
+                setShowExpl(true);
+            }, [selected, q, timeLeft, streak]);
+
+            React.useEffect(() => {
+                setSelected(null); setTimeLeft(TIME_PER_Q); setShowExpl(false);
+                timerRef.current = setInterval(() => {
+                    setTimeLeft(t => {
+                        if (t <= 1) { clearInterval(timerRef.current); handleSelect(-1); return 0; }
+                        return t - 1;
+                    });
+                }, 1000);
+                return () => clearInterval(timerRef.current);
+            }, [qIdx]);
+
+            const handleNext = () => {
+                if (isLast) {
+                    onFinish(score + (history[history.length-1]?.gained || 0), [...history]);
+                } else {
+                    setQIdx(i => i + 1);
+                }
+            };
+
+            const progressPct = ((qIdx) / questions.length) * 100;
+
+            return (
+                <div style={{ display:'flex', flexDirection:'column', minHeight:'100%' }}>
+                    {/* Quiz-header */}
+                    <div style={{
+                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
+                        padding:'16px 20px', display:'flex', alignItems:'center',
+                        justifyContent:'space-between', gap:12,
+                    }}>
+                        <div style={{ color:'white' }}>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:11, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>
+                                Fråga {qIdx+1} / {questions.length}
+                            </div>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:18, fontWeight:700 }}>{playerName}</div>
+                        </div>
+                        <TimerRing timeLeft={timeLeft} total={TIME_PER_Q}/>
+                        <div style={{ textAlign:'right', color:'white' }}>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:11, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>Poäng</div>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:24, fontWeight:900 }}>{score.toLocaleString('sv-SE')}</div>
+                        </div>
+                    </div>
+
+                    {/* Progressbar */}
+                    <div style={{ height:5, background:'#E5E7EB' }}>
+                        <div style={{
+                            height:'100%', width:`${progressPct}%`,
+                            background:'linear-gradient(90deg,#06B4E4,#0891B2)',
+                            transition:'width 0.5s ease',
+                        }}/>
+                    </div>
+
+                    {/* Streak-banner */}
+                    {streak >= 3 && showExpl && (
+                        <div style={{
+                            background:'linear-gradient(90deg,#F59E0B,#EF4444)', color:'white',
+                            textAlign:'center', padding:'7px 0',
+                            fontFamily:"'Barlow Condensed', sans-serif", fontSize:15, fontWeight:700,
+                        }}>🔥 {streak} rätt i rad! Fantastiskt!</div>
+                    )}
+
+                    <div style={{ flex:1, padding:'20px 16px', display:'flex', flexDirection:'column', gap:14, background:'#F8FAFC' }}>
+                        {/* Fråga */}
+                        <div style={{
+                            background:'white', borderRadius:16, padding:'22px 20px',
+                            boxShadow:'0 2px 12px rgba(6,180,228,0.10)', textAlign:'center',
+                        }}>
+                            <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:16, fontWeight:600, color:'#111827', lineHeight:1.55 }}>
+                                {q.question}
+                            </div>
+                        </div>
+
+                        {/* Svarsalternativ */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                            {q.answers.map((ans, i) => {
+                                let bg = ANSWER_COLORS[i];
+                                let border = 'none';
+                                if (selected !== null) {
+                                    if (i === q.correct) { bg = '#16A34A'; border = '3px solid white'; }
+                                    else if (i === selected && i !== q.correct) { bg = '#6B7280'; }
+                                    else { bg = ANSWER_COLORS[i] + '55'; }
+                                }
+                                return (
+                                    <button key={i} className="kk-answer-btn"
+                                        onClick={() => handleSelect(i)}
+                                        disabled={selected !== null}
+                                        style={{ background:bg, border, opacity: (selected !== null && i !== q.correct && i !== selected) ? 0.55 : 1 }}>
+                                        <div style={{ fontSize:18, marginBottom:4, fontWeight:900 }}>{ANSWER_ICONS[i]}</div>
+                                        <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:13, fontWeight:600, lineHeight:1.35 }}>{ans}</div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Förklaring + Nästa */}
+                        {showExpl && (
+                            <div className="kk-fadein" style={{
+                                background: selected === q.correct ? '#F0FDF4' : '#FFF1F2',
+                                borderRadius:14, padding:'16px 18px',
+                                borderLeft:`4px solid ${selected === q.correct ? '#16A34A' : '#DC2626'}`,
+                            }}>
+                                <div style={{ fontWeight:700, color: selected === q.correct ? '#16A34A' : '#DC2626', marginBottom:6, fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
+                                    {selected === q.correct ? '✓ Rätt!' : selected === -1 ? '⏱ Tiden tog slut!' : '✗ Fel svar'}
+                                    {selected === q.correct && (
+                                        <span style={{ color:'#6B7280', fontWeight:600, fontSize:13 }}>
+                                            +{history[history.length-1]?.gained} poäng
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ fontSize:13, color:'#374151', lineHeight:1.55 }}>{q.explanation}</div>
+                                <button className="kk-primary-btn" onClick={handleNext} style={{ marginTop:14, padding:'12px 0' }}>
+                                    {isLast ? '🏁 Se resultat' : 'Nästa fråga →'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ──────────────────────────────────────
+        // ResultScreen
+        // ──────────────────────────────────────
+        function ResultScreen({ playerName, score, totalQ, sessionScores, onHome, onLeaderboard }) {
+            const correct  = sessionScores.filter(s => s.correct).length;
+            const pct      = Math.round((correct / totalQ) * 100);
+            const avgTime  = sessionScores.filter(s => s.correct).length > 0
+                ? Math.round(sessionScores.filter(s=>s.correct).reduce((a,b)=>a+b.timeLeft,0) / correct)
+                : 0;
+
+            let medal = '🥉', msg = 'Bra försök! Fortsätt träna!';
+            if (pct >= 90) { medal = '🥇'; msg = 'Otroligt bra! Du är expert!'; }
+            else if (pct >= 70) { medal = '🥈'; msg = 'Imponerande! Riktigt bra!'; }
+            else if (pct >= 50) { medal = '🥉'; msg = 'Godkänt! Du kan mer!'; }
+
+            return (
+                <div className="kk-home-bg">
+                    <div className="kk-card" style={{ maxWidth:460 }}>
+                        <div style={{ textAlign:'center', marginBottom:24 }}>
+                            <div style={{ fontSize:60, marginBottom:8, animation:'kk-pop 0.5s ease' }}>{medal}</div>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:26, fontWeight:800, color:'#111827' }}>{msg}</div>
+                            <div style={{ color:'#6B7280', fontSize:14, marginTop:4 }}>{playerName}</div>
+                        </div>
+
+                        <div style={{
+                            background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
+                            borderRadius:16, padding:'24px', textAlign:'center', color:'white', marginBottom:20,
+                        }}>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:52, fontWeight:900, lineHeight:1 }}>
+                                {score.toLocaleString('sv-SE')}
+                            </div>
+                            <div style={{ opacity:0.8, fontSize:14, marginTop:4 }}>poäng</div>
+                        </div>
+
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:24 }}>
+                            {[
+                                { label:'Rätt svar',    value:`${correct}/${totalQ}`, color:'#16A34A' },
+                                { label:'Precision',    value:`${pct}%`,              color:'#06B4E4' },
+                                { label:'Snittid kvar', value:`${avgTime}s`,          color:'#F59E0B' },
+                            ].map(stat => (
+                                <div key={stat.label} style={{
+                                    background:'white', borderRadius:12, padding:'14px 8px',
+                                    textAlign:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.07)',
+                                }}>
+                                    <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:22, fontWeight:800, color:stat.color }}>{stat.value}</div>
+                                    <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{stat.label}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                            <button className="kk-primary-btn" onClick={onLeaderboard}>🏆 Highscore-tavlan</button>
+                            <button className="kk-ghost-btn" style={{ width:'100%' }} onClick={onHome}>← Spela igen</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ──────────────────────────────────────
+        // LeaderboardScreen
+        // ──────────────────────────────────────
+        function LeaderboardScreen({ onBack, currentPlayer, currentScore }) {
+            const [scores,  setScores]  = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+            React.useEffect(() => {
+                loadScores().then(data => { setScores(data); setLoading(false); });
+            }, []);
+
+            const medals = ['🥇','🥈','🥉'];
+            return (
+                <div style={{ display:'flex', flexDirection:'column', minHeight:'100%' }}>
+                    <div style={{
+                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
+                        padding:'20px 20px 24px',
+                    }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+                            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.2)', border:'none', color:'white', fontSize:18, cursor:'pointer', borderRadius:8, padding:'4px 12px' }}>←</button>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:900, fontSize:11, color:'rgba(255,255,255,0.7)', letterSpacing:2, textTransform:'uppercase' }}>⚡ KRETSKAMPEN</div>
+                        </div>
+                        <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:30, fontWeight:900, color:'white' }}>🏆 Highscore-tavlan</div>
+                        <div style={{ color:'rgba(255,255,255,0.7)', fontSize:13 }}>Topp 50 spelare</div>
+                    </div>
+
+                    <div style={{ flex:1, overflow:'auto', padding:16, background:'#F8FAFC', display:'flex', flexDirection:'column', gap:8 }}>
+                        {loading ? (
+                            <div style={{ textAlign:'center', color:'#9CA3AF', paddingTop:60 }}>
+                                <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
+                                    <div className="kk-dot"/><div className="kk-dot"/><div className="kk-dot"/>
+                                </div>
+                                <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:16, fontWeight:600 }}>Hämtar highscores...</div>
+                            </div>
+                        ) : scores.length === 0 ? (
+                            <div style={{ textAlign:'center', color:'#9CA3AF', paddingTop:60 }}>
+                                <div style={{ fontSize:48, marginBottom:12 }}>🎯</div>
+                                <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:20, fontWeight:700 }}>Inga resultat ännu</div>
+                                <div style={{ fontSize:14 }}>Bli den första att spela!</div>
+                            </div>
+                        ) : scores.map((s, i) => {
+                            // Supabase returnerar snake_case – hantera båda formaten
+                            const playedAt = s.played_at || s.date;
+                            const isMe = s.name === currentPlayer && s.score === currentScore;
+                            return (
+                                <div key={i} className="kk-score-row" style={isMe ? {
+                                    background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
+                                    boxShadow:'0 6px 20px rgba(6,180,228,0.3)',
+                                } : {}}>
+                                    <div style={{
+                                        fontFamily:"'Barlow Condensed', sans-serif", fontSize:20, fontWeight:900,
+                                        color: isMe ? 'rgba(255,255,255,0.9)' : '#D1D5DB', minWidth:30, textAlign:'center',
+                                    }}>
+                                        {i < 3 ? medals[i] : `#${i+1}`}
+                                    </div>
+                                    <div style={{ flex:1 }}>
+                                        <div style={{ fontWeight:700, fontSize:14, color: isMe ? 'white' : '#111827' }}>
+                                            {s.name}{isMe ? ' (du)' : ''}
+                                        </div>
+                                        <div style={{ fontSize:12, color: isMe ? 'rgba(255,255,255,0.65)' : '#9CA3AF' }}>
+                                            {s.correct}/{s.total} rätt · {fmtDate(playedAt)}
+                                        </div>
+                                    </div>
+                                    <div style={{
+                                        fontFamily:"'Barlow Condensed', sans-serif", fontSize:22, fontWeight:900,
+                                        color: isMe ? 'white' : '#06B4E4',
+                                    }}>{s.score.toLocaleString('sv-SE')}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        // ──────────────────────────────────────
+        // Huvud-app
+        // ──────────────────────────────────────
+        function KretskampenApp() {
+            const [screen,        setScreen]        = React.useState('home');
+            const [playerName,    setPlayerName]    = React.useState('');
+            const [category,      setCategory]      = React.useState('all');
+            const [qCount,        setQCount]        = React.useState(10);
+            const [questions,     setQuestions]     = React.useState([]);
+            const [finalScore,    setFinalScore]    = React.useState(0);
+            const [sessionScores, setSessionScores] = React.useState([]);
+            const [error,         setError]         = React.useState(null);
+
+            const handleStart = async (name, cat, count) => {
+                setPlayerName(name); setCategory(cat); setQCount(count);
+                setScreen('loading'); setError(null);
+                try {
+                    const qs = await generateQuestions(cat, count);
+                    setQuestions(qs); setScreen('quiz');
+                } catch(e) {
+                    setError('Kunde inte generera frågor: ' + e.message);
+                    setScreen('home');
+                }
+            };
+
+            const handleFinish = async (score, sScores) => {
+                const correct = sScores.filter(s => s.correct).length;
+                setFinalScore(score); setSessionScores(sScores);
+                await saveScore({ name:playerName, score, correct, total:questions.length, category, date:new Date().toISOString() });
+                setScreen('result');
+            };
+
+            return (
+                <div style={{ minHeight:'100%', fontFamily:"'Barlow', sans-serif" }}>
+                    {error && (
+                        <div style={{ background:'#FEF2F2', color:'#991B1B', padding:'12px 16px', fontSize:13, textAlign:'center', borderBottom:'1px solid #FECACA' }}>
+                            ⚠️ {error}
+                        </div>
+                    )}
+                    {screen === 'home'         && <HomeScreen onStart={handleStart} onLeaderboard={() => setScreen('leaderboard')}/>}
+                    {screen === 'loading'      && <LoadingScreen category={category} count={qCount}/>}
+                    {screen === 'quiz'         && <QuizScreen questions={questions} playerName={playerName} onFinish={handleFinish}/>}
+                    {screen === 'result'       && <ResultScreen playerName={playerName} score={finalScore} totalQ={questions.length} sessionScores={sessionScores} onHome={() => setScreen('home')} onLeaderboard={() => setScreen('leaderboard')}/>}
+                    {screen === 'leaderboard'  && <LeaderboardScreen onBack={() => setScreen(finalScore ? 'result' : 'home')} currentPlayer={playerName} currentScore={finalScore}/>}
+                </div>
+            );
+        }
+
+        // Exponera för vanilla JS
+        window.KretskampenApp = KretskampenApp;
+
     </script>
 </body>
 </html>
-
