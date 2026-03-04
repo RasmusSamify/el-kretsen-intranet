@@ -11,7 +11,14 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+<meta http-equiv="Content-Security-Policy" content="
+    default-src 'self' 'unsafe-inline' 'unsafe-eval' https: wss: data: blob:;
+    connect-src 'self' https: wss:;
+    font-src 'self' https: data:;
+    img-src 'self' https: data: blob:;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
+    style-src 'self' 'unsafe-inline' https:;
+">
     <style>
         /* ── Tab-navigation ── */
         .nav-tab {
@@ -985,3 +992,4 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
     </script>
 </body>
 </html>
+
