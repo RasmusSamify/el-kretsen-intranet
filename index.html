@@ -948,10 +948,12 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                 setPlayerName(name); setCategory(cat); setQCount(count);
                 setScreen('loading'); setError(null);
                 try {
+                    console.log("Försöker starta quiz..."); // Ny logg
                     const qs = await generateQuestions(cat, count);
                     setQuestions(qs); setScreen('quiz');
                 } catch(e) {
-                    setError('Kunde inte generera frågor. Ett fel uppstod!');
+                    console.error("DETALJERAT FEL:", e); // Vi skriver ut hela felet i konsolen
+                    setError('Ett fel uppstod: ' + e.message); // Visar det exakta felet på skärmen
                     setScreen('home');
                 }
             };
@@ -985,5 +987,6 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
     </script>
 </body>
 </html>
+
 
 
