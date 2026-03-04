@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* ── Dynamiska Teman & Bakgrunder (Nu över hela skärmen!) ── */
+        /* ── Dynamiska Teman & Bakgrunder ── */
         :root {
             --primary: #06B4E4;
             --primary-dark: #0369A1;
@@ -26,7 +26,7 @@
             --primary: #10B981;
             --primary-dark: #065F46;
             --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/422896.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyLzQyMjg5Ni5qcGciLCJpYXQiOjE3NzI2NjIxNTYsImV4cCI6MTA0MTI2NjIxNTZ9.FFXfnrTj0vXaeHgvx5zAtFPyEBJiG4DIIeBCYdY6Ny4');
-            --bg-overlay: rgba(255, 255, 255, 0.65); /* Ljusare dimma så skogen syns mer */
+            --bg-overlay: rgba(255, 255, 255, 0.65);
             --header-gradient: linear-gradient(135deg, #10B981 0%, #064E3B 100%);
         }
 
@@ -46,7 +46,7 @@
             --header-gradient: linear-gradient(135deg, #312E81 0%, #1E1B4B 100%);
         }
 
-        /* ── App Container (Ligger nu på BODY) ── */
+        /* ── App Container ── */
         .bg-app-container { 
             background: var(--bg-app); 
             background-size: cover; 
@@ -59,7 +59,6 @@
             background: var(--bg-overlay); z-index: 0; pointer-events: none;
         }
 
-        /* Tvinga innehållet att ligga OVANPÅ bakgrundsbilden */
         .content-relative { position: relative; z-index: 1; }
 
         /* ── Custom Scrollbar ── */
@@ -84,7 +83,7 @@
             font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.2s;
         }
-        .kk-primary-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .kk-primary-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
         .kk-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
         .kk-card {
@@ -109,8 +108,8 @@
         .kk-cat-btn.selected { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .kk-cat-btn:hover:not(.selected) { border-color: var(--primary); color: var(--primary); background: white; }
         
-        .kk-answer-btn { padding: 20px 16px; border-radius: 16px; border: none; color: white; cursor: pointer; text-align: left; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .kk-answer-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .kk-answer-btn { padding: 20px 16px; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .kk-answer-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .kk-answer-btn:disabled { cursor: default; }
 
         @keyframes kk-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -138,22 +137,40 @@
 
     <div id="intranet-screen" class="hidden h-full flex flex-col content-relative">
         
-        <header class="bg-white/80 backdrop-blur-lg border-b border-white/40 p-4 flex justify-between items-center shadow-sm">
+        <header class="bg-white/80 backdrop-blur-lg border-b border-white/40 p-4 flex justify-between items-center shadow-sm z-20 relative">
             <div class="flex items-center gap-4">
                 <img src="https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew" alt="El-kretsen" class="h-10 w-auto drop-shadow-sm">
                 <h1 class="text-xl font-black font-barlow-condensed uppercase tracking-wider border-l-2 pl-4 border-gray-300/50 hidden sm:block text-gray-700">Intranät</h1>
             </div>
             
-            <div class="flex items-center gap-4">
-                <div class="flex bg-white/60 p-1.5 rounded-full border border-gray-200/50 shadow-inner">
+            <div class="flex items-center gap-3 sm:gap-4">
+                <div class="hidden sm:flex bg-white/60 p-1.5 rounded-full border border-gray-200/50 shadow-inner">
                     <button onclick="setTheme('default')" class="w-6 h-6 rounded-full bg-[#06B4E4] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Standard"></button>
                     <button onclick="setTheme('green')" class="w-6 h-6 rounded-full bg-[#10B981] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Skog"></button>
                     <button onclick="setTheme('orange')" class="w-6 h-6 rounded-full bg-[#F59E0B] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Energi"></button>
                     <button onclick="setTheme('dark')" class="w-6 h-6 rounded-full bg-[#111827] border-2 border-white shadow-sm hover:scale-110 transition-transform" title="Midnatt"></button>
                 </div>
-                <button id="logout-btn" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors bg-white/50 px-3 py-1.5 rounded-lg border border-gray-200/50">Logga ut</button>
+                <!-- Feedback Knapp -->
+                <button onclick="document.getElementById('feedback-modal').classList.remove('hidden')" class="text-xs font-bold uppercase text-gray-600 hover:text-[var(--primary)] transition-colors bg-white/80 px-3 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"></path></svg>
+                    <span class="hidden sm:inline">Feedback</span>
+                </button>
+                <button id="logout-btn" class="text-xs font-bold uppercase text-gray-600 hover:text-red-500 transition-colors bg-white/80 px-3 py-2 rounded-lg border border-gray-200 shadow-sm">Logga ut</button>
             </div>
         </header>
+
+        <!-- Modal för Feedback -->
+        <div id="feedback-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col" style="height: 85vh;">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/80">
+                    <h3 class="font-bold text-gray-800 text-lg">Skicka feedback</h3>
+                    <button onclick="document.getElementById('feedback-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-800 bg-white shadow-sm border border-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+                </div>
+                <div class="flex-1 overflow-hidden w-full bg-gray-50">
+                    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdCmi8SVddoUUufsWVYSR84yjggY4FoUGH6xoAmkY1L09JMKQ/viewform?embedded=true" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">Läser in …</iframe>
+                </div>
+            </div>
+        </div>
 
         <nav class="bg-white/60 backdrop-blur-md border-b border-white/30 px-6 flex items-center gap-4 shadow-sm">
             <button id="tab-elvis" class="nav-tab active flex items-center gap-2" onclick="switchTab('elvis')">
@@ -173,7 +190,7 @@
 
             <aside class="w-1/3 max-w-sm bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl p-6 flex flex-col border border-white/50 overflow-hidden">
                 <div class="mb-4 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center" style="color: var(--primary); background: var(--bg-app); opacity: 0.9;">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style="color: var(--primary); background: var(--primary-light);">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <div>
@@ -272,23 +289,25 @@
             }
         }
 
-        // ── Smart funktion för snygga fil-ikoner ──
+        // ── Smart funktion för snygga fil-ikoner, NU MED HTML ──
         function getFileIconHTML(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             let bg = 'bg-gray-100'; let text = 'text-gray-500';
-            // Standardikon (Fil)
             let icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>`;
 
-            if (ext === 'pdf') { // PDF = Röd
+            if (ext === 'pdf') { 
                 bg = 'bg-red-50'; text = 'text-red-500';
-            } else if (['xls', 'xlsx', 'csv'].includes(ext)) { // Excel = Grön (Tabell)
+            } else if (['xls', 'xlsx', 'csv'].includes(ext)) { 
                 bg = 'bg-green-50'; text = 'text-green-500';
                 icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>`;
-            } else if (['doc', 'docx'].includes(ext)) { // Word = Blå
+            } else if (['doc', 'docx'].includes(ext)) { 
                 bg = 'bg-blue-50'; text = 'text-blue-500';
-            } else if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext)) { // Bild = Lila (Foto)
+            } else if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext)) { 
                 bg = 'bg-purple-50'; text = 'text-purple-500';
                 icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`;
+            } else if (['html', 'htm'].includes(ext)) { // Lade till HTML-ikonen här!
+                bg = 'bg-orange-50'; text = 'text-orange-500';
+                icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>`;
             }
 
             return `<div class="w-10 h-10 rounded-xl ${bg} ${text} flex items-center justify-center flex-shrink-0 shadow-sm border border-white">
@@ -310,7 +329,6 @@
                 const li = document.createElement('li');
                 li.className = 'doc-item';
                 
-                // Vår nya lyxiga layout för varje dokument
                 li.innerHTML = `
                     <a class="flex items-center p-3 bg-white rounded-2xl border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
                         ${getFileIconHTML(file.name)}
@@ -376,6 +394,7 @@
 
     </script>
 
+    <!-- REACT / JSX – KRETSKAMPEN -->
     <script type="text/babel" data-presets="react">
         const KNOWLEDGE_BASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Quiz%20dokument/Elkretsen_Kunskapsbas_Samlad_Quiz.txt?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJRdWl6IGRva3VtZW50L0Vsa3JldHNlbl9LdW5za2Fwc2Jhc19TYW1sYWRfUXVpei50eHQiLCJpYXQiOjE3NzI2NTI2NzYsImV4cCI6NDkyNjI1MjY3Nn0.3zkcFjaJmwLPFEoWa9sJx15eq2xil9NiteRPb76mtKQ';
         
@@ -422,6 +441,7 @@
             return correct ? Math.round(500 + (timeLeft / TIME_PER_Q) * 500) : 0;
         }
 
+        // Tydlig mörk text i timern
         function TimerRing({ timeLeft, total }) {
             const r = 34, cx = 42, cy = 42, circ = 2 * Math.PI * r;
             const offset = circ * (1 - timeLeft / total);
@@ -429,10 +449,10 @@
             return (
                 <div style={{ position:'relative', width:84, height:84 }}>
                     <svg width="84" height="84" style={{ transform:'rotate(-90deg)' }}>
-                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={6}/>
-                        <circle cx={cx} cy={cy} r={r} fill="none" stroke={timeLeft > 10 ? "white" : color} strokeWidth={6} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }}/>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={6}/>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={6} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }}/>
                     </svg>
-                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, fontWeight:900, color:"white", fontFamily:"'Barlow Condensed'" }}>{timeLeft}</div>
+                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, fontWeight:900, color:"#111827", fontFamily:"'Barlow Condensed'" }}>{timeLeft}</div>
                 </div>
             );
         }
@@ -504,9 +524,9 @@
                 <div className="flex flex-col items-center py-12 relative z-10">
                     <div className="kk-card text-center bg-white/90 backdrop-blur-xl border border-white/50">
                         <div class="text-7xl mb-4 drop-shadow-md" style={{animation: 'kk-pop 0.5s ease'}}>🏆</div>
-                        <h2 class="text-3xl font-bold mb-2">Snyggt jobbat, {player}!</h2>
-                        <div class="p-8 rounded-3xl my-8 shadow-inner border border-gray-100" style={{background: 'var(--bg-app)', opacity: 0.95}}>
-                            <div class="text-sm uppercase font-black mb-1" style={{color: 'var(--primary-dark)'}}>Din Slutpoäng</div>
+                        <h2 class="text-3xl font-bold mb-2 text-gray-800">Snyggt jobbat, {player}!</h2>
+                        <div class="p-8 rounded-3xl my-8 shadow-inner border border-gray-100 bg-gray-50">
+                            <div class="text-sm uppercase font-black mb-1 text-gray-500">Din Slutpoäng</div>
                             <div class="text-6xl font-black font-barlow-condensed drop-shadow-sm" style={{color: 'var(--primary)'}}>{score.toLocaleString()}</div>
                         </div>
                         <button class="kk-primary-btn mb-4 py-4 text-lg shadow-xl" onClick={()=>setScreen('leaderboard')}>Se var du hamnade 🏅</button>
@@ -518,6 +538,7 @@
             if (screen === 'leaderboard') return <div className="relative z-10 py-8 h-full"><Leaderboard onBack={()=>setScreen(score > 0 ? 'result' : 'home')} player={player} score={score} /></div>;
         }
 
+        // Tydliga och svarta texter lagda här inne i QuizWindow
         function QuizWindow({ questions, player, onFinish }) {
             const [idx, setIdx] = React.useState(0);
             const [score, setScore] = React.useState(0);
@@ -547,37 +568,39 @@
 
             return (
                 <div className="w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col">
-                    <div className="bg-header p-5 sm:p-6 text-white flex justify-between items-center shadow-md z-10">
+                    
+                    <div className="bg-white p-5 sm:p-6 border-b border-gray-100 flex justify-between items-center z-10 shadow-sm">
                         <div>
-                            <div class="text-[11px] uppercase font-bold opacity-80 tracking-wider font-barlow-condensed">Fråga {idx+1}/{questions.length}</div>
-                            <div class="text-xl font-bold font-barlow-condensed">{player}</div>
+                            <div class="text-[12px] uppercase font-bold text-gray-400 tracking-wider font-barlow-condensed">Fråga {idx+1}/{questions.length}</div>
+                            <div class="text-xl font-bold font-barlow-condensed text-gray-900">{player}</div>
                         </div>
                         <TimerRing timeLeft={timeLeft} total={TIME_PER_Q} />
                         <div class="text-right">
-                            <div class="text-[11px] uppercase font-bold opacity-80 tracking-wider font-barlow-condensed">Poäng</div>
-                            <div class="text-3xl font-black font-barlow-condensed drop-shadow-md">{score.toLocaleString()}</div>
+                            <div class="text-[12px] uppercase font-bold text-gray-400 tracking-wider font-barlow-condensed">Poäng</div>
+                            <div class="text-3xl font-black font-barlow-condensed text-gray-900">{score.toLocaleString()}</div>
                         </div>
                     </div>
-                    <div class="p-6 sm:p-8 flex-1 bg-white/50">
-                        <h3 class="text-xl sm:text-2xl font-bold mb-8 text-center leading-relaxed text-gray-800">{q.question}</h3>
+                    
+                    <div class="p-6 sm:p-8 flex-1 bg-gray-50/50">
+                        <h3 class="text-xl sm:text-2xl font-bold mb-8 text-center leading-relaxed text-gray-900">{q.question}</h3>
                         <div class="grid sm:grid-cols-2 gap-4 mb-6">
                             {q.answers.map((a, i) => {
-                                let btnStyle = { background: ANSWER_COLORS[i], color: 'white', border: 'none' };
+                                let btnStyle = { background: 'white', color: '#1F2937', border: '2px solid #E5E7EB' };
                                 if (selected !== null) {
-                                    if (i === q.correct) btnStyle = { background: '#10B981', color: 'white', border: '3px solid #059669', transform: 'scale(1.02)' };
-                                    else if (i === selected) btnStyle = { background: '#EF4444', color: 'white', opacity: 0.8 };
-                                    else btnStyle = { background: ANSWER_COLORS[i], opacity: 0.4 };
+                                    if (i === q.correct) btnStyle = { background: '#10B981', color: 'white', border: '2px solid #059669', transform: 'scale(1.02)' };
+                                    else if (i === selected) btnStyle = { background: '#EF4444', color: 'white', border: '2px solid #B91C1C', opacity: 0.9 };
+                                    else btnStyle = { background: 'white', color: '#9CA3AF', border: '2px solid #F3F4F6', opacity: 0.5 };
                                 }
                                 return (
-                                    <button key={i} onClick={()=>handleAns(i)} disabled={selected !== null} className="kk-answer-btn flex flex-col p-5 border-b-4" style={{...btnStyle, borderBottomColor: 'rgba(0,0,0,0.2)'}}>
-                                        <div style={{ fontSize:26, marginBottom:8, opacity:0.9, dropShadow:'0 2px 4px rgba(0,0,0,0.2)' }}>{ANSWER_ICONS[i]}</div>
+                                    <button key={i} onClick={()=>handleAns(i)} disabled={selected !== null} className="flex flex-col p-5 rounded-2xl transition-all duration-200 hover:border-[var(--primary)] shadow-sm" style={btnStyle}>
+                                        <div style={{ fontSize:26, marginBottom:8, opacity:0.9 }}>{ANSWER_ICONS[i]}</div>
                                         <div style={{ fontSize:16, fontWeight:600, lineHeight:1.4 }}>{a}</div>
                                     </button>
                                 )
                             })}
                         </div>
                         {selected !== null && (
-                            <div class="kk-fadein rounded-2xl border-l-4 overflow-hidden shadow-lg bg-white" style={{ borderColor: selected === q.correct ? '#10B981' : '#EF4444' }}>
+                            <div class="kk-fadein rounded-2xl border-l-4 overflow-hidden shadow-lg bg-white mt-8" style={{ borderColor: selected === q.correct ? '#10B981' : '#EF4444' }}>
                                 <div className="p-5" style={{ background: selected === q.correct ? '#ECFDF5' : '#FEF2F2' }}>
                                     <div className="flex justify-between items-center mb-2">
                                         <div style={{ fontWeight:800, fontSize:18, color: selected === q.correct ? '#059669' : '#B91C1C' }}>
