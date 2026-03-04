@@ -378,7 +378,6 @@
         }
     </script>
 
-
     <script type="text/babel" data-presets="react">
 
         // ── Länk till kunskapsbasen i Supabase ──
@@ -426,6 +425,7 @@
                 return [];
             }
         }
+
         async function saveScore(entry) {
             try {
                 const { error } = await supabaseClient
@@ -492,12 +492,11 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
 
             const data = await res.json();
             
-            // 🚨 HÄR ÄR VÅR NYA FELSÖKNING 🚨
+            // Felsökning
             console.log("RÅDATA FRÅN SUPABASE/GEMINI:", data);
 
             if (!res.ok) throw new Error(data.error?.message || 'Ett fel uppstod vid hämtning från Supabase');
             
-            // Om Google skickade ett felmeddelande inbakat i datan
             if (data.error) {
                 throw new Error("Gemini säger: " + data.error.message);
             }
@@ -554,7 +553,6 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
 
             return (
                 <div className="kk-home-bg">
-                    {/* Hero-banner */}
                     <div style={{
                         width:'100%', maxWidth:460,
                         background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
@@ -590,7 +588,6 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                         </div>
                     </div>
 
-                    {/* Formulär */}
                     <div className="kk-card" style={{ borderRadius:'0 0 20px 20px', paddingTop:24 }}>
                         <div style={{ marginBottom:20 }}>
                             <div className="kk-label">Ditt namn</div>
@@ -716,26 +713,24 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
 
             return (
                 <div style={{ display:'flex', flexDirection:'column', minHeight:'100%' }}>
-                    {/* Quiz-header */}
                     <div style={{
                         background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
                         padding:'16px 20px', display:'flex', alignItems:'center',
                         justifyContent:'space-between', gap:12,
                     }}>
                         <div style={{ color:'white' }}>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:11, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:14, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>
                                 Fråga {qIdx+1} / {questions.length}
                             </div>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:18, fontWeight:700 }}>{playerName}</div>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:20, fontWeight:700 }}>{playerName}</div>
                         </div>
                         <TimerRing timeLeft={timeLeft} total={TIME_PER_Q}/>
                         <div style={{ textAlign:'right', color:'white' }}>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:11, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>Poäng</div>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:24, fontWeight:900 }}>{score.toLocaleString('sv-SE')}</div>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:14, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>Poäng</div>
+                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:28, fontWeight:900 }}>{score.toLocaleString('sv-SE')}</div>
                         </div>
                     </div>
 
-                    {/* Progressbar */}
                     <div style={{ height:5, background:'#E5E7EB' }}>
                         <div style={{
                             height:'100%', width:`${progressPct}%`,
@@ -744,27 +739,24 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                         }}/>
                     </div>
 
-                    {/* Streak-banner */}
                     {streak >= 3 && showExpl && (
                         <div style={{
                             background:'linear-gradient(90deg,#F59E0B,#EF4444)', color:'white',
                             textAlign:'center', padding:'7px 0',
-                            fontFamily:"'Barlow Condensed', sans-serif", fontSize:15, fontWeight:700,
+                            fontFamily:"'Barlow Condensed', sans-serif", fontSize:18, fontWeight:700,
                         }}>🔥 {streak} rätt i rad! Fantastiskt!</div>
                     )}
 
                     <div style={{ flex:1, padding:'20px 16px', display:'flex', flexDirection:'column', gap:14, background:'#F8FAFC' }}>
-                        {/* Fråga */}
                         <div style={{
                             background:'white', borderRadius:16, padding:'22px 20px',
                             boxShadow:'0 2px 12px rgba(6,180,228,0.10)', textAlign:'center',
                         }}>
-                            <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:16, fontWeight:600, color:'#111827', lineHeight:1.55 }}>
+                            <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:22, fontWeight:600, color:'#111827', lineHeight:1.55 }}>
                                 {q.question}
                             </div>
                         </div>
 
-                        {/* Svarsalternativ */}
                         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                             {q.answers.map((ans, i) => {
                                 let bg = ANSWER_COLORS[i];
@@ -779,30 +771,29 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                                         onClick={() => handleSelect(i)}
                                         disabled={selected !== null}
                                         style={{ background:bg, border, opacity: (selected !== null && i !== q.correct && i !== selected) ? 0.55 : 1 }}>
-                                        <div style={{ fontSize:18, marginBottom:4, fontWeight:900 }}>{ANSWER_ICONS[i]}</div>
-                                        <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:13, fontWeight:600, lineHeight:1.35 }}>{ans}</div>
+                                        <div style={{ fontSize:22, marginBottom:4, fontWeight:900 }}>{ANSWER_ICONS[i]}</div>
+                                        <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:16, fontWeight:600, lineHeight:1.35 }}>{ans}</div>
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {/* Förklaring + Nästa */}
                         {showExpl && (
                             <div className="kk-fadein" style={{
                                 background: selected === q.correct ? '#F0FDF4' : '#FFF1F2',
                                 borderRadius:14, padding:'16px 18px',
                                 borderLeft:`4px solid ${selected === q.correct ? '#16A34A' : '#DC2626'}`,
                             }}>
-                                <div style={{ fontWeight:700, color: selected === q.correct ? '#16A34A' : '#DC2626', marginBottom:6, fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
+                                <div style={{ fontWeight:700, color: selected === q.correct ? '#16A34A' : '#DC2626', marginBottom:6, fontSize:16, display:'flex', alignItems:'center', gap:8 }}>
                                     {selected === q.correct ? '✓ Rätt!' : selected === -1 ? '⏱ Tiden tog slut!' : '✗ Fel svar'}
                                     {selected === q.correct && (
-                                        <span style={{ color:'#6B7280', fontWeight:600, fontSize:13 }}>
+                                        <span style={{ color:'#6B7280', fontWeight:600, fontSize:15 }}>
                                             +{history[history.length-1]?.gained} poäng
                                         </span>
                                     )}
                                 </div>
-                                <div style={{ fontSize:13, color:'#374151', lineHeight:1.55 }}>{q.explanation}</div>
-                                <button className="kk-primary-btn" onClick={handleNext} style={{ marginTop:14, padding:'12px 0' }}>
+                                <div style={{ fontSize:16, color:'#374151', lineHeight:1.55 }}>{q.explanation}</div>
+                                <button className="kk-primary-btn" onClick={handleNext} style={{ marginTop:14, padding:'12px 0', fontSize:18 }}>
                                     {isLast ? '🏁 Se resultat' : 'Nästa fråga →'}
                                 </button>
                             </div>
@@ -911,7 +902,6 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                                 <div style={{ fontSize:14 }}>Bli den första att spela!</div>
                             </div>
                         ) : scores.map((s, i) => {
-                            // Supabase returnerar snake_case – hantera båda formaten
                             const playedAt = s.played_at || s.date;
                             const isMe = s.name === currentPlayer && s.score === currentScore;
                             return (
@@ -962,12 +952,12 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                 setPlayerName(name); setCategory(cat); setQCount(count);
                 setScreen('loading'); setError(null);
                 try {
-                    console.log("Försöker starta quiz..."); // Ny logg
+                    console.log("Försöker starta quiz...");
                     const qs = await generateQuestions(cat, count);
                     setQuestions(qs); setScreen('quiz');
                 } catch(e) {
-                    console.error("DETALJERAT FEL:", e); // Vi skriver ut hela felet i konsolen
-                    setError('Ett fel uppstod: ' + e.message); // Visar det exakta felet på skärmen
+                    console.error("DETALJERAT FEL:", e);
+                    setError('Ett fel uppstod: ' + e.message);
                     setScreen('home');
                 }
             };
@@ -995,7 +985,6 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
             );
         }
 
-        // Exponera för vanilla JS
         window.KretskampenApp = KretskampenApp;
 
     </script>
