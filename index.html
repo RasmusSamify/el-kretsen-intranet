@@ -445,6 +445,7 @@
         }
 
         // ── Gemini API (VIA SUPABASE EDGE FUNCTION) ──
+// ── Gemini API (VIA SUPABASE EDGE FUNCTION) ──
         async function generateQuestions(category, count) {
             const catLabel = category === 'all'
                 ? 'alla kategorier (EU & Reglering, Ekonomi, Teknik, Juridik)'
@@ -477,7 +478,7 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
 }
 "correct" är index (0-3) för rätt svar.`;
 
-            // ANROP TILL SUPABASE (Ingen API-nyckel här längre!)
+            // ANROP TILL SUPABASE
             const res = await fetch(
                 'https://jnwatbnkdzuyhqmcerej.supabase.co/functions/v1/smooth-action',
                 {
@@ -491,15 +492,26 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
             );
 
             const data = await res.json();
+            
+            // 🚨 HÄR ÄR VÅR NYA FELSÖKNING 🚨
+            console.log("RÅDATA FRÅN SUPABASE/GEMINI:", data);
+
             if (!res.ok) throw new Error(data.error?.message || 'Ett fel uppstod vid hämtning från Supabase');
             
+            // Om Google skickade ett felmeddelande inbakat i datan
+            if (data.error) {
+                throw new Error("Gemini säger: " + data.error.message);
+            }
+
             const text  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            
+            if (!text) {
+                 throw new Error("Fick tomt svar från AI. Kanske en säkerhetsspärr?");
+            }
+
             const clean = text.replace(/```json|```/g, '').trim();
             return JSON.parse(clean).questions;
         }
-
-        function calcScore(timeLeft, correct) {
-            return correct ? Math.round(500 + (timeLeft / TIME_PER_Q) * 500) : 0;
         }
         function fmtDate(iso) {
             return new Date(iso).toLocaleDateString('sv-SE', { day:'numeric', month:'short', year:'numeric' });
@@ -987,6 +999,7 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
     </script>
 </body>
 </html>
+
 
 
 
