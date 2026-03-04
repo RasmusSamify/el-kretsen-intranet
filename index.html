@@ -445,7 +445,6 @@
         }
 
         // ── Gemini API (VIA SUPABASE EDGE FUNCTION) ──
-// ── Gemini API (VIA SUPABASE EDGE FUNCTION) ──
         async function generateQuestions(category, count) {
             const catLabel = category === 'all'
                 ? 'alla kategorier (EU & Reglering, Ekonomi, Teknik, Juridik)'
@@ -512,6 +511,9 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
             const clean = text.replace(/```json|```/g, '').trim();
             return JSON.parse(clean).questions;
         }
+
+        function calcScore(timeLeft, correct) {
+            return correct ? Math.round(500 + (timeLeft / TIME_PER_Q) * 500) : 0;
         }
         function fmtDate(iso) {
             return new Date(iso).toLocaleDateString('sv-SE', { day:'numeric', month:'short', year:'numeric' });
@@ -999,7 +1001,3 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
     </script>
 </body>
 </html>
-
-
-
-
