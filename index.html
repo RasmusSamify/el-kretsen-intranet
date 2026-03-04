@@ -43,16 +43,6 @@
             box-shadow: 0 8px 40px rgba(6,180,228,0.12), 0 2px 8px rgba(0,0,0,0.06);
             width: 100%; max-width: 460px;
         }
-        .kk-logo-circle {
-            width: 56px; height: 56px; border-radius: 14px;
-            background: linear-gradient(135deg, #06B4E4 0%, #0891B2 100%);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 26px; box-shadow: 0 4px 16px rgba(6,180,228,0.35);
-        }
-        .kk-title {
-            font-family: 'Barlow Condensed', sans-serif;
-            font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
-        }
         .kk-label {
             font-family: 'Barlow Condensed', sans-serif;
             font-size: 11px; font-weight: 700; color: #9CA3AF;
@@ -100,7 +90,6 @@
         }
         .kk-ghost-btn:hover { border-color: #06B4E4; color: #06B4E4; }
 
-        /* Answer buttons */
         .kk-answer-btn {
             padding: 18px 14px; border-radius: 14px; border: none; color: white;
             cursor: pointer; text-align: left; transition: all 0.25s;
@@ -109,26 +98,21 @@
         .kk-answer-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
         .kk-answer-btn:disabled { cursor: default; }
 
-        /* Timer ring animation */
-        @keyframes kk-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
-        @keyframes kk-spin { to{transform:rotate(360deg)} }
-        @keyframes kk-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes kk-pop { 0%{transform:scale(0.85)} 60%{transform:scale(1.08)} 100%{transform:scale(1)} }
         .kk-fadein { animation: kk-fadein 0.35s ease forwards; }
+        @keyframes kk-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-        /* Leaderboard */
+        /* ── Highscore Row Styling ── */
         .kk-score-row {
             display: flex; align-items: center; gap: 12px;
-            padding: 14px 16px; border-radius: 14px; background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.15s;
+            padding: 12px 16px; border-radius: 16px; background: white;
+            border: 1px solid #F1F5F9; transition: all 0.2s;
         }
-        .kk-score-row:hover { transform: translateX(3px); }
-        .kk-score-row.me {
-            background: linear-gradient(135deg, #06B4E4 0%, #0891B2 100%);
-            box-shadow: 0 6px 20px rgba(6,180,228,0.3);
-        }
+        .kk-score-row:hover { transform: scale(1.01); border-color: #06B4E4; }
+        .kk-rank-gold { background: #FEF9C3; border-color: #FDE047; }
+        .kk-rank-silver { background: #F1F5F9; border-color: #CBD5E1; }
+        .kk-rank-bronze { background: #FFEDD5; border-color: #FED7AA; }
 
-        /* Loading dots */
         .kk-dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#06B4E4; animation: kk-dot-bounce 1.4s infinite; }
         .kk-dot:nth-child(2){animation-delay:.2s} .kk-dot:nth-child(3){animation-delay:.4s}
         @keyframes kk-dot-bounce { 0%,80%,100%{transform:scale(0.7);opacity:0.5} 40%{transform:scale(1.1);opacity:1} }
@@ -161,7 +145,6 @@
     </div>
 
     <div id="intranet-screen" class="hidden h-full flex flex-col">
-
         <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm flex-shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-[#06B4E4] rounded flex items-center justify-center text-white font-bold text-xs">EK</div>
@@ -211,7 +194,6 @@
                     </zapier-interfaces-chatbot-embed>
                 </div>
             </main>
-
             <aside class="w-1/3 max-w-sm bg-white p-6 border-l border-gray-200 overflow-y-auto shadow-inner flex flex-col">
                 <h2 class="text-lg font-bold mb-2 text-gray-800">Dokument & Rutiner</h2>
                 <p class="text-sm text-gray-500 mb-4">Sök bland filer som ELvis hänvisar till.</p>
@@ -236,15 +218,15 @@
         <div id="content-kretskampen" class="hidden flex-1 overflow-auto kk-screen">
             <div id="quiz-root" style="min-height: 100%;"></div>
         </div>
+    </div>
 
-    </div><script>
+    <script>
         // ── Supabase ──
         const SUPABASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo';
         const BUCKET_NAME = 'intranet-dokument';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ── UI-element ──
         const loginScreen    = document.getElementById('login-screen');
         const intranetScreen = document.getElementById('intranet-screen');
         const loginForm      = document.getElementById('login-form');
@@ -256,93 +238,42 @@
         const uploadBtn      = document.getElementById('upload-btn');
         const uploadStatus   = document.getElementById('upload-status');
 
-        // ── Flikbyte ──
         let quizMounted = false;
         function switchTab(tab) {
             const tabs    = ['elvis', 'kretskampen'];
             const tabBtns = { elvis: document.getElementById('tab-elvis'), kretskampen: document.getElementById('tab-kretskampen') };
             const contents = { elvis: document.getElementById('content-elvis'), kretskampen: document.getElementById('content-kretskampen') };
-
             tabs.forEach(t => {
                 tabBtns[t].classList.toggle('active', t === tab);
-                tabBtns[t].classList.toggle('tab-inactive', t !== tab);
                 contents[t].classList.toggle('hidden', t !== tab);
             });
-
-            // Montera React-quizet första gången fliken öppnas
             if (tab === 'kretskampen' && !quizMounted) {
                 quizMounted = true;
-                const container = document.getElementById('quiz-root');
-                const root = ReactDOM.createRoot(container);
+                const root = ReactDOM.createRoot(document.getElementById('quiz-root'));
                 root.render(React.createElement(window.KretskampenApp));
             }
         }
 
-        // ── Dokument-hantering ──
         async function loadDocuments() {
-            documentList.innerHTML = '<li class="text-sm text-gray-500 py-2">Hämtar filer från Supabase...</li>';
             const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list();
-            if (error) {
-                documentList.innerHTML = '<li class="text-sm text-red-500 py-2">Kunde inte hämta dokument.</li>';
-                return;
-            }
+            if (error) { documentList.innerHTML = 'Fel vid laddning'; return; }
             documentList.innerHTML = '';
-            if (!data || data.length === 0) {
-                documentList.innerHTML = '<li class="text-sm text-gray-400 py-2">Inga dokument uppladdade ännu.</li>';
-                return;
-            }
             data.forEach(file => {
                 if (file.name === '.emptyFolderPlaceholder') return;
                 const { data: publicUrlData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(file.name);
                 const li = document.createElement('li');
                 li.className = 'doc-item';
-                li.innerHTML = `
-                    <a class="flex items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-gray-700 hover:text-[#06B4E4] group cursor-pointer">
-                        <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-[#06B4E4] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                        <span class="font-medium text-sm truncate">${file.name}</span>
-                    </a>`;
-                li.querySelector('a').addEventListener('click', async () => {
-                    const fileUrl = publicUrlData.publicUrl;
-                    if (file.name.endsWith('.html')) {
-                        const response = await fetch(fileUrl);
-                        const html = await response.text();
-                        const blob = new Blob([html], { type: 'text/html' });
-                        window.open(URL.createObjectURL(blob), '_blank');
-                    } else {
-                        window.open(fileUrl, '_blank');
-                    }
-                });
+                li.innerHTML = `<a class="flex items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all text-gray-700 hover:text-[#06B4E4] group cursor-pointer font-medium text-sm truncate">${file.name}</a>`;
+                li.addEventListener('click', () => window.open(publicUrlData.publicUrl, '_blank'));
                 documentList.appendChild(li);
             });
         }
 
         uploadBtn.addEventListener('click', async () => {
             const file = fileUpload.files[0];
-            if (!file) { showUploadStatus('Välj en fil först!', 'text-red-500'); return; }
-            showUploadStatus('Laddar upp...', 'text-[#06B4E4]');
-            uploadBtn.disabled = true;
-            const contentType = file.name.endsWith('.html') ? 'text/html' : file.type;
-            const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(file.name, file, { cacheControl: '3600', upsert: true, contentType });
-            uploadBtn.disabled = false;
-            if (error) { showUploadStatus('Fel: ' + error.message, 'text-red-500'); }
-            else {
-                showUploadStatus('Uppladdning lyckades!', 'text-green-500');
-                fileUpload.value = '';
-                loadDocuments();
-                setTimeout(() => uploadStatus.classList.add('hidden'), 3000);
-            }
-        });
-
-        function showUploadStatus(msg, colorClass) {
-            uploadStatus.textContent = msg;
-            uploadStatus.className = `text-xs mt-2 block ${colorClass}`;
-        }
-
-        searchInput.addEventListener('input', function(e) {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.doc-item').forEach(item => {
-                item.style.display = item.textContent.toLowerCase().includes(term) ? 'block' : 'none';
-            });
+            if (!file) return;
+            const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(file.name, file, { upsert: true });
+            if (!error) { loadDocuments(); fileUpload.value = ''; }
         });
 
         async function checkSession() {
@@ -353,22 +284,17 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            errorMsg.classList.add('hidden');
             const { error } = await supabaseClient.auth.signInWithPassword({
                 email: document.getElementById('email').value,
                 password: document.getElementById('password').value,
             });
-            if (error) {
-                errorMsg.textContent = 'Fel e-post eller lösenord. Försök igen.';
-                errorMsg.classList.remove('hidden');
-            } else { showIntranet(); }
+            if (error) { errorMsg.textContent = 'Fel e-post eller lösenord'; errorMsg.classList.remove('hidden'); }
+            else { showIntranet(); }
         });
 
         logoutBtn.addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
-            loginScreen.classList.remove('hidden');
-            intranetScreen.classList.add('hidden');
-            document.getElementById('password').value = '';
+            location.reload();
         });
 
         function showIntranet() {
@@ -379,18 +305,14 @@
     </script>
 
     <script type="text/babel" data-presets="react">
-
-        // ── Länk till kunskapsbasen i Supabase ──
         const KNOWLEDGE_BASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Quiz%20dokument/Elkretsen_Kunskapsbas_Samlad_Quiz.txt?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJRdWl6IGRva3VtZW50L0Vsa3JldHNlbl9LdW5za2Fwc2Jhc19TYW1sYWRfUXVpei50eHQiLCJpYXQiOjE3NzI2NTI2NzYsImV4cCI6NDkyNjI1MjY3Nn0.3zkcFjaJmwLPFEoWa9sJx15eq2xil9NiteRPb76mtKQ';
-
         let cachedKnowledgeBase = null;
 
-        // Funktion för att hämta texten (hämtar bara en gång per spelsession för att spara data)
         async function getKnowledgeBase() {
             if (cachedKnowledgeBase) return cachedKnowledgeBase;
             try {
                 const response = await fetch(KNOWLEDGE_BASE_URL);
-                if (!response.ok) throw new Error('Kunde inte läsa textfilen från Supabase');
+                if (!response.ok) throw new Error('Kunde inte läsa textfilen');
                 cachedKnowledgeBase = await response.text();
                 return cachedKnowledgeBase;
             } catch (error) {
@@ -410,103 +332,39 @@
         const ANSWER_ICONS   = ['▲','◆','●','✦'];
         const TIME_PER_Q     = 20;
 
-        // ── Supabase highscores – delad tabell för hela organisationen ──
         async function loadScores() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('kretskampen_scores')
-                    .select('*')
-                    .order('score', { ascending: false })
-                    .limit(50);
-                if (error) throw error;
-                return data || [];
-            } catch (e) {
-                console.error('Kunde inte hämta highscores:', e);
-                return [];
-            }
+            const { data } = await supabaseClient.from('kretskampen_scores').select('*').order('score', { ascending: false }).limit(50);
+            return data || [];
         }
-
         async function saveScore(entry) {
-            try {
-                const { error } = await supabaseClient
-                    .from('kretskampen_scores')
-                    .insert([{
-                        name:     entry.name,
-                        score:    entry.score,
-                        correct:  entry.correct,
-                        total:    entry.total,
-                        category: entry.category,
-                        played_at: entry.date,
-                    }]);
-                if (error) throw error;
-            } catch (e) {
-                console.error('Kunde inte spara highscore:', e);
-            }
+            await supabaseClient.from('kretskampen_scores').insert([entry]);
         }
 
-        // ── Gemini API (VIA SUPABASE EDGE FUNCTION) ──
         async function generateQuestions(category, count) {
-            const catLabel = category === 'all'
-                ? 'alla kategorier (EU & Reglering, Ekonomi, Teknik, Juridik)'
-                : CATEGORIES.find(c => c.id === category)?.label;
-
-            // Hämta texten från Supabase-filen!
+            const catLabel = category === 'all' ? 'alla kategorier' : CATEGORIES.find(c => c.id === category)?.label;
             const knowledgeBaseText = await getKnowledgeBase();
+            
+            // "GÖMD KLOCKA" (Random Seed) för variation
+            const sessionSeed = new Date().getTime();
 
-            const prompt = `Du är quizmaster för El-kretsen (Sveriges ledande producentansvarssystem för el-avfall och batterier).
-
+            const prompt = `SESSION_ID: ${sessionSeed}
+Du är quizmaster för El-kretsen. Skapa unika frågor!
+INSTRUKTION FÖR SLUMPMÄSSIGHET:
+- Använd SESSION_ID som seed.
+- Plocka frågor från HELA dokumentet, hoppa runt!
 Kunskapsbas:
 ${knowledgeBaseText}
-
 Generera exakt ${count} flervalsfrågor på SVENSKA om kategori: ${catLabel}.
-Regler:
-- Exakt 4 svarsalternativ (A, B, C, D). Bara ETT korrekt svar.
-- Faktabaserade frågor direkt från kunskapsbasen. Inga dubbletter.
-- Blanda svårighetsgrad. Fokus på konkreta siffror, datum, lagar, paragrafer och koder.
+Svara ENBART med JSON:
+{ "questions": [ { "question": "Text?", "answers": ["A","B","C","D"], "correct": 0, "explanation": "Varför?" } ] }`;
 
-Svara ENBART med JSON (inga backticks, ingen förklaring):
-{
-  "questions": [
-    {
-      "question": "Frågetext?",
-      "answers": ["Svar A","Svar B","Svar C","Svar D"],
-      "correct": 0,
-      "explanation": "Kort förklaring av rätt svar."
-    }
-  ]
-}
-"correct" är index (0-3) för rätt svar.`;
-
-            // ANROP TILL SUPABASE
-            const res = await fetch(
-                'https://jnwatbnkdzuyhqmcerej.supabase.co/functions/v1/smooth-action',
-                {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    },
-                    body: JSON.stringify({ prompt: prompt })
-                }
-            );
-
+            const res = await fetch('https://jnwatbnkdzuyhqmcerej.supabase.co/functions/v1/smooth-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+                body: JSON.stringify({ prompt: prompt })
+            });
             const data = await res.json();
-            
-            // Felsökning
-            console.log("RÅDATA FRÅN SUPABASE/GEMINI:", data);
-
-            if (!res.ok) throw new Error(data.error?.message || 'Ett fel uppstod vid hämtning från Supabase');
-            
-            if (data.error) {
-                throw new Error("Gemini säger: " + data.error.message);
-            }
-
-            const text  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            
-            if (!text) {
-                 throw new Error("Fick tomt svar från AI. Kanske en säkerhetsspärr?");
-            }
-
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             const clean = text.replace(/```json|```/g, '').trim();
             return JSON.parse(clean).questions;
         }
@@ -514,288 +372,96 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
         function calcScore(timeLeft, correct) {
             return correct ? Math.round(500 + (timeLeft / TIME_PER_Q) * 500) : 0;
         }
-        function fmtDate(iso) {
-            return new Date(iso).toLocaleDateString('sv-SE', { day:'numeric', month:'short', year:'numeric' });
-        }
 
-        // ──────────────────────────────────────
-        // TimerRing
-        // ──────────────────────────────────────
         function TimerRing({ timeLeft, total }) {
-            const { useId } = React;
             const r = 34, cx = 42, cy = 42, circ = 2 * Math.PI * r;
             const offset = circ * (1 - timeLeft / total);
             const color  = timeLeft > 10 ? '#06B4E4' : timeLeft > 5 ? '#F59E0B' : '#EF4444';
             return (
-                <div style={{ position:'relative', width:84, height:84, flexShrink:0 }}>
+                <div style={{ position:'relative', width:84, height:84 }}>
                     <svg width="84" height="84" style={{ transform:'rotate(-90deg)' }}>
                         <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={6}/>
-                        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={6}
-                            strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-                            style={{ transition:'stroke-dashoffset 1s linear, stroke 0.3s' }}/>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={6} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }}/>
                     </svg>
-                    <div style={{
-                        position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
-                        fontSize:20, fontWeight:900, color,
-                        fontFamily:"'Barlow Condensed', sans-serif",
-                    }}>{timeLeft}</div>
+                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, fontWeight:900, color, fontFamily:"'Barlow Condensed'" }}>{timeLeft}</div>
                 </div>
             );
         }
 
-        // ──────────────────────────────────────
-        // HomeScreen
-        // ──────────────────────────────────────
         function HomeScreen({ onStart, onLeaderboard }) {
-            const [name,     setName]     = React.useState('');
+            const [name, setName] = React.useState('');
             const [category, setCategory] = React.useState('all');
-            const [qCount,   setQCount]   = React.useState(10);
-
+            const [qCount, setQCount] = React.useState(10);
             return (
                 <div className="kk-home-bg">
-                    <div style={{
-                        width:'100%', maxWidth:460,
-                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
-                        borderRadius:'20px 20px 0 0', padding:'28px 28px 24px',
-                        color:'white', position:'relative', overflow:'hidden',
-                    }}>
-                        <div style={{
-                            position:'absolute', top:-30, right:-30, width:120, height:120,
-                            borderRadius:'50%', background:'rgba(255,255,255,0.08)',
-                        }}/>
-                        <div style={{
-                            position:'absolute', bottom:-20, right:20, width:80, height:80,
-                            borderRadius:'50%', background:'rgba(255,255,255,0.06)',
-                        }}/>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                            <div>
-                                <div style={{
-                                    fontFamily:"'Barlow Condensed', sans-serif",
-                                    fontSize:32, fontWeight:900, letterSpacing:3,
-                                    lineHeight:1, marginBottom:4,
-                                }}>⚡ KRETSKAMPEN</div>
-                                <div style={{ fontSize:14, opacity:0.85, fontWeight:500 }}>
-                                    Testa dina kunskaper om El-kretsen
-                                </div>
-                            </div>
-                            <button onClick={onLeaderboard} style={{
-                                background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)',
-                                borderRadius:10, padding:'8px 14px', color:'white',
-                                cursor:'pointer', fontSize:13, fontWeight:600,
-                                fontFamily:"'Barlow', sans-serif", backdropFilter:'blur(4px)',
-                                flexShrink:0,
-                            }}>🏆 Highscore</button>
+                    <div style={{ width:'100%', maxWidth:460, background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)', borderRadius:'20px 20px 0 0', padding:'28px', color:'white' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between' }}>
+                            <div><div style={{ fontFamily:"'Barlow Condensed'", fontSize:32, fontWeight:900 }}>⚡ KRETSKAMPEN</div><div style={{ fontSize:14 }}>Testa din kunskap</div></div>
+                            <button onClick={onLeaderboard} className="kk-ghost-btn" style={{ color:'white', borderColor:'white' }}>🏆 Highscore</button>
                         </div>
                     </div>
-
-                    <div className="kk-card" style={{ borderRadius:'0 0 20px 20px', paddingTop:24 }}>
-                        <div style={{ marginBottom:20 }}>
-                            <div className="kk-label">Ditt namn</div>
-                            <input className="kk-input" placeholder="Skriv ditt namn..."
-                                value={name} onChange={e => setName(e.target.value)} maxLength={30}/>
-                        </div>
-                        <div style={{ marginBottom:20 }}>
-                            <div className="kk-label">Välj kategori</div>
-                            {CATEGORIES.map(cat => (
-                                <button key={cat.id}
-                                    className={`kk-cat-btn ${category === cat.id ? 'selected' : ''}`}
-                                    onClick={() => setCategory(cat.id)}>
-                                    <span style={{ fontSize:16 }}>{cat.emoji}</span>
-                                    <span>{cat.label}</span>
-                                    {category === cat.id && <span style={{ marginLeft:'auto', opacity:0.8 }}>✓</span>}
-                                </button>
-                            ))}
-                        </div>
-                        <div style={{ marginBottom:24 }}>
-                            <div className="kk-label">Antal frågor</div>
-                            <div style={{ display:'flex', gap:10 }}>
-                                {[5,10,15].map(n => (
-                                    <button key={n}
-                                        className={`kk-qcount-btn ${qCount === n ? 'selected' : ''}`}
-                                        onClick={() => setQCount(n)}>{n} st</button>
-                                ))}
-                            </div>
-                        </div>
-                        <button className="kk-primary-btn"
-                            disabled={!name.trim()}
-                            onClick={() => name.trim() && onStart(name.trim(), category, qCount)}>
-                            ⚡ Starta quiz
-                        </button>
+                    <div className="kk-card" style={{ borderRadius:'0 0 20px 20px' }}>
+                        <div className="kk-label">Ditt namn</div>
+                        <input className="kk-input mb-4" value={name} onChange={e => setName(e.target.value)} maxLength={20}/>
+                        <div className="kk-label">Kategori</div>
+                        {CATEGORIES.map(cat => <button key={cat.id} className={`kk-cat-btn ${category === cat.id ? 'selected' : ''}`} onClick={() => setCategory(cat.id)}>{cat.emoji} {cat.label}</button>)}
+                        <div className="kk-label mt-4">Antal frågor</div>
+                        <div className="flex gap-2 mb-6">{[5,10,15].map(n => <button key={n} className={`kk-qcount-btn ${qCount === n ? 'selected' : ''}`} onClick={() => setQCount(n)}>{n} st</button>)}</div>
+                        <button className="kk-primary-btn" disabled={!name} onClick={() => onStart(name, category, qCount)}>⚡ Starta quiz</button>
                     </div>
                 </div>
             );
         }
 
-        // ──────────────────────────────────────
-        // LoadingScreen
-        // ──────────────────────────────────────
-        function LoadingScreen({ category, count }) {
-            const cat = CATEGORIES.find(c => c.id === category);
-            return (
-                <div style={{
-                    display:'flex', flexDirection:'column', alignItems:'center',
-                    justifyContent:'center', minHeight:'100%', padding:32,
-                    background:'linear-gradient(150deg, #f0f9ff 0%, #e0f2fe 100%)',
-                }}>
-                    <div style={{
-                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
-                        borderRadius:20, padding:'40px 48px', textAlign:'center',
-                        color:'white', boxShadow:'0 20px 60px rgba(6,180,228,0.25)',
-                    }}>
-                        <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:24 }}>
-                            <div className="kk-dot"/>
-                            <div className="kk-dot"/>
-                            <div className="kk-dot"/>
-                        </div>
-                        <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:24, fontWeight:800, marginBottom:8 }}>
-                            AI genererar {count} frågor
-                        </div>
-                        <div style={{ opacity:0.8, fontSize:15 }}>
-                            {cat?.emoji} {cat?.label}
-                        </div>
-                        <div style={{ opacity:0.6, fontSize:13, marginTop:4 }}>
-                            Tar ungefär 10–15 sekunder...
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ──────────────────────────────────────
-        // QuizScreen
-        // ──────────────────────────────────────
         function QuizScreen({ questions, playerName, onFinish }) {
-            const [qIdx,     setQIdx]     = React.useState(0);
+            const [qIdx, setQIdx] = React.useState(0);
             const [selected, setSelected] = React.useState(null);
             const [timeLeft, setTimeLeft] = React.useState(TIME_PER_Q);
-            const [score,    setScore]    = React.useState(0);
-            const [history,  setHistory]  = React.useState([]);
-            const [streak,   setStreak]   = React.useState(0);
+            const [score, setScore] = React.useState(0);
+            const [history, setHistory] = React.useState([]);
             const [showExpl, setShowExpl] = React.useState(false);
             const timerRef = React.useRef();
+            const q = questions[qIdx];
 
-            const q      = questions[qIdx];
-            const isLast = qIdx === questions.length - 1;
-
-            const handleSelect = React.useCallback((idx) => {
+            const handleSelect = (idx) => {
                 if (selected !== null) return;
                 clearInterval(timerRef.current);
                 setSelected(idx);
-                const correct = idx === q.correct;
-                const gained  = calcScore(timeLeft, correct);
-                const newStr  = correct ? streak + 1 : 0;
-                setStreak(newStr);
+                const gained = calcScore(timeLeft, idx === q.correct);
                 setScore(s => s + gained);
-                setHistory(h => [...h, { gained, correct, timeLeft }]);
+                setHistory(h => [...h, { gained, correct: idx === q.correct, timeLeft }]);
                 setShowExpl(true);
-            }, [selected, q, timeLeft, streak]);
+            };
 
             React.useEffect(() => {
                 setSelected(null); setTimeLeft(TIME_PER_Q); setShowExpl(false);
                 timerRef.current = setInterval(() => {
-                    setTimeLeft(t => {
-                        if (t <= 1) { clearInterval(timerRef.current); handleSelect(-1); return 0; }
-                        return t - 1;
-                    });
+                    setTimeLeft(t => { if(t <= 1){ clearInterval(timerRef.current); handleSelect(-1); return 0; } return t - 1; });
                 }, 1000);
                 return () => clearInterval(timerRef.current);
             }, [qIdx]);
 
-            const handleNext = () => {
-                if (isLast) {
-                    onFinish(score + (history[history.length-1]?.gained || 0), [...history]);
-                } else {
-                    setQIdx(i => i + 1);
-                }
-            };
-
-            const progressPct = ((qIdx) / questions.length) * 100;
-
             return (
-                <div style={{ display:'flex', flexDirection:'column', minHeight:'100%' }}>
-                    <div style={{
-                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
-                        padding:'16px 20px', display:'flex', alignItems:'center',
-                        justifyContent:'space-between', gap:12,
-                    }}>
-                        <div style={{ color:'white' }}>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:14, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>
-                                Fråga {qIdx+1} / {questions.length}
-                            </div>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:20, fontWeight:700 }}>{playerName}</div>
-                        </div>
+                <div className="flex flex-col min-h-full">
+                    <div style={{ background:'linear-gradient(135deg,#06B4E4,#0369A1)', padding:'20px', display:'flex', justifyContent:'space-between', color:'white' }}>
+                        <div><div style={{ fontSize:12, opacity:0.7 }}>Fråga {qIdx+1}/{questions.length}</div><div style={{ fontSize:20, fontWeight:700 }}>{playerName}</div></div>
                         <TimerRing timeLeft={timeLeft} total={TIME_PER_Q}/>
-                        <div style={{ textAlign:'right', color:'white' }}>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:14, opacity:0.75, letterSpacing:1, textTransform:'uppercase' }}>Poäng</div>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:28, fontWeight:900 }}>{score.toLocaleString('sv-SE')}</div>
-                        </div>
+                        <div className="text-right"><div style={{ fontSize:12, opacity:0.7 }}>Poäng</div><div style={{ fontSize:28, fontWeight:900 }}>{score}</div></div>
                     </div>
-
-                    <div style={{ height:5, background:'#E5E7EB' }}>
-                        <div style={{
-                            height:'100%', width:`${progressPct}%`,
-                            background:'linear-gradient(90deg,#06B4E4,#0891B2)',
-                            transition:'width 0.5s ease',
-                        }}/>
-                    </div>
-
-                    {streak >= 3 && showExpl && (
-                        <div style={{
-                            background:'linear-gradient(90deg,#F59E0B,#EF4444)', color:'white',
-                            textAlign:'center', padding:'7px 0',
-                            fontFamily:"'Barlow Condensed', sans-serif", fontSize:18, fontWeight:700,
-                        }}>🔥 {streak} rätt i rad! Fantastiskt!</div>
-                    )}
-
-                    <div style={{ flex:1, padding:'20px 16px', display:'flex', flexDirection:'column', gap:14, background:'#F8FAFC' }}>
-                        <div style={{
-                            background:'white', borderRadius:16, padding:'22px 20px',
-                            boxShadow:'0 2px 12px rgba(6,180,228,0.10)', textAlign:'center',
-                        }}>
-                            <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:22, fontWeight:600, color:'#111827', lineHeight:1.55 }}>
-                                {q.question}
-                            </div>
-                        </div>
-
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                            {q.answers.map((ans, i) => {
-                                let bg = ANSWER_COLORS[i];
-                                let border = 'none';
-                                if (selected !== null) {
-                                    if (i === q.correct) { bg = '#16A34A'; border = '3px solid white'; }
-                                    else if (i === selected && i !== q.correct) { bg = '#6B7280'; }
-                                    else { bg = ANSWER_COLORS[i] + '55'; }
-                                }
-                                return (
-                                    <button key={i} className="kk-answer-btn"
-                                        onClick={() => handleSelect(i)}
-                                        disabled={selected !== null}
-                                        style={{ background:bg, border, opacity: (selected !== null && i !== q.correct && i !== selected) ? 0.55 : 1 }}>
-                                        <div style={{ fontSize:22, marginBottom:4, fontWeight:900 }}>{ANSWER_ICONS[i]}</div>
-                                        <div style={{ fontFamily:"'Barlow', sans-serif", fontSize:16, fontWeight:600, lineHeight:1.35 }}>{ans}</div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {showExpl && (
-                            <div className="kk-fadein" style={{
-                                background: selected === q.correct ? '#F0FDF4' : '#FFF1F2',
-                                borderRadius:14, padding:'16px 18px',
-                                borderLeft:`4px solid ${selected === q.correct ? '#16A34A' : '#DC2626'}`,
-                            }}>
-                                <div style={{ fontWeight:700, color: selected === q.correct ? '#16A34A' : '#DC2626', marginBottom:6, fontSize:16, display:'flex', alignItems:'center', gap:8 }}>
-                                    {selected === q.correct ? '✓ Rätt!' : selected === -1 ? '⏱ Tiden tog slut!' : '✗ Fel svar'}
-                                    {selected === q.correct && (
-                                        <span style={{ color:'#6B7280', fontWeight:600, fontSize:15 }}>
-                                            +{history[history.length-1]?.gained} poäng
-                                        </span>
-                                    )}
-                                </div>
-                                <div style={{ fontSize:16, color:'#374151', lineHeight:1.55 }}>{q.explanation}</div>
-                                <button className="kk-primary-btn" onClick={handleNext} style={{ marginTop:14, padding:'12px 0', fontSize:18 }}>
-                                    {isLast ? '🏁 Se resultat' : 'Nästa fråga →'}
+                    <div style={{ flex:1, padding:20, background:'#F8FAFC' }}>
+                        <div className="bg-white p-6 rounded-xl shadow-sm text-center mb-6"><div style={{ fontSize:22, fontWeight:600 }}>{q.question}</div></div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {q.answers.map((ans, i) => (
+                                <button key={i} className="kk-answer-btn" style={{ background: selected === null ? ANSWER_COLORS[i] : (i === q.correct ? '#16A34A' : (i === selected ? '#6B7280' : ANSWER_COLORS[i]+'55')) }} onClick={() => handleSelect(i)} disabled={selected !== null}>
+                                    <div style={{ fontSize:22 }}>{ANSWER_ICONS[i]}</div><div style={{ fontSize:16, fontWeight:600 }}>{ans}</div>
                                 </button>
+                            ))}
+                        </div>
+                        {showExpl && (
+                            <div className="kk-fadein mt-6 p-6 rounded-xl border-l-4" style={{ background: selected === q.correct ? '#F0FDF4' : '#FFF1F2', borderColor: selected === q.correct ? '#16A34A' : '#DC2626' }}>
+                                <div style={{ fontWeight:700, fontSize:18, color: selected === q.correct ? '#16A34A' : '#DC2626' }}>{selected === q.correct ? '✓ Rätt!' : '✗ Fel svar'}</div>
+                                <div className="mt-2 text-lg">{q.explanation}</div>
+                                <button className="kk-primary-btn mt-4" onClick={() => qIdx < questions.length - 1 ? setQIdx(qIdx+1) : onFinish(score, history)}>{qIdx < questions.length - 1 ? 'Nästa fråga →' : 'Se resultat'}</button>
                             </div>
                         )}
                     </div>
@@ -803,130 +469,34 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
             );
         }
 
-        // ──────────────────────────────────────
-        // ResultScreen
-        // ──────────────────────────────────────
-        function ResultScreen({ playerName, score, totalQ, sessionScores, onHome, onLeaderboard }) {
-            const correct  = sessionScores.filter(s => s.correct).length;
-            const pct      = Math.round((correct / totalQ) * 100);
-            const avgTime  = sessionScores.filter(s => s.correct).length > 0
-                ? Math.round(sessionScores.filter(s=>s.correct).reduce((a,b)=>a+b.timeLeft,0) / correct)
-                : 0;
-
-            let medal = '🥉', msg = 'Bra försök! Fortsätt träna!';
-            if (pct >= 90) { medal = '🥇'; msg = 'Otroligt bra! Du är expert!'; }
-            else if (pct >= 70) { medal = '🥈'; msg = 'Imponerande! Riktigt bra!'; }
-            else if (pct >= 50) { medal = '🥉'; msg = 'Godkänt! Du kan mer!'; }
-
-            return (
-                <div className="kk-home-bg">
-                    <div className="kk-card" style={{ maxWidth:460 }}>
-                        <div style={{ textAlign:'center', marginBottom:24 }}>
-                            <div style={{ fontSize:60, marginBottom:8, animation:'kk-pop 0.5s ease' }}>{medal}</div>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:26, fontWeight:800, color:'#111827' }}>{msg}</div>
-                            <div style={{ color:'#6B7280', fontSize:14, marginTop:4 }}>{playerName}</div>
-                        </div>
-
-                        <div style={{
-                            background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
-                            borderRadius:16, padding:'24px', textAlign:'center', color:'white', marginBottom:20,
-                        }}>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:52, fontWeight:900, lineHeight:1 }}>
-                                {score.toLocaleString('sv-SE')}
-                            </div>
-                            <div style={{ opacity:0.8, fontSize:14, marginTop:4 }}>poäng</div>
-                        </div>
-
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:24 }}>
-                            {[
-                                { label:'Rätt svar',    value:`${correct}/${totalQ}`, color:'#16A34A' },
-                                { label:'Precision',    value:`${pct}%`,              color:'#06B4E4' },
-                                { label:'Snittid kvar', value:`${avgTime}s`,          color:'#F59E0B' },
-                            ].map(stat => (
-                                <div key={stat.label} style={{
-                                    background:'white', borderRadius:12, padding:'14px 8px',
-                                    textAlign:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.07)',
-                                }}>
-                                    <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:22, fontWeight:800, color:stat.color }}>{stat.value}</div>
-                                    <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{stat.label}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                            <button className="kk-primary-btn" onClick={onLeaderboard}>🏆 Highscore-tavlan</button>
-                            <button className="kk-ghost-btn" style={{ width:'100%' }} onClick={onHome}>← Spela igen</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ──────────────────────────────────────
-        // LeaderboardScreen
-        // ──────────────────────────────────────
         function LeaderboardScreen({ onBack, currentPlayer, currentScore }) {
-            const [scores,  setScores]  = React.useState([]);
+            const [scores, setScores] = React.useState([]);
             const [loading, setLoading] = React.useState(true);
-            React.useEffect(() => {
-                loadScores().then(data => { setScores(data); setLoading(false); });
-            }, []);
+            React.useEffect(() => { loadScores().then(d => { setScores(d); setLoading(false); }); }, []);
 
-            const medals = ['🥇','🥈','🥉'];
             return (
-                <div style={{ display:'flex', flexDirection:'column', minHeight:'100%' }}>
-                    <div style={{
-                        background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
-                        padding:'20px 20px 24px',
-                    }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-                            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.2)', border:'none', color:'white', fontSize:18, cursor:'pointer', borderRadius:8, padding:'4px 12px' }}>←</button>
-                            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:900, fontSize:11, color:'rgba(255,255,255,0.7)', letterSpacing:2, textTransform:'uppercase' }}>⚡ KRETSKAMPEN</div>
-                        </div>
-                        <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:30, fontWeight:900, color:'white' }}>🏆 Highscore-tavlan</div>
-                        <div style={{ color:'rgba(255,255,255,0.7)', fontSize:13 }}>Topp 50 spelare</div>
+                <div className="flex flex-col min-h-full">
+                    <div style={{ background:'linear-gradient(135deg,#06B4E4,#0369A1)', padding:'24px 20px', color:'white' }}>
+                        <button onClick={onBack} className="mb-4 opacity-80 hover:opacity-100">← Gå tillbaka</button>
+                        <h2 style={{ fontFamily:"'Barlow Condensed'", fontSize:36, fontWeight:900 }}>🏆 HIGHSCORE</h2>
+                        <p style={{ opacity:0.8 }}>Topp 50 hjältar hos El-kretsen</p>
                     </div>
-
-                    <div style={{ flex:1, overflow:'auto', padding:16, background:'#F8FAFC', display:'flex', flexDirection:'column', gap:8 }}>
-                        {loading ? (
-                            <div style={{ textAlign:'center', color:'#9CA3AF', paddingTop:60 }}>
-                                <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
-                                    <div className="kk-dot"/><div className="kk-dot"/><div className="kk-dot"/>
-                                </div>
-                                <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:16, fontWeight:600 }}>Hämtar highscores...</div>
-                            </div>
-                        ) : scores.length === 0 ? (
-                            <div style={{ textAlign:'center', color:'#9CA3AF', paddingTop:60 }}>
-                                <div style={{ fontSize:48, marginBottom:12 }}>🎯</div>
-                                <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:20, fontWeight:700 }}>Inga resultat ännu</div>
-                                <div style={{ fontSize:14 }}>Bli den första att spela!</div>
-                            </div>
-                        ) : scores.map((s, i) => {
-                            const playedAt = s.played_at || s.date;
+                    <div style={{ flex:1, padding:16, background:'#F8FAFC', display:'flex', flexDirection:'column', gap:8 }}>
+                        {loading ? <div className="text-center py-20"><div className="kk-dot"/><div className="kk-dot"/><div className="kk-dot"/></div> :
+                        scores.map((s, i) => {
                             const isMe = s.name === currentPlayer && s.score === currentScore;
+                            const medalClass = i === 0 ? 'kk-rank-gold' : i === 1 ? 'kk-rank-silver' : i === 2 ? 'kk-rank-bronze' : '';
+                            const catEmoji = CATEGORIES.find(c => c.id === s.category)?.emoji || '⚡';
                             return (
-                                <div key={i} className="kk-score-row" style={isMe ? {
-                                    background:'linear-gradient(135deg, #06B4E4 0%, #0369A1 100%)',
-                                    boxShadow:'0 6px 20px rgba(6,180,228,0.3)',
-                                } : {}}>
-                                    <div style={{
-                                        fontFamily:"'Barlow Condensed', sans-serif", fontSize:20, fontWeight:900,
-                                        color: isMe ? 'rgba(255,255,255,0.9)' : '#D1D5DB', minWidth:30, textAlign:'center',
-                                    }}>
-                                        {i < 3 ? medals[i] : `#${i+1}`}
+                                <div key={i} className={`kk-score-row ${medalClass}`} style={isMe ? { border: '2px solid #06B4E4', boxShadow: '0 0 15px rgba(6,180,228,0.2)' } : {}}>
+                                    <div style={{ fontSize:22, fontWeight:900, minWidth:40, textAlign:'center', color: i < 3 ? '#1E293B' : '#94A3B8', fontFamily:"'Barlow Condensed'" }}>
+                                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
                                     </div>
                                     <div style={{ flex:1 }}>
-                                        <div style={{ fontWeight:700, fontSize:14, color: isMe ? 'white' : '#111827' }}>
-                                            {s.name}{isMe ? ' (du)' : ''}
-                                        </div>
-                                        <div style={{ fontSize:12, color: isMe ? 'rgba(255,255,255,0.65)' : '#9CA3AF' }}>
-                                            {s.correct}/{s.total} rätt · {fmtDate(playedAt)}
-                                        </div>
+                                        <div style={{ fontWeight:700, fontSize:15 }}>{s.name} {isMe && '(Dig)'}</div>
+                                        <div style={{ fontSize:11, color:'#64748B' }}>{catEmoji} · {s.correct}/{s.total} rätt · {new Date(s.played_at).toLocaleDateString()}</div>
                                     </div>
-                                    <div style={{
-                                        fontFamily:"'Barlow Condensed', sans-serif", fontSize:22, fontWeight:900,
-                                        color: isMe ? 'white' : '#06B4E4',
-                                    }}>{s.score.toLocaleString('sv-SE')}</div>
+                                    <div style={{ fontSize:24, fontWeight:900, color:'#06B4E4', fontFamily:"'Barlow Condensed'" }}>{s.score.toLocaleString()}</div>
                                 </div>
                             );
                         })}
@@ -935,58 +505,54 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
             );
         }
 
-        // ──────────────────────────────────────
-        // Huvud-app
-        // ──────────────────────────────────────
-        function KretskampenApp() {
-            const [screen,        setScreen]        = React.useState('home');
-            const [playerName,    setPlayerName]    = React.useState('');
-            const [category,      setCategory]      = React.useState('all');
-            const [qCount,        setQCount]        = React.useState(10);
-            const [questions,     setQuestions]     = React.useState([]);
-            const [finalScore,    setFinalScore]    = React.useState(0);
-            const [sessionScores, setSessionScores] = React.useState([]);
-            const [error,         setError]         = React.useState(null);
-
-            const handleStart = async (name, cat, count) => {
-                setPlayerName(name); setCategory(cat); setQCount(count);
-                setScreen('loading'); setError(null);
-                try {
-                    console.log("Försöker starta quiz...");
-                    const qs = await generateQuestions(cat, count);
-                    setQuestions(qs); setScreen('quiz');
-                } catch(e) {
-                    console.error("DETALJERAT FEL:", e);
-                    setError('Ett fel uppstod: ' + e.message);
-                    setScreen('home');
-                }
-            };
-
-            const handleFinish = async (score, sScores) => {
-                const correct = sScores.filter(s => s.correct).length;
-                setFinalScore(score); setSessionScores(sScores);
-                await saveScore({ name:playerName, score, correct, total:questions.length, category, date:new Date().toISOString() });
-                setScreen('result');
-            };
-
+        function ResultScreen({ playerName, score, totalQ, sessionScores, onHome, onLeaderboard }) {
+            const correct = sessionScores.filter(s => s.correct).length;
             return (
-                <div style={{ minHeight:'100%', fontFamily:"'Barlow', sans-serif" }}>
-                    {error && (
-                        <div style={{ background:'#FEF2F2', color:'#991B1B', padding:'12px 16px', fontSize:13, textAlign:'center', borderBottom:'1px solid #FECACA' }}>
-                            ⚠️ {error}
+                <div className="kk-home-bg">
+                    <div className="kk-card text-center">
+                        <div style={{ fontSize:64, marginBottom:10 }}>{correct / totalQ >= 0.8 ? '🏆' : '👍'}</div>
+                        <h2 style={{ fontFamily:"'Barlow Condensed'", fontSize:32, fontWeight:900 }}>Bra jobbat, {playerName}!</h2>
+                        <div className="bg-blue-50 p-8 rounded-2xl my-6">
+                            <div style={{ fontSize:14, textTransform:'uppercase', opacity:0.6 }}>Din poäng</div>
+                            <div style={{ fontSize:56, fontWeight:900, color:'#06B4E4', fontFamily:"'Barlow Condensed'" }}>{score}</div>
                         </div>
-                    )}
-                    {screen === 'home'         && <HomeScreen onStart={handleStart} onLeaderboard={() => setScreen('leaderboard')}/>}
-                    {screen === 'loading'      && <LoadingScreen category={category} count={qCount}/>}
-                    {screen === 'quiz'         && <QuizScreen questions={questions} playerName={playerName} onFinish={handleFinish}/>}
-                    {screen === 'result'       && <ResultScreen playerName={playerName} score={finalScore} totalQ={questions.length} sessionScores={sessionScores} onHome={() => setScreen('home')} onLeaderboard={() => setScreen('leaderboard')}/>}
-                    {screen === 'leaderboard'  && <LeaderboardScreen onBack={() => setScreen(finalScore ? 'result' : 'home')} currentPlayer={playerName} currentScore={finalScore}/>}
+                        <button className="kk-primary-btn mb-3" onClick={onLeaderboard}>Se highscore-tavlan</button>
+                        <button className="kk-ghost-btn w-full" onClick={onHome}>Spela igen</button>
+                    </div>
                 </div>
             );
         }
 
-        window.KretskampenApp = KretskampenApp;
+        function KretskampenApp() {
+            const [screen, setScreen] = React.useState('home');
+            const [playerName, setPlayerName] = React.useState('');
+            const [questions, setQuestions] = React.useState([]);
+            const [finalScore, setFinalScore] = React.useState(0);
+            const [sessionScores, setSessionScores] = React.useState([]);
+            const [error, setError] = React.useState(null);
 
+            const handleStart = async (name, cat, count) => {
+                setPlayerName(name); setScreen('loading'); setError(null);
+                try { setQuestions(await generateQuestions(cat, count)); setScreen('quiz'); }
+                catch(e) { setError('Kunde inte generera frågor.'); setScreen('home'); }
+            };
+            const handleFinish = async (score, h) => {
+                setFinalScore(score); setSessionScores(h);
+                await saveScore({ name:playerName, score, correct:h.filter(x=>x.correct).length, total:questions.length, category:'all', played_at:new Date().toISOString() });
+                setScreen('result');
+            };
+            return (
+                <div className="min-h-full">
+                    {error && <div className="bg-red-100 p-2 text-center text-xs text-red-700">{error}</div>}
+                    {screen === 'home' && <HomeScreen onStart={handleStart} onLeaderboard={() => setScreen('leaderboard')}/>}
+                    {screen === 'loading' && <div className="kk-home-bg"><div className="kk-card text-center"><div className="kk-dot"/><div className="kk-dot"/><div className="kk-dot"/><h2 className="mt-4 font-bold">AI skapar dina frågor...</h2></div></div>}
+                    {screen === 'quiz' && <QuizScreen questions={questions} playerName={playerName} onFinish={handleFinish}/>}
+                    {screen === 'result' && <ResultScreen playerName={playerName} score={finalScore} totalQ={questions.length} sessionScores={sessionScores} onHome={() => setScreen('home')} onLeaderboard={() => setScreen('leaderboard')}/>}
+                    {screen === 'leaderboard' && <LeaderboardScreen onBack={() => setScreen(finalScore ? 'result' : 'home')} currentPlayer={playerName} currentScore={finalScore}/>}
+                </div>
+            );
+        }
+        window.KretskampenApp = KretskampenApp;
     </script>
 </body>
 </html>
