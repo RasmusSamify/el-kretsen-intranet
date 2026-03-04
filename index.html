@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script async type='module' src='https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js'></script>
-    <!-- React + Babel för KRETSKAMPEN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -137,9 +136,6 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col">
 
-    <!-- ════════════════════════════════════════
-         INLOGGNINGSSKÄRM
-    ════════════════════════════════════════ -->
     <div id="login-screen" class="flex flex-col items-center justify-center h-full">
         <div class="bg-white p-10 rounded-xl shadow-lg w-96 border border-gray-100">
             <div class="flex justify-center mb-6">
@@ -164,12 +160,8 @@
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════
-         INTRANÄTSKÄRM
-    ════════════════════════════════════════ -->
     <div id="intranet-screen" class="hidden h-full flex flex-col">
 
-        <!-- Header -->
         <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm flex-shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-[#06B4E4] rounded flex items-center justify-center text-white font-bold text-xs">EK</div>
@@ -182,7 +174,6 @@
                 </button>
                 <button id="logout-btn" class="text-sm text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-1.5 rounded-lg transition-colors font-medium">Logga ut</button>
             </div>
-            <!-- Feedback Modal -->
             <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
                 <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
                     <div class="flex justify-between items-center px-5 py-4 border-b border-gray-200">
@@ -194,7 +185,6 @@
             </div>
         </header>
 
-        <!-- ── Fliknavigation ── -->
         <nav class="bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <button id="tab-elvis" class="nav-tab active" onclick="switchTab('elvis')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"></path></svg>
@@ -207,7 +197,6 @@
             </button>
         </nav>
 
-        <!-- ════ FLIK 1: ELvis ════ -->
         <div id="content-elvis" class="flex flex-1 overflow-hidden">
             <main class="flex-1 bg-gray-50 p-6 flex flex-col">
                 <div class="flex items-center mb-4">
@@ -244,18 +233,11 @@
             </aside>
         </div>
 
-        <!-- ════ FLIK 2: KRETSKAMPEN ════ -->
         <div id="content-kretskampen" class="hidden flex-1 overflow-auto kk-screen">
             <div id="quiz-root" style="min-height: 100%;"></div>
         </div>
 
-    </div><!-- /intranet-screen -->
-
-
-    <!-- ════════════════════════════════════════
-         VANILLA JS – BEFINTLIG LOGIK
-    ════════════════════════════════════════ -->
-    <script>
+    </div><script>
         // ── Supabase ──
         const SUPABASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo';
@@ -397,114 +379,26 @@
     </script>
 
 
-    <!-- ════════════════════════════════════════
-         REACT / JSX – KRETSKAMPEN QUIZ
-         ⚠️  BYTA UT: Lägg in din Anthropic API-nyckel nedan
-    ════════════════════════════════════════ -->
     <script type="text/babel" data-presets="react">
 
-        // ╔══════════════════════════════════╗
-        // ║  🔑  KONFIGURATION               ║
-        // ║  Ersätt med din Anthropic-nyckel ║
-        // ╚══════════════════════════════════╝
-        const GEMINI_API_KEY = 'AIzaSyCXmt9eW_jxOkH2b_MG9QegML8b9PZElbA'; // ← Byt ut mot din NYA nyckel!
+        // ── Länk till kunskapsbasen i Supabase ──
+        const KNOWLEDGE_BASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Quiz%20dokument/Elkretsen_Kunskapsbas_Samlad_Quiz.txt?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJRdWl6IGRva3VtZW50L0Vsa3JldHNlbl9LdW5za2Fwc2Jhc19TYW1sYWRfUXVpei50eHQiLCJpYXQiOjE3NzI2NTI2NzYsImV4cCI6NDkyNjI1MjY3Nn0.3zkcFjaJmwLPFEoWa9sJx15eq2xil9NiteRPb76mtKQ';
 
-        // ── Konstanter ──
-        const KNOWLEDGE_BASE = `
-# El-kretsen – Samlad Kunskapsbas (Quizoptimerad version)
+        let cachedKnowledgeBase = null;
 
-SEKTION 1 | KATEGORI C – EU & Reglering – EU:s Batteriförordning (2023/1542)
-- Bärbart batteri: max 5 kg, förseglat, ej fordons- eller industribatteri.
-- LMT-batteri (lätta transportmedel): max 25 kg, t.ex. elcyklar/elsparkcyklar.
-- Elfordonsbatteri (EV): över 25 kg, hybrid/elfordon.
-- Industribatteri: industriellt bruk eller >5 kg, ej annan kategori.
-- Producent: tillverkare/importör/distributör som FÖRSTA GÅNGEN tillhandahåller batteri på marknaden.
-- Insamlingsmål bärbara: 45% (31 dec 2023), 63% (31 dec 2027), 73% (31 dec 2030).
-- Insamlingsmål LMT: 51% (31 dec 2028), 61% (31 dec 2031).
-- Märkning "Överkryssad soptunna" obligatorisk från 18 augusti 2025.
-- QR-kod obligatorisk på batterier från 18 februari 2027.
-- Batteripass obligatoriskt från 18 februari 2027 för LMT, industribatterier >2 kWh och EV.
-- Batteriförordningen (2023/1542) trädde i kraft 17 augusti 2023.
-- Gamla batteridirektivet (2006/66/EC) upphävs 2025.
-
-SEKTION 2 | KATEGORI C – EU & Reglering – WEEE-direktivet (2012/19/EU)
-- Insamlingsmål WEEE från 2019: 65% av EEE sålt senaste 3 åren, alternativt 85% av genererat WEEE.
-- Finansieringsansvar för produkter sålda efter 13 augusti 2005.
-- Solceller producentansvar för paneler sålda efter 13 augusti 2012.
-- Öppet scope gäller produkter från 15 augusti 2018.
-- Ändringsdirektiv 2024/884 i nationell lag senast 9 oktober 2025.
-- WEEE-retur kostnadsfritt för hushåll; förbjudet i hushållssopor.
-
-SEKTION 3 | KATEGORI C – EU & Reglering – EU-kommissionen Batterier Översikt
-- Batteriefterfrågan förväntas öka 14 gånger till 2030.
-- EU förväntas stå för ca 17% av global batteriefterfrågan.
-- Nya regler för beräkning av återvinningsgrad träder i kraft 24 juli 2025.
-- Undantagsansökan (Art.11 bärbara) stängde 30 april 2025.
-
-SEKTION 4 | KATEGORI D – Juridik – Miljöbalk (1998:808)
-- Max fängelse för miljöbrott (29 kap. 1§): 2 år.
-- Avfallshierarkin (5 steg): 1=Förebyggande, 2=Återanvändning, 3=Materialåtervinning, 4=Annan återvinning, 5=Bortskaffande/deponi.
-- Bevisbörda (2:1): den som bedriver verksamheten visar att hänsynsreglerna följs.
-- Förorenaren betalar: 2 kap. 8§. Grunden för El-kretsens existens: 15 kap. 21§.
-- Tillsynsmyndigheter: Naturvårdsverket, Länsstyrelsen, Kommunerna.
-- Miljösanktionsavgift kräver INTE uppsåt – strikt ansvar.
-
-SEKTION 5 | KATEGORI D – Juridik – Avfallsförordning (2020:614)
-- Farligt avfall: asterisk (*) i avfallskatalogen.
-- Rapportering till avfallsregistret: senast 2 arbetsdagar efter händelsen.
-- Tillstånd transport farligt avfall: >100 kg/år från egen verksamhet.
-- EWC-koder: Kyl/frys 16 02 11*, Blybatteri 16 06 01*, NiCd 16 06 02*, Kvicksilverhaltigt batteri 16 06 03*, Alkaliskt batteri 16 06 04 (EJ farligt), Lysrör 20 01 21*.
-- 7 sorteringskategorier: Bioavfall, Förpackningar, Elavfall, Farligt avfall, Returpapper, Textilavfall, Restavfall.
-
-SEKTION 6 | KATEGORI D – Juridik – Miljötillsynsförordning (2011:13)
-- Tillsynsmyndighet producentansvar batterier/elavfall: Naturvårdsverket.
-- Tillsynsmyndighet lokal butiksinsamling: Kommunen.
-- Tillsynsmyndighet RoHS/farliga ämnen i elektronik: Kemikalieinspektionen.
-- Tillsynsmyndighet tillståndspliktiga återvinningsanläggningar: Länsstyrelsen.
-- Behovsutredning: period om 3 år. Max tid mellan tillsynsbesök normal risk: 3 år, hög risk: 1 år. Tillsynsplan görs varje år.
-
-SEKTION 7 | KATEGORI A – Ekonomi – Förordning (2022:1276) om producentansvar för elutrustning
-- Rapporteringsdatum producenter: 31 mars varje år.
-- Registrering i EE-registret INNAN försäljning (§28).
-- Butiker >400 m² elektronikyta: ta emot smått elavfall (<25 cm) gratis utan nyköp (§71).
-- Återvinningsmål: Kat 1&4 (Kyla/Stor) 85% (80% material), Kat 2 (Skärmar) 80% (70% material), Kat 3 (Lampor) 80% material, Kat 5&6 (Liten/IT) 75% (55% material).
-- Spänningsgräns undantag: 1000V AC / 1500V DC. PRO-krav konsumentelutrustning: obligatoriskt §39.
-- En-mot-en: säljare tar gratis emot gammal utrustning av samma typ §70. 6 elutrustningskategorier.
-
-SEKTION 8 | KATEGORI A – Ekonomi – Miljösanktionsavgifter (SFS 2012:259)
-- Sen rapportering elutrustning till NV: 10 000 kr. Sen rapportering batterier till NV: 10 000 kr.
-- Försenad rapportering farligt avfall till avfallsregistret: 5 000 kr.
-- Transport farligt avfall utan korrekt dokument: 5 000 kr.
-- Saknad CE-märkning (RoHS): 20 000 kr. Saknad teknisk RoHS-dokumentation: 10 000 kr.
-- Dubbel avgift vid upprepad överträdelse inom 2 år (max 1 miljon kr). Kräver INTE uppsåt.
-
-SEKTION 9 | KATEGORI A – Ekonomi – NFS 2022:12 Naturvårdsverkets föreskrifter
-- NFS 2022:12 gäller från 5 januari 2023. Rättslig grund: §46 förordningen 2022:1276.
-- Avgiftsdifferentiering baseras på REACH Kandidatförteckning (Art. 59, förordning 1907/2006).
-- Produkt med farliga ämnen (REACH): högre avgift. Utan: lägre avgift.
-
-SEKTION 10 | KATEGORI D – Juridik – Lag om viten (1985:206)
-- Vite: tvinga fram FRAMTIDA rättelse (skiljer sig från sanktionsavgift för redan begånget fel).
-- Vitesbelopp bestäms utifrån adressatens ekonomiska förmåga §3.
-- Löpande vite: per tidsperiod (t.ex. varje månad) §4.
-- Vitet döms ut av Förvaltningsrätten (på myndighetens ansökan) §6.
-- Vite faller bort om ej ansökt inom 2 år från överträdelsen §9. Kan jämkas vid särskilda skäl §9.
-
-SEKTION 11 | KATEGORI B – Teknik – Interna Riktlinjer Batterikoder och Deklaration
-- B=Bärbara, L=Lätta transportmedel (LMT), S=Startbatteri, I=Industribatteri, E=Elfordonsbatteri.
-- LCO=Litium Kobolt Oxid, NMC=Nickel Mangan Kobolt, NCA=Nickel Kobolt Aluminium, LFP=Litium Järnfosfat, LMO=Manganoxid, LTO=Titanoxid. LCO och NMC vanligast.
-- Samlingskod B77 för bärbara utan kemispec, kan användas t.o.m. 2026. Från 2027 krävs specifik kemikod.
-- Bärbara NiCd och blybatterier saknar kod – FÖRBJUDNA att sälja.
-- AR = Authorized Representative (Producentombud) för utländska producenter.
-- Månadsdeklaration senast 10:e i efterföljande månad. Kvartalsdeklaration: 2% ränta/mellanmånad.
-- Förseningsavgift: 300 kr per missad deklaration. Noll-deklaration måste alltid skickas.
-
-SEKTION 12 | KATEGORI B – Teknik – Produktkoder 2026
-- Elcykelbatteri (LMT Li-jon portabelt): 12.7. NiMH bärbara: 11.4. NiCd: 11.1. Alkaliska bärbara: 11.5. Li-jon bärbart uppladdningsbart: 11.7.
-- Kyl och frys (konsument): 1.1. Mobiltelefon: 3.5. Laptop: 3.2.1. Solcellspaneler >50cm (konsument): 4.4.
-- Brandvarnare optisk: 9.2. Laddningsstation elbil (professionell): P26. Lampor >7cm: 5.2. Lampor <7cm: 5.3. Surfplattor/e-bokläsare: 3.3.1.
-- Totalt antal produktkoder i El-kretsens lista 2026: 1 738.
-        `;
+        // Funktion för att hämta texten (hämtar bara en gång per spelsession för att spara data)
+        async function getKnowledgeBase() {
+            if (cachedKnowledgeBase) return cachedKnowledgeBase;
+            try {
+                const response = await fetch(KNOWLEDGE_BASE_URL);
+                if (!response.ok) throw new Error('Kunde inte läsa textfilen från Supabase');
+                cachedKnowledgeBase = await response.text();
+                return cachedKnowledgeBase;
+            } catch (error) {
+                console.error('Kunde inte hämta kunskapsbasen:', error);
+                throw error;
+            }
+        }
 
         const CATEGORIES = [
             { id: 'all', label: 'Alla kategorier', emoji: '⚡' },
@@ -518,7 +412,6 @@ SEKTION 12 | KATEGORI B – Teknik – Produktkoder 2026
         const TIME_PER_Q     = 20;
 
         // ── Supabase highscores – delad tabell för hela organisationen ──
-        // Tabellen 'kretskampen_scores' skapas via SQL i Supabase (se instruktioner).
         async function loadScores() {
             try {
                 const { data, error } = await supabaseClient
@@ -551,16 +444,19 @@ SEKTION 12 | KATEGORI B – Teknik – Produktkoder 2026
             }
         }
 
-        // ── Gemini API ──
+        // ── Gemini API (VIA SUPABASE EDGE FUNCTION) ──
         async function generateQuestions(category, count) {
             const catLabel = category === 'all'
                 ? 'alla kategorier (EU & Reglering, Ekonomi, Teknik, Juridik)'
                 : CATEGORIES.find(c => c.id === category)?.label;
 
+            // Hämta texten från Supabase-filen!
+            const knowledgeBaseText = await getKnowledgeBase();
+
             const prompt = `Du är quizmaster för El-kretsen (Sveriges ledande producentansvarssystem för el-avfall och batterier).
 
 Kunskapsbas:
-${KNOWLEDGE_BASE}
+${knowledgeBaseText}
 
 Generera exakt ${count} flervalsfrågor på SVENSKA om kategori: ${catLabel}.
 Regler:
@@ -581,22 +477,22 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
 }
 "correct" är index (0-3) för rätt svar.`;
 
+            // ANROP TILL SUPABASE (Ingen API-nyckel här längre!)
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                'https://jnwatbnkdzuyhqmcerej.supabase.co/functions/v1/smooth-action',
                 {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: {
-                            temperature: 0.7,
-                            maxOutputTokens: 4000,
-                        },
-                    }),
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ prompt: prompt })
                 }
             );
+
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || 'Gemini API-fel');
+            if (!res.ok) throw new Error(data.error?.message || 'Ett fel uppstod vid hämtning från Supabase');
+            
             const text  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             const clean = text.replace(/```json|```/g, '').trim();
             return JSON.parse(clean).questions;
@@ -1055,7 +951,7 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
                     const qs = await generateQuestions(cat, count);
                     setQuestions(qs); setScreen('quiz');
                 } catch(e) {
-                    setError('Kunde inte generera frågor: ' + e.message);
+                    setError('Kunde inte generera frågor. Ett fel uppstod!');
                     setScreen('home');
                 }
             };
@@ -1089,4 +985,3 @@ Svara ENBART med JSON (inga backticks, ingen förklaring):
     </script>
 </body>
 </html>
-
