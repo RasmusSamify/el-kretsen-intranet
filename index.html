@@ -15,35 +15,43 @@
     <style>
         /* ── Dynamiska Teman & Bakgrunder ── */
         :root {
+            /* STANDARD (BLÅ/HAVET) */
             --primary: #06B4E4;
             --primary-dark: #0369A1;
-            --bg-app: linear-gradient(150deg, #f0f9ff 0%, #e0f2fe 40%, #f8fafc 100%);
-            --bg-overlay: transparent;
+            --primary-light: #E0F7FE;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Havet.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL0hhdmV0LmpwZyIsImlhdCI6MTc3MjY2NTE2NSwiZXhwIjozMTcxMzI2NjUxNjV9.5ZtZ6-Ft0mIWkYS2uAkfcCPLOtmNjOt9U-4Y7Jte5Lw');
+            --bg-overlay: rgba(255, 255, 255, 0.75);
             --header-gradient: linear-gradient(135deg, #06B4E4 0%, #0369A1 100%);
         }
 
         [data-theme='green'] {
+            /* GRÖN (SKOG) */
             --primary: #10B981;
             --primary-dark: #065F46;
+            --primary-light: #ECFDF5;
             --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/422896.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyLzQyMjg5Ni5qcGciLCJpYXQiOjE3NzI2NjIxNTYsImV4cCI6MTA0MTI2NjIxNTZ9.FFXfnrTj0vXaeHgvx5zAtFPyEBJiG4DIIeBCYdY6Ny4');
-            --bg-overlay: rgba(255, 255, 255, 0.65);
+            --bg-overlay: rgba(255, 255, 255, 0.75);
             --header-gradient: linear-gradient(135deg, #10B981 0%, #064E3B 100%);
         }
 
-        [data-theme='orange'] {
-            --primary: #F59E0B;
-            --primary-dark: #92400E;
-            --bg-app: linear-gradient(150deg, #fffbeb 0%, #fef3c7 40%, #f8fafc 100%);
-            --bg-overlay: transparent;
-            --header-gradient: linear-gradient(135deg, #F59E0B 0%, #B45309 100%);
+        [data-theme='yellow'] {
+            /* GUL/ORANGE (CITRONER) */
+            --primary: #EAB308;
+            --primary-dark: #A16207;
+            --primary-light: #FEF9C3;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Citroner.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL0NpdHJvbmVyLnBuZyIsImlhdCI6MTc3MjY2NTEyNiwiZXhwIjoyNjM2NjY1MTI2fQ.SCXRfyxSC9hi4MtUzr8C85pO8HRV9WG008UEji9_RzI');
+            --bg-overlay: rgba(255, 255, 255, 0.75);
+            --header-gradient: linear-gradient(135deg, #EAB308 0%, #854D0E 100%);
         }
 
-        [data-theme='dark'] {
-            --primary: #6366F1;
-            --primary-dark: #312E81;
-            --bg-app: linear-gradient(150deg, #0F172A 0%, #1E293B 100%);
-            --bg-overlay: transparent;
-            --header-gradient: linear-gradient(135deg, #312E81 0%, #1E1B4B 100%);
+        [data-theme='purple'] {
+            /* LILA (UNIVERSUM) */
+            --primary: #8B5CF6;
+            --primary-dark: #5B21B6;
+            --primary-light: #EDE9FE;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Universum.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL1VuaXZlcnN1bS5qcGVnIiwiaWF0IjoxNzcyNjY1MTQ5LCJleHAiOjMxNzEzMjY2NTE0OX0.URQzBKMfAUqNp93Nsb0k392D4uN2XYtz4RJGZ_uCXTw');
+            --bg-overlay: rgba(255, 255, 255, 0.85); /* Lite starkare overlay här så svart text syns på rymden */
+            --header-gradient: linear-gradient(135deg, #8B5CF6 0%, #4C1D95 100%);
         }
 
         /* ── App Container ── */
@@ -52,11 +60,13 @@
             background-size: cover; 
             background-position: center;
             position: relative;
+            min-height: 100vh;
         }
 
         .bg-app-container::before {
             content: ""; position: absolute; inset: 0;
             background: var(--bg-overlay); z-index: 0; pointer-events: none;
+            backdrop-filter: blur(4px); /* Extra snygg glas-effekt på bakgrundsbilden */
         }
 
         .content-relative { position: relative; z-index: 1; }
@@ -145,10 +155,10 @@
             
             <div class="flex items-center gap-3 sm:gap-4">
                 <div class="hidden sm:flex bg-white/60 p-1.5 rounded-full border border-gray-200/50 shadow-inner">
-                    <button onclick="setTheme('default')" class="w-6 h-6 rounded-full bg-[#06B4E4] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Standard"></button>
+                    <button onclick="setTheme('default')" class="w-6 h-6 rounded-full bg-[#06B4E4] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Havet"></button>
                     <button onclick="setTheme('green')" class="w-6 h-6 rounded-full bg-[#10B981] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Skog"></button>
-                    <button onclick="setTheme('orange')" class="w-6 h-6 rounded-full bg-[#F59E0B] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Energi"></button>
-                    <button onclick="setTheme('dark')" class="w-6 h-6 rounded-full bg-[#111827] border-2 border-white shadow-sm hover:scale-110 transition-transform" title="Midnatt"></button>
+                    <button onclick="setTheme('yellow')" class="w-6 h-6 rounded-full bg-[#EAB308] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Citroner"></button>
+                    <button onclick="setTheme('purple')" class="w-6 h-6 rounded-full bg-[#8B5CF6] border-2 border-white shadow-sm hover:scale-110 transition-transform" title="Universum"></button>
                 </div>
                 <!-- Feedback Knapp -->
                 <button onclick="document.getElementById('feedback-modal').classList.remove('hidden')" class="text-xs font-bold uppercase text-gray-600 hover:text-[var(--primary)] transition-colors bg-white/80 px-3 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-1.5">
@@ -289,7 +299,7 @@
             }
         }
 
-        // ── Smart funktion för snygga fil-ikoner, NU MED HTML ──
+        // ── Smart funktion för snygga fil-ikoner (Inklusive HTML!) ──
         function getFileIconHTML(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             let bg = 'bg-gray-100'; let text = 'text-gray-500';
@@ -305,7 +315,7 @@
             } else if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext)) { 
                 bg = 'bg-purple-50'; text = 'text-purple-500';
                 icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`;
-            } else if (['html', 'htm'].includes(ext)) { // Lade till HTML-ikonen här!
+            } else if (['html', 'htm'].includes(ext)) { 
                 bg = 'bg-orange-50'; text = 'text-orange-500';
                 icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>`;
             }
@@ -496,7 +506,7 @@
                                 {CATEGORIES.map(cat => <button key={cat.id} className={`kk-cat-btn ${category === cat.id ? 'selected' : ''}`} onClick={() => setCategory(cat.id)} style={{marginBottom:0}}>{cat.emoji} {cat.label}</button>)}
                             </div>
                         </div>
-                        <button class="kk-primary-btn mb-4 text-xl py-4 shadow-xl" disabled={!player.trim()} onClick={()=>startQuiz(player, category, 10)}>Starta Kampen 🚀</button>
+                        <button class="kk-primary-btn mb-4 text-xl py-4 shadow-xl text-white" disabled={!player.trim()} onClick={()=>startQuiz(player, category, 10)}>Starta Kampen 🚀</button>
                         <button onClick={()=>setScreen('leaderboard')} class="w-full text-sm font-bold uppercase text-gray-500 hover:text-gray-800 transition-colors py-2">Visa Highscore 🏆</button>
                     </div>
                 </div>
@@ -529,7 +539,7 @@
                             <div class="text-sm uppercase font-black mb-1 text-gray-500">Din Slutpoäng</div>
                             <div class="text-6xl font-black font-barlow-condensed drop-shadow-sm" style={{color: 'var(--primary)'}}>{score.toLocaleString()}</div>
                         </div>
-                        <button class="kk-primary-btn mb-4 py-4 text-lg shadow-xl" onClick={()=>setScreen('leaderboard')}>Se var du hamnade 🏅</button>
+                        <button class="kk-primary-btn mb-4 py-4 text-lg shadow-xl text-white" onClick={()=>setScreen('leaderboard')}>Se var du hamnade 🏅</button>
                         <button class="kk-ghost-btn w-full" onClick={()=>setScreen('home')}>Spela igen</button>
                     </div>
                 </div>
@@ -538,7 +548,7 @@
             if (screen === 'leaderboard') return <div className="relative z-10 py-8 h-full"><Leaderboard onBack={()=>setScreen(score > 0 ? 'result' : 'home')} player={player} score={score} /></div>;
         }
 
-        // Tydliga och svarta texter lagda här inne i QuizWindow
+        // Tydliga och svarta texter i hela QuizWindow
         function QuizWindow({ questions, player, onFinish }) {
             const [idx, setIdx] = React.useState(0);
             const [score, setScore] = React.useState(0);
@@ -592,9 +602,9 @@
                                     else btnStyle = { background: 'white', color: '#9CA3AF', border: '2px solid #F3F4F6', opacity: 0.5 };
                                 }
                                 return (
-                                    <button key={i} onClick={()=>handleAns(i)} disabled={selected !== null} className="flex flex-col p-5 rounded-2xl transition-all duration-200 hover:border-[var(--primary)] shadow-sm" style={btnStyle}>
+                                    <button key={i} onClick={()=>handleAns(i)} disabled={selected !== null} className="flex flex-col p-5 rounded-2xl transition-all duration-200 hover:border-[var(--primary)] shadow-sm text-left" style={btnStyle}>
                                         <div style={{ fontSize:26, marginBottom:8, opacity:0.9 }}>{ANSWER_ICONS[i]}</div>
-                                        <div style={{ fontSize:16, fontWeight:600, lineHeight:1.4 }}>{a}</div>
+                                        <div style={{ fontSize:16, fontWeight:700, lineHeight:1.4 }}>{a}</div>
                                     </button>
                                 )
                             })}
@@ -611,7 +621,7 @@
                                     <div class="text-gray-800 leading-relaxed font-medium text-sm sm:text-base">{q.explanation}</div>
                                 </div>
                                 <div className="p-4 bg-gray-50 border-t border-gray-200">
-                                    <button class="kk-primary-btn py-3 shadow-md" onClick={()=>{ if(idx < questions.length-1){ setIdx(idx+1); } else { onFinish(score, history); }}}>{idx < questions.length-1 ? 'Nästa fråga →' : 'Se Resultat 🏆'}</button>
+                                    <button class="kk-primary-btn py-3 shadow-md text-white" onClick={()=>{ if(idx < questions.length-1){ setIdx(idx+1); } else { onFinish(score, history); }}}>{idx < questions.length-1 ? 'Nästa fråga →' : 'Se Resultat 🏆'}</button>
                                 </div>
                             </div>
                         )}
@@ -631,9 +641,9 @@
                 <div className="flex flex-col items-center px-4 h-full">
                     <div className="w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col h-full max-h-[850px]">
                         <div className="bg-header p-6 sm:p-8 text-white text-center relative shadow-lg z-10">
-                            <button onClick={onBack} class="absolute left-6 top-1/2 -translate-y-1/2 font-bold text-sm uppercase opacity-90 hover:opacity-100 bg-black/20 px-3 py-2 rounded-xl transition-all shadow-inner border border-white/10">← Tillbaka</button>
-                            <h2 class="text-4xl sm:text-5xl font-black font-barlow-condensed italic uppercase tracking-wider drop-shadow-md">Hjältar 🏅</h2>
-                            <p className="text-sm sm:text-base font-bold opacity-80 mt-2 tracking-widest uppercase">Topp 50 hos El-kretsen</p>
+                            <button onClick={onBack} class="absolute left-6 top-1/2 -translate-y-1/2 font-bold text-sm uppercase opacity-90 hover:opacity-100 bg-black/20 px-3 py-2 rounded-xl transition-all shadow-inner border border-white/10 text-white">← Tillbaka</button>
+                            <h2 class="text-4xl sm:text-5xl font-black font-barlow-condensed italic uppercase tracking-wider drop-shadow-md text-white">Hjältar 🏅</h2>
+                            <p className="text-sm sm:text-base font-bold opacity-80 mt-2 tracking-widest uppercase text-white">Topp 50 hos El-kretsen</p>
                         </div>
                         <div class="flex-1 overflow-y-auto p-4 sm:p-8 bg-gray-50/50 space-y-3">
                             {list.length === 0 ? <div className="text-center py-20 text-gray-500 font-bold text-lg animate-pulse">Laddar resultat...</div> : 
