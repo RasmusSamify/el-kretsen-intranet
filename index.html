@@ -11,38 +11,156 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
+
+    <style>
+        /* ── Dynamiska Teman & Bakgrunder ── */
+        :root {
+            /* STANDARD (BLÅ/HAVET) */
+            --primary: #06B4E4;
+            --primary-dark: #0369A1;
+            --primary-light: #E0F7FE;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Havet.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL0hhdmV0LmpwZyIsImlhdCI6MTc3MjY2NTE2NSwiZXhwIjozMTcxMzI2NjUxNjV9.5ZtZ6-Ft0mIWkYS2uAkfcCPLOtmNjOt9U-4Y7Jte5Lw');
+            --bg-overlay: rgba(255, 255, 255, 0.75);
+            --header-gradient: linear-gradient(135deg, #06B4E4 0%, #0369A1 100%);
+        }
+
+        [data-theme='green'] {
+            /* GRÖN (SKOG) */
+            --primary: #10B981;
+            --primary-dark: #065F46;
+            --primary-light: #ECFDF5;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/422896.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyLzQyMjg5Ni5qcGciLCJpYXQiOjE3NzI2NjIxNTYsImV4cCI6MTA0MTI2NjIxNTZ9.FFXfnrTj0vXaeHgvx5zAtFPyEBJiG4DIIeBCYdY6Ny4');
+            --bg-overlay: rgba(255, 255, 255, 0.75);
+            --header-gradient: linear-gradient(135deg, #10B981 0%, #064E3B 100%);
+        }
+
+        [data-theme='yellow'] {
+            /* GUL/ORANGE (CITRONER) */
+            --primary: #EAB308;
+            --primary-dark: #A16207;
+            --primary-light: #FEF9C3;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Citroner.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL0NpdHJvbmVyLnBuZyIsImlhdCI6MTc3MjY2NTEyNiwiZXhwIjoyNjM2NjY1MTI2fQ.SCXRfyxSC9hi4MtUzr8C85pO8HRV9WG008UEji9_RzI');
+            --bg-overlay: rgba(255, 255, 255, 0.75);
+            --header-gradient: linear-gradient(135deg, #EAB308 0%, #854D0E 100%);
+        }
+
+        [data-theme='purple'] {
+            /* LILA (UNIVERSUM) */
+            --primary: #8B5CF6;
+            --primary-dark: #5B21B6;
+            --primary-light: #EDE9FE;
+            --bg-app: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Universum.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL1VuaXZlcnN1bS5qcGVnIiwiaWF0IjoxNzcyNjY1MTQ5LCJleHAiOjMxNzEzMjY2NTE0OX0.URQzBKMfAUqNp93Nsb0k392D4uN2XYtz4RJGZ_uCXTw');
+            --bg-overlay: rgba(255, 255, 255, 0.85); /* Lite starkare overlay här så svart text syns på rymden */
+            --header-gradient: linear-gradient(135deg, #8B5CF6 0%, #4C1D95 100%);
+        }
+
+        /* ── App Container ── */
+        .bg-app-container { 
+            background: var(--bg-app); 
+            background-size: cover; 
+            background-position: center;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .bg-app-container::before {
+            content: ""; position: absolute; inset: 0;
+            background: var(--bg-overlay); z-index: 0; pointer-events: none;
+            backdrop-filter: blur(4px); /* Extra snygg glas-effekt på bakgrundsbilden */
+        }
+
+        .content-relative { position: relative; z-index: 1; }
+
+        /* ── Custom Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .nav-tab {
+            padding: 16px 20px; font-size: 15px; font-weight: 700;
+            border-bottom: 3px solid transparent; color: #475569;
+            transition: all 0.2s; cursor: pointer; background: none;
+            border-top: none; border-left: none; border-right: none;
+        }
+        .nav-tab:hover { color: var(--primary); border-bottom-color: #CBD5E1; }
+        .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .kk-primary-btn {
+            width: 100%; padding: 15px 0; background: var(--header-gradient);
+            color: white; border: none; border-radius: 16px; font-weight: 700;
+            font-size: 16px; cursor: pointer;
+            font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.2s;
+        }
+        .kk-primary-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .kk-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .kk-card {
+            background: white; border-radius: 24px; padding: 32px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.06); width: 100%; max-width: 480px;
+        }
+
+        .kk-score-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 16px; background: white;
+            border: 1px solid #F1F5F9; transition: all 0.2s;
+        }
+        .kk-score-row:hover { transform: scale(1.01); border-color: var(--primary); }
+        .kk-rank-gold { background: #FEF9C3; border-color: #FDE047; }
+        .kk-rank-silver { background: #F1F5F9; border-color: #CBD5E1; }
+        .kk-rank-bronze { background: #FFEDD5; border-color: #FED7AA; }
+
+        .kk-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; color: #64748B; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .kk-input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #E5E7EB; font-size: 16px; font-family: 'Barlow', sans-serif; outline: none; transition: border-color 0.2s; background: #F8FAFC; }
+        .kk-input:focus { border-color: var(--primary); background: white; }
+        .kk-cat-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border-radius: 14px; border: 2px solid #E5E7EB; cursor: pointer; transition: all 0.18s; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 600; background: #F8FAFC; color: #334155; margin-bottom: 8px; }
+        .kk-cat-btn.selected { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .kk-cat-btn:hover:not(.selected) { border-color: var(--primary); color: var(--primary); background: white; }
+        
+        .kk-answer-btn { padding: 20px 16px; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .kk-answer-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .kk-answer-btn:disabled { cursor: default; }
+
+        @keyframes kk-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .kk-fadein { animation: kk-fadein 0.35s ease forwards; }
+        @keyframes kk-pop { 0%{transform:scale(0.85)} 60%{transform:scale(1.08)} 100%{transform:scale(1)} }
+        
+        .kk-dot { display:inline-block; width:12px; height:12px; border-radius:50%; background: var(--primary); animation: kk-dot-bounce 1.4s infinite; }
+        .kk-dot:nth-child(2){animation-delay:.2s} .kk-dot:nth-child(3){animation-delay:.4s}
+        @keyframes kk-dot-bounce { 0%,80%,100%{transform:scale(0.7);opacity:0.5} 40%{transform:scale(1.1);opacity:1} }
+    </style>
 </head>
 <body class="text-gray-800 font-sans h-screen flex flex-col bg-app-container overflow-hidden" data-theme="default">
 
-    <!-- ── LOGIN ── -->
     <div id="login-screen" class="flex flex-col items-center justify-center h-full content-relative">
         <div class="kk-card text-center bg-white/90 backdrop-blur-xl border border-white/50">
             <img src="https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew" alt="El-kretsen" class="h-12 mx-auto mb-8">
             <form id="login-form" class="space-y-4 text-left">
-                <input type="email" id="email" placeholder="E-post" required class="w-full p-4 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 outline-none transition-all">
-                <input type="password" id="password" placeholder="Lösenord" required class="w-full p-4 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 outline-none transition-all">
+                <input type="email" id="email" placeholder="E-post" required class="w-full p-4 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all">
+                <input type="password" id="password" placeholder="Lösenord" required class="w-full p-4 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all">
                 <button type="submit" class="kk-primary-btn mt-2 py-4">Logga in på Intranätet</button>
                 <p id="error-message" class="text-red-500 text-sm hidden text-center"></p>
             </form>
         </div>
     </div>
 
-    <!-- ── INTRANÄT ── -->
     <div id="intranet-screen" class="hidden h-full flex flex-col content-relative">
-
+        
         <header class="bg-white/80 backdrop-blur-lg border-b border-white/40 p-4 flex justify-between items-center shadow-sm z-20 relative">
             <div class="flex items-center gap-4">
                 <img src="https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew" alt="El-kretsen" class="h-10 w-auto drop-shadow-sm">
-                <h1 class="text-xl font-black uppercase tracking-wider border-l-2 pl-4 border-gray-300/50 hidden sm:block text-gray-700" style="font-family:'Barlow Condensed',sans-serif">Intranät</h1>
+                <h1 class="text-xl font-black font-barlow-condensed uppercase tracking-wider border-l-2 pl-4 border-gray-300/50 hidden sm:block text-gray-700">Intranät</h1>
             </div>
+            
             <div class="flex items-center gap-3 sm:gap-4">
                 <div class="hidden sm:flex bg-white/60 p-1.5 rounded-full border border-gray-200/50 shadow-inner">
                     <button onclick="setTheme('default')" class="w-6 h-6 rounded-full bg-[#06B4E4] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Havet"></button>
-                    <button onclick="setTheme('green')"   class="w-6 h-6 rounded-full bg-[#10B981] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Skog"></button>
-                    <button onclick="setTheme('yellow')"  class="w-6 h-6 rounded-full bg-[#EAB308] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Citroner"></button>
-                    <button onclick="setTheme('purple')"  class="w-6 h-6 rounded-full bg-[#8B5CF6] border-2 border-white shadow-sm hover:scale-110 transition-transform" title="Universum"></button>
+                    <button onclick="setTheme('green')" class="w-6 h-6 rounded-full bg-[#10B981] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Skog"></button>
+                    <button onclick="setTheme('yellow')" class="w-6 h-6 rounded-full bg-[#EAB308] border-2 border-white shadow-sm mr-1.5 hover:scale-110 transition-transform" title="Citroner"></button>
+                    <button onclick="setTheme('purple')" class="w-6 h-6 rounded-full bg-[#8B5CF6] border-2 border-white shadow-sm hover:scale-110 transition-transform" title="Universum"></button>
                 </div>
+                <!-- Feedback Knapp -->
                 <button onclick="document.getElementById('feedback-modal').classList.remove('hidden')" class="text-xs font-bold uppercase text-gray-600 hover:text-[var(--primary)] transition-colors bg-white/80 px-3 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"></path></svg>
                     <span class="hidden sm:inline">Feedback</span>
@@ -51,7 +169,7 @@
             </div>
         </header>
 
-        <!-- Feedback Modal -->
+        <!-- Modal för Feedback -->
         <div id="feedback-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col" style="height: 85vh;">
                 <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/80">
@@ -64,31 +182,25 @@
             </div>
         </div>
 
-        <!-- Navigation -->
-        <nav class="bg-white/60 backdrop-blur-md border-b border-white/30 px-6 flex items-center gap-1 shadow-sm overflow-x-auto">
+        <nav class="bg-white/60 backdrop-blur-md border-b border-white/30 px-6 flex items-center gap-4 shadow-sm">
             <button id="tab-elvis" class="nav-tab active flex items-center gap-2" onclick="switchTab('elvis')">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"></path></svg>
                 Fråga ELvis
             </button>
-            <button id="tab-ai" class="nav-tab flex items-center gap-2 whitespace-nowrap" onclick="switchTab('ai')">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v3"/></svg>
-                AI-analys
-                <span class="ml-1 px-2 py-0.5 shadow-sm text-white text-[10px] rounded-full font-black" style="background:var(--primary)">NY</span>
-            </button>
-            <button id="tab-kretskampen" class="nav-tab flex items-center gap-2 whitespace-nowrap" onclick="switchTab('kretskampen')">
+            <button id="tab-kretskampen" class="nav-tab flex items-center gap-2" onclick="switchTab('kretskampen')">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                Kretskampen
+                Kretskampen <span class="ml-1 px-2 py-0.5 shadow-sm" style="background: var(--primary); color: white; font-size: 10px; border-radius: 9999px;">NY</span>
             </button>
         </nav>
 
-        <!-- ── TAB: ELvis ── -->
         <div id="content-elvis" class="flex flex-1 overflow-hidden p-4 sm:p-6 gap-6">
             <main class="flex-1 bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden border border-white/50 flex flex-col">
                 <zapier-interfaces-chatbot-embed is-popup='false' chatbot-id='cmkpsh9h5001bobaanf41g3v6' style='width: 100%; height: 100%;'></zapier-interfaces-chatbot-embed>
             </main>
+
             <aside class="w-1/3 max-w-sm bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl p-6 flex flex-col border border-white/50 overflow-hidden">
                 <div class="mb-4 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style="color:var(--primary);background:var(--primary-light)">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style="color: var(--primary); background: var(--primary-light);">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <div>
@@ -96,39 +208,472 @@
                         <p class="text-xs font-semibold text-gray-500 mt-1">Sök bland rutiner och manualer</p>
                     </div>
                 </div>
+
                 <div class="mb-6 p-4 bg-gray-50/80 rounded-2xl border border-gray-100">
                     <input type="file" id="file-upload" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-white file:text-gray-700 hover:file:bg-gray-100 cursor-pointer mb-3 shadow-sm border border-gray-200">
-                    <button id="upload-btn" class="w-full bg-white border-2 text-xs font-bold py-2 rounded-xl transition hover:shadow-md" style="border-color:var(--primary);color:var(--primary)">+ Ladda upp till ELvis</button>
+                    <button id="upload-btn" class="w-full bg-white border-2 text-xs font-bold py-2 rounded-xl transition hover:shadow-md" style="border-color: var(--primary); color: var(--primary);">+ Ladda upp till ELvis</button>
                     <p id="upload-status" class="text-xs mt-2 hidden text-center font-bold"></p>
                 </div>
+
                 <div class="mb-4 relative">
-                    <input type="text" id="search-input" placeholder="Sök efter en fil..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm font-medium transition-all">
+                    <input type="text" id="search-input" placeholder="Sök efter en fil..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent text-sm font-medium transition-all" style="--tw-ring-color: var(--primary);">
                     <svg class="w-5 h-5 text-gray-400 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
+
                 <ul class="space-y-3 flex-1 overflow-y-auto pr-2" id="document-list">
                     <li class="text-sm text-gray-400 font-medium text-center py-10">Laddar dokument...</li>
                 </ul>
             </aside>
         </div>
 
-        <!-- ── TAB: AI-ANALYS ── -->
-        <div id="content-ai" class="hidden flex-1 overflow-hidden p-4 sm:p-6">
-            <div id="ai-chat-root" class="h-full"></div>
-        </div>
-
-        <!-- ── TAB: KRETSKAMPEN ── -->
         <div id="content-kretskampen" class="hidden flex-1 overflow-auto relative z-10">
-            <div id="quiz-root" style="min-height:100%"></div>
+            <div id="quiz-root" style="min-height: 100%;"></div>
         </div>
     </div>
 
-    <!-- ── Scripts ── -->
-    <script src="js/config.js"></script>
-    <script src="js/theme.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/documents.js"></script>
-    <script src="js/navigation.js"></script>
-    <script src="js/ai-assistant.js"></script>
-    <script type="text/babel" data-presets="react" src="components/kretskampen.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo';
+        const BUCKET_NAME = 'intranet-dokument';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function setTheme(themeName) {
+            document.body.setAttribute('data-theme', themeName);
+            localStorage.setItem('user-theme', themeName);
+            const uploadBtn = document.getElementById('upload-btn');
+            if(uploadBtn) {
+                const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+                uploadBtn.style.borderColor = primaryColor;
+                uploadBtn.style.color = primaryColor;
+            }
+        }
+        setTheme(localStorage.getItem('user-theme') || 'default');
+
+        const loginScreen = document.getElementById('login-screen');
+        const intranetScreen = document.getElementById('intranet-screen');
+        const errorMsg = document.getElementById('error-message');
+        const documentList = document.getElementById('document-list');
+        const searchInput = document.getElementById('search-input');
+        const fileUpload = document.getElementById('file-upload');
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadStatus = document.getElementById('upload-status');
+
+        async function checkSession() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) showIntranet();
+        }
+        checkSession();
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+            });
+            if (error) { errorMsg.textContent = 'Fel e-post eller lösenord'; errorMsg.classList.remove('hidden'); }
+            else { showIntranet(); }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        });
+
+        function showIntranet() {
+            loginScreen.classList.add('hidden');
+            intranetScreen.classList.remove('hidden');
+            loadDocuments();
+        }
+
+        let quizMounted = false;
+        function switchTab(tab) {
+            const contents = { elvis: document.getElementById('content-elvis'), kretskampen: document.getElementById('content-kretskampen') };
+            const tabs = { elvis: document.getElementById('tab-elvis'), kretskampen: document.getElementById('tab-kretskampen') };
+            Object.keys(contents).forEach(k => {
+                contents[k].classList.toggle('hidden', k !== tab);
+                tabs[k].classList.toggle('active', k === tab);
+            });
+            if (tab === 'kretskampen' && !quizMounted) {
+                quizMounted = true;
+                ReactDOM.createRoot(document.getElementById('quiz-root')).render(React.createElement(window.KretskampenApp));
+            }
+        }
+
+        // ── Smart funktion för snygga fil-ikoner (Inklusive HTML!) ──
+        function getFileIconHTML(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            let bg = 'bg-gray-100'; let text = 'text-gray-500';
+            let icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>`;
+
+            if (ext === 'pdf') { 
+                bg = 'bg-red-50'; text = 'text-red-500';
+            } else if (['xls', 'xlsx', 'csv'].includes(ext)) { 
+                bg = 'bg-green-50'; text = 'text-green-500';
+                icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>`;
+            } else if (['doc', 'docx'].includes(ext)) { 
+                bg = 'bg-blue-50'; text = 'text-blue-500';
+            } else if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext)) { 
+                bg = 'bg-purple-50'; text = 'text-purple-500';
+                icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>`;
+            } else if (['html', 'htm'].includes(ext)) { 
+                bg = 'bg-orange-50'; text = 'text-orange-500';
+                icon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>`;
+            }
+
+            return `<div class="w-10 h-10 rounded-xl ${bg} ${text} flex items-center justify-center flex-shrink-0 shadow-sm border border-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icon}</svg>
+            </div>`;
+        }
+
+        async function loadDocuments() {
+            if(!documentList) return;
+            documentList.innerHTML = '<li class="text-sm text-gray-500 py-10 text-center font-bold animate-pulse">Hämtar dokument...</li>';
+            const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list();
+            if (error) { documentList.innerHTML = '<li class="text-sm text-red-500 py-10 text-center">Kunde inte hämta dokument.</li>'; return; }
+            documentList.innerHTML = '';
+            if (!data || data.length === 0) { documentList.innerHTML = '<li class="text-sm text-gray-400 py-10 text-center">Inga dokument uppladdade ännu.</li>'; return; }
+            
+            data.forEach(file => {
+                if (file.name === '.emptyFolderPlaceholder') return;
+                const { data: publicUrlData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(file.name);
+                const li = document.createElement('li');
+                li.className = 'doc-item';
+                
+                li.innerHTML = `
+                    <a class="flex items-center p-3 bg-white rounded-2xl border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
+                        ${getFileIconHTML(file.name)}
+                        <div class="flex-1 min-w-0 ml-3">
+                            <p class="font-bold text-sm truncate text-gray-800 group-hover:text-[var(--primary)] transition-colors">${file.name}</p>
+                            <p class="text-[10px] text-gray-400 uppercase font-black tracking-widest mt-0.5">Läs dokument</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </div>
+                    </a>`;
+                    
+                li.querySelector('a').addEventListener('click', async () => {
+                    const fileUrl = publicUrlData.publicUrl;
+                    if (file.name.endsWith('.html')) {
+                        const response = await fetch(fileUrl);
+                        const html = await response.text();
+                        const blob = new Blob([html], { type: 'text/html' });
+                        window.open(URL.createObjectURL(blob), '_blank');
+                    } else {
+                        window.open(fileUrl, '_blank');
+                    }
+                });
+                documentList.appendChild(li);
+            });
+        }
+
+        if(uploadBtn) {
+            uploadBtn.addEventListener('click', async () => {
+                const file = fileUpload.files[0];
+                if (!file) { showUploadStatus('Välj en fil först!', 'text-red-500'); return; }
+                showUploadStatus('Laddar upp...', 'text-gray-500');
+                uploadBtn.disabled = true;
+                const contentType = file.name.endsWith('.html') ? 'text/html' : file.type;
+                const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(file.name, file, { cacheControl: '3600', upsert: true, contentType });
+                uploadBtn.disabled = false;
+                if (error) { showUploadStatus('Fel: ' + error.message, 'text-red-500'); }
+                else {
+                    showUploadStatus('Uppladdning lyckades!', 'text-green-500');
+                    fileUpload.value = '';
+                    loadDocuments();
+                    setTimeout(() => uploadStatus.classList.add('hidden'), 3000);
+                }
+            });
+        }
+
+        function showUploadStatus(msg, colorClass) {
+            if(uploadStatus) {
+                uploadStatus.textContent = msg;
+                uploadStatus.className = `text-xs mt-2 block ${colorClass}`;
+                uploadStatus.classList.remove('hidden');
+            }
+        }
+
+        if(searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                document.querySelectorAll('.doc-item').forEach(item => {
+                    item.style.display = item.textContent.toLowerCase().includes(term) ? 'block' : 'none';
+                });
+            });
+        }
+
+    </script>
+
+    <!-- REACT / JSX – KRETSKAMPEN -->
+    <script type="text/babel" data-presets="react">
+        const KNOWLEDGE_BASE_URL = 'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Quiz%20dokument/Elkretsen_Kunskapsbas_Samlad_Quiz.txt?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJRdWl6IGRva3VtZW50L0Vsa3JldHNlbl9LdW5za2Fwc2Jhc19TYW1sYWRfUXVpei50eHQiLCJpYXQiOjE3NzI2NTI2NzYsImV4cCI6NDkyNjI1MjY3Nn0.3zkcFjaJmwLPFEoWa9sJx15eq2xil9NiteRPb76mtKQ';
+        
+        async function getKnowledgeBase() {
+            const response = await fetch(KNOWLEDGE_BASE_URL);
+            return await response.text();
+        }
+
+        const CATEGORIES = [
+            { id: 'all', label: 'Alla kategorier', emoji: '⚡' },
+            { id: 'C', label: 'EU & Reglering', emoji: '🇪🇺' },
+            { id: 'A', label: 'Ekonomi', emoji: '💰' },
+            { id: 'B', label: 'Teknik', emoji: '🔧' },
+            { id: 'D', label: 'Juridik', emoji: '⚖️' },
+        ];
+
+        const ANSWER_COLORS  = ['#EF4444','#3B82F6','#22C55E','#F59E0B'];
+        const ANSWER_ICONS   = ['▲','◆','●','✦'];
+        const TIME_PER_Q     = 20;
+
+        async function loadScores() {
+            const { data } = await supabaseClient.from('kretskampen_scores').select('*').order('score', {ascending:false}).limit(20);
+            return data || [];
+        }
+
+        async function generateQuestions(category, count) {
+            const kb = await getKnowledgeBase();
+            const seed = new Date().getTime();
+            const catLabel = category === 'all' ? 'alla kategorier' : CATEGORIES.find(c => c.id === category)?.label;
+            const prompt = `SESSION: ${seed}. Skapa ${count} flervalsfrågor på SVENSKA om: ${catLabel}. Plocka frågor från HELA dokumentet, sprid ut dem! Kunskapsbas: ${kb}. Svara i JSON: { "questions": [ { "question": "Text?", "answers": ["A","B","C","D"], "correct": 0, "explanation": "Varför?" } ] }`;
+            
+            const res = await fetch('https://jnwatbnkdzuyhqmcerej.supabase.co/functions/v1/smooth-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            const data = await res.json();
+            if(data.error) throw new Error(data.error.message);
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            return JSON.parse(text.replace(/```json|```/g, '').trim()).questions;
+        }
+
+        function calcScore(timeLeft, correct) {
+            return correct ? Math.round(500 + (timeLeft / TIME_PER_Q) * 500) : 0;
+        }
+
+        // Tydlig mörk text i timern
+        function TimerRing({ timeLeft, total }) {
+            const r = 34, cx = 42, cy = 42, circ = 2 * Math.PI * r;
+            const offset = circ * (1 - timeLeft / total);
+            const color = timeLeft > 10 ? 'var(--primary)' : timeLeft > 5 ? '#F59E0B' : '#EF4444';
+            return (
+                <div style={{ position:'relative', width:84, height:84 }}>
+                    <svg width="84" height="84" style={{ transform:'rotate(-90deg)' }}>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={6}/>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={6} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }}/>
+                    </svg>
+                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, fontWeight:900, color:"#111827", fontFamily:"'Barlow Condensed'" }}>{timeLeft}</div>
+                </div>
+            );
+        }
+
+        /* ── REACT COMPONENTS ── */
+        function KretskampenApp() {
+            const [screen, setScreen] = React.useState('home');
+            const [questions, setQuestions] = React.useState([]);
+            const [player, setPlayer] = React.useState('');
+            const [score, setScore] = React.useState(0);
+            const [category, setCategory] = React.useState('all');
+
+            const startQuiz = async (name, cat, count) => {
+                setPlayer(name); setCategory(cat); setScreen('loading');
+                try {
+                    const qs = await generateQuestions(cat, count);
+                    setQuestions(qs); setScreen('quiz');
+                } catch(e) { alert('Fel vid AI-generering: ' + e.message); setScreen('home'); }
+            };
+
+            const finishQuiz = async (finalScore, hist) => {
+                setScore(finalScore); setScreen('result');
+                const correctCount = hist.filter(h => h.correct).length;
+                await supabaseClient.from('kretskampen_scores').insert([{ name:player, score:finalScore, correct:correctCount, total:questions.length, category:category, played_at:new Date().toISOString() }]);
+            };
+
+            if (screen === 'home') return (
+                <div className="flex flex-col items-center py-12 px-4 h-full relative z-10">
+                    <div className="kk-card bg-white/90 backdrop-blur-xl border border-white/50">
+                        <div className="text-center mb-8">
+                            <h2 className="text-5xl font-black font-barlow-condensed italic uppercase drop-shadow-sm" style={{color: 'var(--primary)'}}>⚡ Kretskampen</h2>
+                            <p class="text-gray-600 font-medium">Utmana kollegorna i El-kretsens stora kunskapskamp!</p>
+                        </div>
+                        <div class="mb-6">
+                            <label class="kk-label">Ditt Namn</label>
+                            <input class="kk-input" value={player} onChange={e=>setPlayer(e.target.value)} placeholder="T.ex. Magnus..." maxLength="20" />
+                        </div>
+                        <div class="mb-6">
+                            <label class="kk-label">Kategori</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {CATEGORIES.map(cat => <button key={cat.id} className={`kk-cat-btn ${category === cat.id ? 'selected' : ''}`} onClick={() => setCategory(cat.id)} style={{marginBottom:0}}>{cat.emoji} {cat.label}</button>)}
+                            </div>
+                        </div>
+                        <button class="kk-primary-btn mb-4 text-xl py-4 shadow-xl text-white" disabled={!player.trim()} onClick={()=>startQuiz(player, category, 10)}>Starta Kampen 🚀</button>
+                        <button onClick={()=>setScreen('leaderboard')} class="w-full text-sm font-bold uppercase text-gray-500 hover:text-gray-800 transition-colors py-2">Visa Highscore 🏆</button>
+                    </div>
+                </div>
+            );
+
+            if (screen === 'loading') return (
+                <div className="flex flex-col items-center justify-center py-20 relative z-10">
+                    <div className="bg-white/90 backdrop-blur-xl border border-white/50 p-10 rounded-3xl shadow-2xl text-center max-w-sm w-full">
+                        <div className="kk-dot h-4 w-4 mb-6"></div>
+                        <div className="kk-dot h-4 w-4 mb-6 mx-2" style={{animationDelay: '0.2s'}}></div>
+                        <div className="kk-dot h-4 w-4 mb-6" style={{animationDelay: '0.4s'}}></div>
+                        <p class="font-black italic uppercase tracking-widest text-xl" style={{color: 'var(--primary)'}}>AI laddar dokumentet...</p>
+                        <p className="text-gray-500 font-medium text-sm mt-2">Letar upp kluriga frågor åt {player}</p>
+                    </div>
+                </div>
+            );
+
+            if (screen === 'quiz') return (
+                <div className="relative z-10 py-6 px-4 flex-1 overflow-auto flex flex-col items-center">
+                    <QuizWindow questions={questions} player={player} onFinish={finishQuiz} />
+                </div>
+            );
+
+            if (screen === 'result') return (
+                <div className="flex flex-col items-center py-12 relative z-10">
+                    <div className="kk-card text-center bg-white/90 backdrop-blur-xl border border-white/50">
+                        <div class="text-7xl mb-4 drop-shadow-md" style={{animation: 'kk-pop 0.5s ease'}}>🏆</div>
+                        <h2 class="text-3xl font-bold mb-2 text-gray-800">Snyggt jobbat, {player}!</h2>
+                        <div class="p-8 rounded-3xl my-8 shadow-inner border border-gray-100 bg-gray-50">
+                            <div class="text-sm uppercase font-black mb-1 text-gray-500">Din Slutpoäng</div>
+                            <div class="text-6xl font-black font-barlow-condensed drop-shadow-sm" style={{color: 'var(--primary)'}}>{score.toLocaleString()}</div>
+                        </div>
+                        <button class="kk-primary-btn mb-4 py-4 text-lg shadow-xl text-white" onClick={()=>setScreen('leaderboard')}>Se var du hamnade 🏅</button>
+                        <button class="kk-ghost-btn w-full" onClick={()=>setScreen('home')}>Spela igen</button>
+                    </div>
+                </div>
+            );
+
+            if (screen === 'leaderboard') return <div className="relative z-10 py-8 h-full"><Leaderboard onBack={()=>setScreen(score > 0 ? 'result' : 'home')} player={player} score={score} /></div>;
+        }
+
+        // Tydliga och svarta texter i hela QuizWindow
+        function QuizWindow({ questions, player, onFinish }) {
+            const [idx, setIdx] = React.useState(0);
+            const [score, setScore] = React.useState(0);
+            const [selected, setSelected] = React.useState(null);
+            const [history, setHistory] = React.useState([]);
+            const [timeLeft, setTimeLeft] = React.useState(TIME_PER_Q);
+            const timerRef = React.useRef();
+            const q = questions[idx];
+
+            const handleAns = (i) => {
+                if (selected !== null) return;
+                clearInterval(timerRef.current);
+                setSelected(i);
+                const correct = i === q.correct;
+                const gained = calcScore(timeLeft, correct);
+                setScore(s => s + gained);
+                setHistory(h => [...h, { gained, correct, timeLeft }]);
+            };
+
+            React.useEffect(() => {
+                setSelected(null); setTimeLeft(TIME_PER_Q);
+                timerRef.current = setInterval(() => {
+                    setTimeLeft(t => { if(t <= 1){ clearInterval(timerRef.current); handleAns(-1); return 0; } return t - 1; });
+                }, 1000);
+                return () => clearInterval(timerRef.current);
+            }, [idx]);
+
+            return (
+                <div className="w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col">
+                    
+                    <div className="bg-white p-5 sm:p-6 border-b border-gray-100 flex justify-between items-center z-10 shadow-sm">
+                        <div>
+                            <div class="text-[12px] uppercase font-bold text-gray-400 tracking-wider font-barlow-condensed">Fråga {idx+1}/{questions.length}</div>
+                            <div class="text-xl font-bold font-barlow-condensed text-gray-900">{player}</div>
+                        </div>
+                        <TimerRing timeLeft={timeLeft} total={TIME_PER_Q} />
+                        <div class="text-right">
+                            <div class="text-[12px] uppercase font-bold text-gray-400 tracking-wider font-barlow-condensed">Poäng</div>
+                            <div class="text-3xl font-black font-barlow-condensed text-gray-900">{score.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 sm:p-8 flex-1 bg-gray-50/50">
+                        <h3 class="text-xl sm:text-2xl font-bold mb-8 text-center leading-relaxed text-gray-900">{q.question}</h3>
+                        <div class="grid sm:grid-cols-2 gap-4 mb-6">
+                            {q.answers.map((a, i) => {
+                                let btnStyle = { background: 'white', color: '#1F2937', border: '2px solid #E5E7EB' };
+                                if (selected !== null) {
+                                    if (i === q.correct) btnStyle = { background: '#10B981', color: 'white', border: '2px solid #059669', transform: 'scale(1.02)' };
+                                    else if (i === selected) btnStyle = { background: '#EF4444', color: 'white', border: '2px solid #B91C1C', opacity: 0.9 };
+                                    else btnStyle = { background: 'white', color: '#9CA3AF', border: '2px solid #F3F4F6', opacity: 0.5 };
+                                }
+                                return (
+                                    <button key={i} onClick={()=>handleAns(i)} disabled={selected !== null} className="flex flex-col p-5 rounded-2xl transition-all duration-200 hover:border-[var(--primary)] shadow-sm text-left" style={btnStyle}>
+                                        <div style={{ fontSize:26, marginBottom:8, opacity:0.9 }}>{ANSWER_ICONS[i]}</div>
+                                        <div style={{ fontSize:16, fontWeight:700, lineHeight:1.4 }}>{a}</div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        {selected !== null && (
+                            <div class="kk-fadein rounded-2xl border-l-4 overflow-hidden shadow-lg bg-white mt-8" style={{ borderColor: selected === q.correct ? '#10B981' : '#EF4444' }}>
+                                <div className="p-5" style={{ background: selected === q.correct ? '#ECFDF5' : '#FEF2F2' }}>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div style={{ fontWeight:800, fontSize:18, color: selected === q.correct ? '#059669' : '#B91C1C' }}>
+                                            {selected === q.correct ? '🎉 Rätt svar!' : selected === -1 ? '⏱ Tiden var ute!' : '❌ Tyvärr fel'}
+                                        </div>
+                                        {selected === q.correct && <div className="font-black text-green-800 bg-green-200 px-3 py-1.5 rounded-full text-sm shadow-sm">+{history[history.length-1]?.gained} p</div>}
+                                    </div>
+                                    <div class="text-gray-800 leading-relaxed font-medium text-sm sm:text-base">{q.explanation}</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                                    <button class="kk-primary-btn py-3 shadow-md text-white" onClick={()=>{ if(idx < questions.length-1){ setIdx(idx+1); } else { onFinish(score, history); }}}>{idx < questions.length-1 ? 'Nästa fråga →' : 'Se Resultat 🏆'}</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function Leaderboard({ onBack, player, score }) {
+            const [list, setList] = React.useState([]);
+            React.useEffect(() => {
+                supabaseClient.from('kretskampen_scores').select('*').order('score', {ascending:false}).limit(50)
+                .then(({data})=>setList(data || []));
+            }, []);
+
+            return (
+                <div className="flex flex-col items-center px-4 h-full">
+                    <div className="w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col h-full max-h-[850px]">
+                        <div className="bg-header p-6 sm:p-8 text-white text-center relative shadow-lg z-10">
+                            <button onClick={onBack} class="absolute left-6 top-1/2 -translate-y-1/2 font-bold text-sm uppercase opacity-90 hover:opacity-100 bg-black/20 px-3 py-2 rounded-xl transition-all shadow-inner border border-white/10 text-white">← Tillbaka</button>
+                            <h2 class="text-4xl sm:text-5xl font-black font-barlow-condensed italic uppercase tracking-wider drop-shadow-md text-white">Hjältar 🏅</h2>
+                            <p className="text-sm sm:text-base font-bold opacity-80 mt-2 tracking-widest uppercase text-white">Topp 50 hos El-kretsen</p>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 sm:p-8 bg-gray-50/50 space-y-3">
+                            {list.length === 0 ? <div className="text-center py-20 text-gray-500 font-bold text-lg animate-pulse">Laddar resultat...</div> : 
+                            list.map((s, i) => {
+                                const isMe = s.name === player && s.score === score && score > 0;
+                                const rankClass = i === 0 ? 'kk-rank-gold shadow-md' : i === 1 ? 'kk-rank-silver shadow-md' : i === 2 ? 'kk-rank-bronze shadow-md' : 'shadow-sm';
+                                const catEmoji = CATEGORIES.find(c => c.id === s.category)?.emoji || '⚡';
+                                return (
+                                    <div key={i} class={`kk-score-row ${rankClass}`} style={isMe ? { borderColor: 'var(--primary)', borderWidth: '2px', boxShadow: '0 8px 25px rgba(0,0,0,0.1)', transform:'scale(1.02)' } : {}}>
+                                        <div class="text-3xl font-black font-barlow-condensed italic w-12 text-center" style={{color: i<3 ? '#475569' : '#94A3B8'}}>
+                                            {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
+                                        </div>
+                                        <div class="flex-1 ml-2">
+                                            <div class="font-black text-gray-800 text-lg flex items-center gap-2">
+                                                {s.name} 
+                                                {isMe && <span className="bg-primary text-white text-[10px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider hidden sm:inline-block shadow-sm">Det är du!</span>}
+                                            </div>
+                                            <div class="text-xs font-bold text-gray-500 mt-1 uppercase tracking-wider">{catEmoji} {s.correct}/{s.total} rätt <span className="mx-1 opacity-50">•</span> {new Date(s.played_at).toLocaleDateString('sv-SE', {day:'numeric', month:'short'})}</div>
+                                        </div>
+                                        <div class="text-3xl font-black font-barlow-condensed italic drop-shadow-sm" style={{color: 'var(--primary)'}}>{s.score.toLocaleString()}</div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        window.KretskampenApp = KretskampenApp;
+    </script>
 </body>
 </html>
