@@ -281,12 +281,9 @@
 const SUPABASE_URL      = 'https://jnwatbnkdzuyhqmcerej.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impud2F0Ym5rZHp1eWhxbWNlcmVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzczNDcsImV4cCI6MjA4ODA1MzM0N30._A6BCYepTsITJNYgJBUPb79TDR3ln45DPvbmy8Igyoo';
 const BUCKET_DOCUMENTS  = 'intranet-dokument';
-const BUCKET_KNOWLEDGE  = 'Linneas AI-losning';   // Bucket med de 17 TXT-filerna för AI
-
-// Claude anropas via Supabase Edge Function — API-nyckeln ligger säkert på servern
-const CLAUDE_PROXY_URL = `${SUPABASE_URL}/functions/v1/claude-proxy`;
-const CLAUDE_MODEL     = 'claude-sonnet-4-20250514';
-
+const BUCKET_KNOWLEDGE  = 'Linneas AI-losning';
+const CLAUDE_MODEL      = 'claude-sonnet-4-20250514';
+const CLAUDE_PROXY_URL  = '/api/claude-proxy';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ═══════════════════════════════════════════════
@@ -619,11 +616,10 @@ async function sendMessage(userText, uploadedContext = null) {
 
     try {
         const response = await fetch(CLAUDE_PROXY_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            },
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
             body: JSON.stringify({
                 model: CLAUDE_MODEL,
                 max_tokens: 1500,
