@@ -497,45 +497,20 @@ const AI_STATE = {
     isStreaming: false,
 };
 
-const EK_SYSTEM_PROMPT = [
-    "Du är El-kretsens interna AI-assistent och specialist på producentansvar, avfallshantering och regelefterlevnad.",
-    "",
-    "Svara ALLTID på svenska. Var saklig, juridiskt korrekt och hjälpsam.",
-    "",
-    "FORMATERING - mycket viktigt:",
-    "- Använd alltid markdown",
-    "- Separera varje sektion med en blank rad",
-    "- Skriv ALDRIG flera meningar ihop utan radbrytning",
-    "- Använd alltid rubriker med ##",
-    "",
-    "Svara alltid i detta format:",
-    "",
-    "## [Rubrik]",
-    "",
-    "**Direkt svar:**",
-    "[Max 2-3 meningar]",
-    "",
-    "**Källa:**",
-    "[Fil eller paragraf]",
-    "",
-    "**Praktisk innebörd för El-kretsen:**",
-    "",
-    "- [Punkt 1]",
-    "- [Punkt 2]",
-    "- [Punkt 3]",
-    "",
-    "**Rekommendation:**",
-    "[Nästa steg]",
-    "",
-    "---",
-    "",
-    "Om du inte förstår: Oj, nu blev det kortslutning i mina ledningar. Kan du formulera om dig?",
-    "Om info saknas: Jag har inte information om detta i min kunskapsbank.",
-    "Du får INTE hitta på fakta.",
-    "",
-    "Batterikoder 2026: [Kategori][Kemi][Storlek]. B=Bärbart, L=Lätta transportmedel, S=Start/belysning, I=Industri, E=Elbil.",
-    "B77 (Li-jon ospecificerad) är temporär och tas bort fr.o.m. 2027."
-].join("\n");
+const EK_SYSTEM_PROMPT = `Du är El-kretsens interna AI-assistent och specialist på producentansvar, avfallshantering och regelefterlevnad. Ditt syfte är att hjälpa medarbetare att navigera i komplexa lagar och regler.
+
+Svara ALLTID på svenska. Var saklig, juridiskt korrekt och hjälpsam.
+
+Svarsstruktur:
+1. Direkt svar/slutsats
+2. Källa (vilken fil/paragraf)
+3. Praktisk innebörd för El-kretsen
+4. Om osäker: "Det saknas specifik policy för detta i min nuvarande data, men baserat på befintligt underlag gäller..."
+
+Du får INTE hitta på fakta. Om du inte förstår: "Oj, nu blev det kortslutning i mina ledningar. Kan du formulera om dig?"
+Om informationen saknas: "Jag har inte information om detta i min kunskapsbank."
+
+Batterikoder 2026 följer: [Kategori][Kemi][Storlek]. B=Bärbart, L=Lätta transportmedel, S=Start/belysning, I=Industri, E=Elbil. B77 (Li-jon ospecificerad) är temporär och tas bort fr.o.m. 2027.`;
 
 // ── Chunking ────────────────────────────────────
 function chunkText(text, filename, chunkSize = 1200, overlap = 200) {
@@ -602,10 +577,42 @@ async function loadKnowledgeBase() {
     updateFileCount();
 }
 
+// ── FAQ-loggning & hämtning ─────────────────────
+async function logQuestion(questionText) {
+    const normalized = questionText.trim().toLowerCase().slice(0, 200);
+    const { data: existing } = await supabaseClient
+        .from('ai_questions')
+        .select('id, count')
+        .ilike('question_text', normalized)
+        .limit(1);
+    if (existing && existing.length > 0) {
+        await supabaseClient
+            .from('ai_questions')
+            .update({ count: existing[0].count + 1, last_asked: new Date().toISOString() })
+            .eq('id', existing[0].id);
+    } else {
+        await supabaseClient
+            .from('ai_questions')
+            .insert([{ question_text: normalized, count: 1 }]);
+    }
+}
+
+async function loadTopQuestions() {
+    const { data } = await supabaseClient
+        .from('ai_questions')
+        .select('question_text, count')
+        .order('count', { ascending: false })
+        .limit(6);
+    return data || [];
+}
+
 // ── Skicka meddelande till Claude ───────────────
 async function sendMessage(userText, uploadedContext = null) {
     if (AI_STATE.isStreaming) return;
     AI_STATE.isStreaming = true;
+
+    // Logga frågan för FAQ-statistik
+    logQuestion(userText).catch(() => {});
 
     // Hitta relevanta chunks
     const topChunks = getTopChunks(userText);
@@ -640,6 +647,7 @@ async function sendMessage(userText, uploadedContext = null) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             },
             body: JSON.stringify({
                 model: CLAUDE_MODEL,
@@ -885,21 +893,12 @@ function initAIAssistant() {
 
             <!-- Snabbsvar-kort -->
             <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-5">
-                <h3 class="font-bold text-gray-800 text-sm mb-3">⚡ Snabbfrågor</h3>
-                <div class="space-y-2">
-                    ${[
-                        ['Batterikoder 2026', 'Förklara batterikodstrukturen för 2026 med exempel'],
-                        ['B77 temporär?', 'Vad gäller för B77 och när tas den bort?'],
-                        ['Förseningsavgift', 'Vad händer om vi missar en deklaration?'],
-                        ['Inbyggt batteri', 'Hur deklarerar jag en produkt med inbyggt batteri?'],
-                        ['P24 vs P25', 'Vad är skillnaden mellan P24 och P25?'],
-                        ['Grön avgift', 'Hur ansöker man om grön avgift?'],
-                    ].map(([label, prompt]) =>
-                        `<button onclick="useQuickPrompt('${prompt}')"
-                            class="w-full text-left text-xs font-semibold px-3 py-2.5 rounded-xl border border-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all bg-gray-50 hover:bg-white text-gray-600">
-                            ${label}
-                        </button>`
-                    ).join('')}
+                <h3 class="font-bold text-gray-800 text-sm mb-1 flex items-center justify-between">
+                    ⚡ Snabbfrågor
+                    <span class="text-[10px] text-gray-400 font-normal">Populäraste frågorna</span>
+                </h3>
+                <div id="faq-list" class="space-y-2 mt-3">
+                    <div class="text-xs text-gray-400 text-center py-4 animate-pulse">Laddar...</div>
                 </div>
             </div>
         </div>
@@ -910,6 +909,23 @@ function initAIAssistant() {
 
     // Ladda kunskapsbas
     loadKnowledgeBase();
+
+    // Ladda populäraste frågor
+    loadTopQuestions().then(questions => {
+        const el = document.getElementById('faq-list');
+        if (!el) return;
+        if (questions.length === 0) {
+            el.innerHTML = `<div class="text-xs text-gray-400 text-center py-2">Inga frågor än — börja chatta!</div>`;
+            return;
+        }
+        el.innerHTML = questions.map(q =>
+            `<button onclick="useQuickPrompt('${q.question_text.replace(/'/g, "\\'")}')"
+                class="w-full text-left text-xs font-semibold px-3 py-2.5 rounded-xl border border-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all bg-gray-50 hover:bg-white text-gray-600 flex items-center justify-between gap-2">
+                <span class="truncate">${q.question_text}</span>
+                <span class="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:var(--primary-light);color:var(--primary)">${q.count}×</span>
+            </button>`
+        ).join('');
+    });
 }
 
 // ── Event handlers (globalt scope för inline onclick) ──
