@@ -268,7 +268,3 @@ function json(body: unknown, status: number) {
 export const config: Config = {
   path: '/api/ai-search',
 };
-
-// Netlify serverless cap — raise from 10s default to 26s to cover Claude
-// generation latency on longer RAG queries.
-export const timeout = 26;
