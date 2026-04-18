@@ -19,11 +19,12 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<AIPage />} />
+        <Route path="/" element={<InsightsPage />} />
+        <Route path="/ai-analys" element={<AIPage />} />
         <Route path="/mail" element={<MailAssistantPage />} />
         <Route path="/kalkylator" element={<FeeCalculatorPage />} />
         <Route path="/kretskampen" element={<KretskampenPage />} />
-        <Route path="/insikter" element={<InsightsPage />} />
+        <Route path="/insikter" element={<Navigate to="/" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

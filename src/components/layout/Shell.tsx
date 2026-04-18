@@ -4,8 +4,8 @@ import { Header } from './Header';
 import { TabNav } from './TabNav';
 
 const tabs = [
-  { to: '/insikter', label: 'Insikter', icon: BarChart3 },
-  { to: '/', label: 'AI-analys', icon: BrainCircuit },
+  { to: '/', label: 'Insikter', icon: BarChart3 },
+  { to: '/ai-analys', label: 'AI-analys', icon: BrainCircuit },
   { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY' },
   { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY' },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
