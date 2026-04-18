@@ -17,6 +17,14 @@
   # URL-fetch + chunking + Voyage embed för en hel sida
   timeout = 26
 
+[functions."mail-assistant"]
+  # Genererar ett färdigt svar på kundmail via RAG + Claude
+  timeout = 26
+
+[functions."fee-calculator"]
+  # Räknar ut El-kretsen-avgift för en produktbeskrivning
+  timeout = 26
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
