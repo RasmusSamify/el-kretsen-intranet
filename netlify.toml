@@ -7,7 +7,7 @@
   NODE_VERSION = "20"
   # VITE_-vars är publika per design (bakas in i klient-bundeln, anon-key är
   # avsedd för browsers per Supabase-arkitektur). Hoppa scanner för dessa.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,SUPABASE_URL"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,SUPABASE_URL,NOTIFICATION_EMAIL"
 
 [functions."ai-search"]
   # Höjt från 10s så Claude-generering med 8 chunks hinner klart
