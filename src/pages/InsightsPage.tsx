@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   BarChart3,
   CircleHelp,
@@ -62,12 +62,12 @@ export function InsightsPage() {
           .from('ai_questions')
           .select('id, question_text, count, last_asked')
           .order('count', { ascending: false })
-          .limit(8),
+          .limit(10),
         supabase
           .from('ai_unanswered')
           .select('id, question_text, top_match_filename, top_match_similarity, created_at, notified')
           .order('created_at', { ascending: false })
-          .limit(8),
+          .limit(10),
         supabase.rpc('list_kb_sources'),
       ]);
 
@@ -78,7 +78,7 @@ export function InsightsPage() {
         const sorted = (sourcesRes.data as SourceRow[])
           .slice()
           .sort((a, b) => b.chunk_count - a.chunk_count)
-          .slice(0, 8);
+          .slice(0, 10);
         setTopSources(sorted);
       }
       setLoading(false);
@@ -94,187 +94,231 @@ export function InsightsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto pb-8 space-y-6">
-        <header className="flex items-center gap-3">
-          <IconTile icon={<BarChart3 size={18} strokeWidth={2.25} />} tone="brand" size="md" />
-          <div>
-            <h1 className="text-display text-3xl text-ink-900 leading-none">Insikter</h1>
-            <p className="text-[12px] font-semibold text-ink-400 mt-1">
-              Översikt över AI-användning, kunskapsbas och obesvarade frågor
-            </p>
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <IconTile icon={<BarChart3 size={18} strokeWidth={2.25} />} tone="brand" size="md" />
+            <div>
+              <h1 className="text-display text-3xl text-ink-900 leading-none">Insikter</h1>
+              <p className="text-[12px] font-semibold text-ink-400 mt-1">
+                Översikt över AI-användning, kunskapsbas och obesvarade frågor
+              </p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
+            <Sparkles size={12} strokeWidth={2.25} />
+            <span>Realtid</span>
           </div>
         </header>
 
-        {/* KPI-row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard
-            label="Frågor totalt"
-            value={stats?.total_questions ?? 0}
-            delta={stats?.questions_last_7d ?? 0}
-            deltaLabel="senaste 7 dagar"
-            icon={<MessageSquareText size={14} strokeWidth={2.25} />}
-            tone="brand"
-          />
-          <KpiCard
-            label="Obesvarade"
-            value={stats?.unanswered_total ?? 0}
-            delta={stats?.unanswered_last_7d ?? 0}
-            deltaLabel="senaste 7 dagar"
-            icon={<TriangleAlert size={14} strokeWidth={2.25} />}
-            tone="warning"
-            accent
-          />
-          <KpiCard
-            label="Källor i kunskapsbas"
-            value={stats?.source_count ?? 0}
-            delta={stats?.chunk_count ?? 0}
-            deltaLabel="chunks totalt"
-            icon={<Library size={14} strokeWidth={2.25} />}
-            tone="neutral"
-          />
-          <KpiCard
-            label="Kretskampen-omgångar"
-            value={stats?.quiz_scores_total ?? 0}
-            delta={null}
-            deltaLabel="alla tider"
-            icon={<Trophy size={14} strokeWidth={2.25} />}
-            tone="success"
-          />
-        </div>
-
-        {/* Two-column: unanswered + top FAQ */}
-        <div className="grid lg:grid-cols-[1.2fr_1fr] gap-4">
-          {/* Unanswered */}
-          <Card variant="glass" className="p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <IconTile size="sm" tone="warning" icon={<CircleHelp size={14} strokeWidth={2.25} />} />
-              <div className="flex-1">
-                <h3 className="font-bold text-ink-900 text-[15px] leading-none">Senaste obesvarade</h3>
-                <p className="text-[11px] font-semibold text-ink-400 mt-1">
-                  Frågor som inte kunde besvaras från kunskapsbasen
-                </p>
-              </div>
-            </div>
-
-            {unanswered.length === 0 ? (
-              <p className="text-xs text-ink-400 text-center py-6 font-medium">
-                Inga obesvarade frågor än.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {unanswered.map((row) => (
-                  <li
-                    key={row.id}
-                    className="p-3 rounded-xl bg-white border border-ink-100"
-                  >
-                    <p className="text-[13px] font-semibold text-ink-800 leading-snug">
-                      {row.question_text}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-ink-400">
-                      <span>{formatDate(row.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                      {row.top_match_similarity != null && (
-                        <>
-                          <span className="opacity-50">·</span>
-                          <span>
-                            närmast: {Math.round(row.top_match_similarity * 100)} %
-                          </span>
-                        </>
-                      )}
-                      {row.notified && (
-                        <>
-                          <span className="opacity-50">·</span>
-                          <span className="text-emerald-600">mail skickat</span>
-                        </>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* Top FAQ */}
-          <Card variant="glass" className="p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <IconTile size="sm" tone="warning" icon={<Flame size={14} strokeWidth={2.25} />} />
-              <div className="flex-1">
-                <h3 className="font-bold text-ink-900 text-[15px] leading-none">Populärast</h3>
-                <p className="text-[11px] font-semibold text-ink-400 mt-1">Mest ställda frågor</p>
-              </div>
-            </div>
-
-            {topFaqs.length === 0 ? (
-              <p className="text-xs text-ink-400 text-center py-6 font-medium">
-                Inga frågor än — börja chatta!
-              </p>
-            ) : (
-              <ul className="space-y-1.5">
-                {topFaqs.map((faq, i) => (
-                  <li
-                    key={faq.id}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-ink-100"
-                  >
-                    <span
-                      className={cn(
-                        'w-7 h-7 rounded-lg inline-flex items-center justify-center font-display text-sm shrink-0',
-                        i === 0 ? 'bg-amber-50 text-amber-700' : 'bg-ink-50 text-ink-500',
-                      )}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate">
-                      {faq.question_text}
-                    </span>
-                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100">
-                      {faq.count}×
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-
-        {/* Top sources */}
-        <Card variant="glass" className="p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <IconTile size="sm" tone="neutral" icon={<Database size={14} strokeWidth={2.25} />} />
-            <div className="flex-1">
-              <h3 className="font-bold text-ink-900 text-[15px] leading-none">Största källor</h3>
-              <p className="text-[11px] font-semibold text-ink-400 mt-1">
-                Källor med flest indexerade chunks
-              </p>
-            </div>
+        {/* HERO row — two big asymmetric cards */}
+        <div className="grid grid-cols-12 gap-5">
+          {/* Biggest hero — total usage */}
+          <div className="col-span-12 lg:col-span-7">
+            <HeroCard
+              label="AI-frågor totalt"
+              value={stats?.total_questions ?? 0}
+              subValue={stats?.unique_questions ?? 0}
+              subLabel="unika frågor"
+              delta={stats?.questions_last_7d ?? 0}
+              deltaLabel="ställda senaste 7 dagarna"
+              icon={<MessageSquareText size={16} strokeWidth={2.25} />}
+              tone="brand"
+            />
           </div>
 
+          {/* Secondary hero — unanswered */}
+          <div className="col-span-12 lg:col-span-5">
+            <HeroCard
+              label="Kunskapsluckor"
+              value={stats?.unanswered_total ?? 0}
+              subValue={null}
+              subLabel={stats?.unanswered_total === 0 ? 'Alla frågor besvarade' : 'obesvarade totalt'}
+              delta={stats?.unanswered_last_7d ?? 0}
+              deltaLabel="senaste 7 dagar"
+              icon={<TriangleAlert size={16} strokeWidth={2.25} />}
+              tone={(stats?.unanswered_total ?? 0) > 0 ? 'warning' : 'success'}
+              compact
+            />
+          </div>
+        </div>
+
+        {/* Secondary KPI row — 3 support cards */}
+        <div className="grid grid-cols-12 gap-5">
+          <div className="col-span-6 lg:col-span-4">
+            <StatCard
+              label="Källor i kunskapsbas"
+              value={stats?.source_count ?? 0}
+              sub={`${stats?.chunk_count.toLocaleString('sv-SE') ?? 0} chunks totalt`}
+              icon={<Library size={14} strokeWidth={2.25} />}
+              tone="neutral"
+            />
+          </div>
+          <div className="col-span-6 lg:col-span-4">
+            <StatCard
+              label="Kretskampen-omgångar"
+              value={stats?.quiz_scores_total ?? 0}
+              sub="spelomgångar spelade"
+              icon={<Trophy size={14} strokeWidth={2.25} />}
+              tone="success"
+            />
+          </div>
+          <div className="col-span-12 lg:col-span-4">
+            <StatCard
+              label="Senaste 7 dagar"
+              value={stats?.questions_last_7d ?? 0}
+              sub={`${stats?.unanswered_last_7d ?? 0} av dem obesvarade`}
+              icon={<TrendingUp size={14} strokeWidth={2.25} />}
+              tone="brand"
+            />
+          </div>
+        </div>
+
+        {/* BENTO row — asymmetric content cards */}
+        <div className="grid grid-cols-12 gap-5">
+          {/* Unanswered — wide */}
+          <div className="col-span-12 lg:col-span-8">
+            <Card variant="glass" className="p-6 h-full">
+              <SectionHeader
+                icon={<CircleHelp size={14} strokeWidth={2.25} />}
+                tone="warning"
+                title="Senaste obesvarade"
+                subtitle="Frågor som inte kunde besvaras — visa Linnea att fylla luckan"
+              />
+              {unanswered.length === 0 ? (
+                <EmptyState text="Inga obesvarade frågor än. AI:n klarar alla frågor med nuvarande kunskapsbas." />
+              ) : (
+                <ul className="space-y-2">
+                  {unanswered.map((row) => (
+                    <li key={row.id} className="p-3.5 rounded-xl bg-white border border-ink-100 hover:border-amber-200 hover:bg-amber-50/40 transition-colors">
+                      <p className="text-[13.5px] font-semibold text-ink-900 leading-snug">
+                        {row.question_text}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-ink-400 flex-wrap">
+                        <span>
+                          {formatDate(row.created_at, {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        {row.top_match_similarity != null && (
+                          <>
+                            <span className="opacity-40">·</span>
+                            <span>närmast: {Math.round(row.top_match_similarity * 100)} %</span>
+                          </>
+                        )}
+                        {row.top_match_filename && (
+                          <>
+                            <span className="opacity-40">·</span>
+                            <span className="truncate max-w-[240px] normal-case tracking-normal text-ink-500 font-semibold">
+                              {row.top_match_filename}
+                            </span>
+                          </>
+                        )}
+                        {row.notified && (
+                          <>
+                            <span className="opacity-40">·</span>
+                            <span className="text-emerald-600 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              mail skickat
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </div>
+
+          {/* Top FAQ — narrow tall */}
+          <div className="col-span-12 lg:col-span-4">
+            <Card variant="glass" className="p-6 h-full">
+              <SectionHeader
+                icon={<Flame size={14} strokeWidth={2.25} />}
+                tone="warning"
+                title="Populärast"
+                subtitle="Mest ställda frågor"
+              />
+              {topFaqs.length === 0 ? (
+                <EmptyState text="Inga frågor än — börja chatta." />
+              ) : (
+                <ul className="space-y-1.5">
+                  {topFaqs.map((faq, i) => (
+                    <li
+                      key={faq.id}
+                      className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-ink-100 hover:border-brand-400 hover:bg-brand-50/40 transition-colors"
+                    >
+                      <span
+                        className={cn(
+                          'w-7 h-7 rounded-lg inline-flex items-center justify-center font-display text-sm shrink-0 tabular-nums',
+                          i === 0
+                            ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                            : i < 3
+                              ? 'bg-ink-100 text-ink-700'
+                              : 'bg-ink-50 text-ink-400',
+                        )}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 min-w-0 text-[12px] font-semibold text-ink-700 truncate">
+                        {faq.question_text}
+                      </span>
+                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100 tabular-nums">
+                        {faq.count}×
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </div>
+        </div>
+
+        {/* Sources row — full width with nicer bars */}
+        <Card variant="glass" className="p-6">
+          <SectionHeader
+            icon={<Database size={14} strokeWidth={2.25} />}
+            tone="neutral"
+            title="Största källor"
+            subtitle="Dokument med flest indexerade chunks — visar vilka som driver AI:ns svar"
+          />
+
           {topSources.length === 0 ? (
-            <p className="text-xs text-ink-400 text-center py-6 font-medium">
-              Inga källor än.
-            </p>
+            <EmptyState text="Inga källor än." />
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
               {topSources.map((src, i) => {
                 const maxChunks = topSources[0]?.chunk_count || 1;
                 const pct = (src.chunk_count / maxChunks) * 100;
-                const isUrl = src.filename.includes('/') || src.filename.includes('.se') || src.filename.includes('.eu');
+                const isUrl =
+                  src.filename.includes('/') ||
+                  src.filename.includes('.se') ||
+                  src.filename.includes('.eu');
                 const displayName = isUrl ? src.filename : src.filename.replace(/\.[^/.]+$/, '');
                 return (
-                  <div key={src.filename} className="group">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black text-ink-400 tabular-nums w-6">
+                  <div key={src.filename}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[10px] font-black text-ink-400 tabular-nums w-6 shrink-0">
                         {i + 1}
                       </span>
-                      <span className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate">
+                      <span
+                        className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate"
+                        title={src.filename}
+                      >
                         {displayName}
                       </span>
                       <span className="shrink-0 text-[11px] font-bold text-ink-800 tabular-nums">
-                        {src.chunk_count} chunks
+                        {src.chunk_count}
                       </span>
                     </div>
-                    <div className="h-1.5 bg-ink-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-ink-100/70 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 rounded-full transition-all duration-700 ease-out"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -284,43 +328,105 @@ export function InsightsPage() {
             </div>
           )}
         </Card>
+      </div>
+    </div>
+  );
+}
 
-        {/* Footer hint */}
-        <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-ink-400 py-4">
-          <Sparkles size={12} strokeWidth={2.25} />
-          <span>Uppdateras i realtid · Data från Supabase</span>
-          <TrendingUp size={12} strokeWidth={2.25} />
+function HeroCard({
+  label,
+  value,
+  subValue,
+  subLabel,
+  delta,
+  deltaLabel,
+  icon,
+  tone,
+  compact,
+}: {
+  label: string;
+  value: number;
+  subValue: number | null;
+  subLabel: string;
+  delta: number;
+  deltaLabel: string;
+  icon: ReactNode;
+  tone: 'brand' | 'warning' | 'success';
+  compact?: boolean;
+}) {
+  const bg = {
+    brand: 'bg-gradient-to-br from-white via-brand-50/50 to-brand-100/40 border-brand-100',
+    warning: 'bg-gradient-to-br from-amber-50/80 via-amber-50/60 to-white border-amber-200',
+    success: 'bg-gradient-to-br from-white via-emerald-50/40 to-emerald-50/30 border-emerald-100',
+  }[tone];
+  const accent = {
+    brand: 'text-brand-700',
+    warning: 'text-amber-800',
+    success: 'text-emerald-700',
+  }[tone];
+
+  return (
+    <div className={cn('h-full rounded-3xl border p-8 shadow-card relative overflow-hidden', bg)}>
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex items-center gap-3 mb-8">
+          <IconTile size="sm" tone={tone === 'brand' ? 'brand' : tone} icon={icon} />
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-500">
+            {label}
+          </span>
+        </div>
+
+        <div className="flex-1 flex items-end">
+          <div>
+            <p
+              className={cn(
+                'text-display leading-none tabular-nums',
+                compact ? 'text-6xl' : 'text-7xl',
+                accent,
+              )}
+            >
+              {value.toLocaleString('sv-SE')}
+            </p>
+            {subValue != null && (
+              <p className="text-[13px] font-semibold text-ink-500 mt-3">
+                <span className="text-ink-800 tabular-nums">{subValue.toLocaleString('sv-SE')}</span>{' '}
+                {subLabel}
+              </p>
+            )}
+            {subValue == null && subLabel && (
+              <p className="text-[13px] font-semibold text-ink-500 mt-3">{subLabel}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-ink-100/60 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[12px]">
+            <TrendingUp size={14} className={accent} strokeWidth={2.5} />
+            <span className="font-semibold text-ink-700 tabular-nums">
+              {delta.toLocaleString('sv-SE')}
+            </span>
+            <span className="text-ink-500">{deltaLabel}</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function KpiCard({
+function StatCard({
   label,
   value,
-  delta,
-  deltaLabel,
+  sub,
   icon,
   tone,
-  accent,
 }: {
   label: string;
   value: number;
-  delta: number | null;
-  deltaLabel: string;
-  icon: React.ReactNode;
-  tone: 'brand' | 'warning' | 'neutral' | 'success';
-  accent?: boolean;
+  sub: string;
+  icon: ReactNode;
+  tone: 'brand' | 'neutral' | 'success' | 'warning';
 }) {
   return (
-    <Card
-      variant="glass"
-      className={cn(
-        'p-4',
-        accent && (value > 0 ? 'border-amber-200 bg-amber-50/40' : ''),
-      )}
-    >
+    <Card variant="glass" className="p-5">
       <div className="flex items-center gap-2 mb-3">
         <IconTile size="sm" tone={tone} icon={icon} />
         <span className="text-[11px] font-bold uppercase tracking-wider text-ink-500 truncate">
@@ -330,12 +436,33 @@ function KpiCard({
       <p className="text-display text-4xl text-ink-900 leading-none tabular-nums">
         {value.toLocaleString('sv-SE')}
       </p>
-      {delta != null && (
-        <p className="text-[11px] font-semibold text-ink-400 mt-2">
-          <span className="text-ink-700 tabular-nums">{delta.toLocaleString('sv-SE')}</span>{' '}
-          {deltaLabel}
-        </p>
-      )}
+      <p className="text-[11.5px] font-semibold text-ink-400 mt-2">{sub}</p>
     </Card>
   );
+}
+
+function SectionHeader({
+  icon,
+  tone,
+  title,
+  subtitle,
+}: {
+  icon: ReactNode;
+  tone: 'brand' | 'warning' | 'neutral' | 'success';
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <IconTile size="sm" tone={tone} icon={icon} />
+      <div className="flex-1 min-w-0">
+        <h3 className="font-bold text-ink-900 text-[15px] leading-none">{title}</h3>
+        <p className="text-[11.5px] font-semibold text-ink-400 mt-1">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return <p className="text-[13px] text-ink-400 text-center py-8 font-medium">{text}</p>;
 }
