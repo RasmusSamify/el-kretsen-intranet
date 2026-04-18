@@ -27,8 +27,8 @@ const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const EMBEDDING_MODEL = 'voyage-3';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
-const MATCH_THRESHOLD = 0.3;
-const MATCH_COUNT = 8;
+const MATCH_THRESHOLD = 0.25;
+const MATCH_COUNT = 10;
 
 const SYSTEM_PROMPT = `Du är El-kretsens interna AI-assistent för producentansvar, avfallshantering och regelefterlevnad. El-kretsen är Sveriges nationella insamlingssystem för WEEE (elektronikavfall) och batterier. Du används internt av El-kretsens medarbetare — ofta för att förbereda svar på kundfrågor, inklusive långa mail på svenska eller engelska.
 
