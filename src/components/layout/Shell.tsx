@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { BrainCircuit, Calculator, Mail, Trophy } from 'lucide-react';
+import { BarChart3, BrainCircuit, Calculator, Mail, Trophy } from 'lucide-react';
 import { Header } from './Header';
 import { TabNav } from './TabNav';
 
@@ -7,6 +7,7 @@ const tabs = [
   { to: '/', label: 'AI-analys', icon: BrainCircuit },
   { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY' },
   { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY' },
+  { to: '/insikter', label: 'Insikter', icon: BarChart3, badge: 'NY' },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
 ];
 
