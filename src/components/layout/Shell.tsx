@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { BarChart3, BrainCircuit, Calculator, Mail, Trophy } from 'lucide-react';
+import {
+  ChartLineUp,
+  Sparkle,
+  EnvelopeSimple,
+  Calculator,
+  Trophy,
+} from '@phosphor-icons/react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '@/lib/utils';
 
 const items: SidebarItem[] = [
-  { to: '/', label: 'Insikter', icon: BarChart3, tone: 'brand' },
-  { to: '/ai-analys', label: 'ELvis', icon: BrainCircuit, tone: 'violet' },
-  { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY', tone: 'emerald' },
+  { to: '/', label: 'Insikter', icon: ChartLineUp, tone: 'brand' },
+  { to: '/ai-analys', label: 'ELvis', icon: Sparkle, tone: 'violet' },
+  { to: '/mail', label: 'Mail-assistent', icon: EnvelopeSimple, badge: 'NY', tone: 'emerald' },
   { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY', tone: 'amber' },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy, tone: 'rose' },
 ];

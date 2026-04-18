@@ -11,6 +11,7 @@
     "backfill": "tsx scripts/backfill-embeddings.ts"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.45.4",
     "lucide-react": "^0.454.0",
     "node-html-parser": "^7.1.0",

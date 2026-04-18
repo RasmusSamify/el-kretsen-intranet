@@ -1,7 +1,14 @@
+import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
+import { SidebarSimple } from '@phosphor-icons/react';
 import { Badge, FeatureIcon } from '@/components/ui';
 import { cn } from '@/lib/utils';
+
+type PhosphorIcon = ComponentType<{
+  size?: number | string;
+  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+  className?: string;
+}>;
 
 const LOGO_URL =
   'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew';
@@ -11,7 +18,7 @@ type SidebarTone = 'brand' | 'violet' | 'emerald' | 'amber' | 'rose' | 'slate';
 export interface SidebarItem {
   to: string;
   label: string;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   badge?: string;
   tone?: SidebarTone;
 }
@@ -71,13 +78,13 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
               <>
                 {isActive ? (
                   <FeatureIcon
-                    icon={<Icon strokeWidth={2.25} />}
+                    icon={<Icon weight="duotone" />}
                     tone={tone}
                     size="sm"
                   />
                 ) : (
                   <span className="w-9 h-9 rounded-xl inline-flex items-center justify-center shrink-0 bg-ink-100/70 text-ink-500 group-hover:bg-ink-200/70 group-hover:text-ink-700 transition-colors">
-                    <Icon size={15} strokeWidth={2.25} />
+                    <Icon weight="duotone" size={18} />
                   </span>
                 )}
                 {!collapsed && (
@@ -108,14 +115,8 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
           )}
           aria-label={collapsed ? 'Expandera sidopanelen' : 'Minimera sidopanelen'}
         >
-          {collapsed ? (
-            <PanelLeftOpen size={15} strokeWidth={2.25} />
-          ) : (
-            <>
-              <PanelLeftClose size={15} strokeWidth={2.25} />
-              <span>Minimera</span>
-            </>
-          )}
+          <SidebarSimple size={16} weight="duotone" className={cn('transition-transform', collapsed && 'rotate-180')} />
+          {!collapsed && <span>Minimera</span>}
         </button>
       </div>
     </aside>

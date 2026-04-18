@@ -1,16 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  BarChart3,
-  CircleHelp,
+  ChartLineUp as BarChart3,
+  Question as CircleHelp,
   Database,
-  Flame,
-  Library,
-  MessageSquareText,
-  Sparkles,
-  TrendingUp,
-  TriangleAlert,
+  FireSimple as Flame,
+  Books as Library,
+  ChatsCircle as MessageSquareText,
+  Sparkle as Sparkles,
+  TrendUp as TrendingUp,
+  WarningCircle as TriangleAlert,
   Trophy,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, FeatureIcon, IconTile, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { formatDate, cn } from '@/lib/utils';
@@ -98,7 +98,7 @@ export function InsightsPage() {
       <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <FeatureIcon icon={<BarChart3 strokeWidth={2.25} />} tone="brand" size="lg" />
+            <FeatureIcon icon={<BarChart3 weight="duotone" />} tone="brand" size="lg" />
             <div>
               <h1 className="text-display text-3xl text-ink-900 leading-none">Insikter</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">
@@ -107,7 +107,7 @@ export function InsightsPage() {
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
-            <Sparkles size={12} strokeWidth={2.25} />
+            <Sparkles size={12} weight="bold" />
             <span>Realtid</span>
           </div>
         </header>
@@ -123,7 +123,7 @@ export function InsightsPage() {
               subLabel="olika frågor (unika)"
               delta={stats?.questions_last_7d ?? 0}
               deltaLabel="aktiva senaste 7 dagarna"
-              icon={<MessageSquareText size={16} strokeWidth={2.25} />}
+              icon={<MessageSquareText weight="duotone" />}
               tone="brand"
             />
           </div>
@@ -137,7 +137,7 @@ export function InsightsPage() {
               subLabel={stats?.unanswered_total === 0 ? 'Alla frågor besvarade' : 'obesvarade totalt'}
               delta={stats?.unanswered_last_7d ?? 0}
               deltaLabel="senaste 7 dagar"
-              icon={<TriangleAlert size={16} strokeWidth={2.25} />}
+              icon={<TriangleAlert weight="duotone" />}
               tone={(stats?.unanswered_total ?? 0) > 0 ? 'warning' : 'success'}
               compact
             />
@@ -151,7 +151,7 @@ export function InsightsPage() {
               label="Källor i kunskapsbas"
               value={stats?.source_count ?? 0}
               sub={`${stats?.chunk_count.toLocaleString('sv-SE') ?? 0} chunks totalt`}
-              icon={<Library size={14} strokeWidth={2.25} />}
+              icon={<Library size={14} weight="bold" />}
               tone="neutral"
             />
           </div>
@@ -160,7 +160,7 @@ export function InsightsPage() {
               label="Kretskampen-omgångar"
               value={stats?.quiz_scores_total ?? 0}
               sub="spelomgångar spelade"
-              icon={<Trophy size={14} strokeWidth={2.25} />}
+              icon={<Trophy size={14} weight="bold" />}
               tone="success"
             />
           </div>
@@ -169,7 +169,7 @@ export function InsightsPage() {
               label="Senaste 7 dagar"
               value={stats?.questions_last_7d ?? 0}
               sub={`${stats?.unanswered_last_7d ?? 0} av dem obesvarade`}
-              icon={<TrendingUp size={14} strokeWidth={2.25} />}
+              icon={<TrendingUp size={14} weight="bold" />}
               tone="brand"
             />
           </div>
@@ -181,7 +181,7 @@ export function InsightsPage() {
           <div className="col-span-12 lg:col-span-8">
             <Card variant="glass" className="p-6 h-full">
               <SectionHeader
-                icon={<CircleHelp size={14} strokeWidth={2.25} />}
+                icon={<CircleHelp size={14} weight="bold" />}
                 tone="warning"
                 title="Senaste obesvarade"
                 subtitle="Frågor som inte kunde besvaras — visa Linnea att fylla luckan"
@@ -239,7 +239,7 @@ export function InsightsPage() {
           <div className="col-span-12 lg:col-span-4">
             <Card variant="glass" className="p-6 h-full">
               <SectionHeader
-                icon={<Flame size={14} strokeWidth={2.25} />}
+                icon={<Flame size={14} weight="bold" />}
                 tone="warning"
                 title="Populärast"
                 subtitle="Mest ställda frågor"
@@ -282,7 +282,7 @@ export function InsightsPage() {
         {/* Sources row — full width with nicer bars */}
         <Card variant="glass" className="p-6">
           <SectionHeader
-            icon={<Database size={14} strokeWidth={2.25} />}
+            icon={<Database size={14} weight="bold" />}
             tone="neutral"
             title="Största källor"
             subtitle="Dokument med flest indexerade chunks — visar vilka som driver AI:ns svar"
@@ -400,7 +400,7 @@ function HeroCard({
 
         <div className="mt-6 pt-5 border-t border-ink-100/60 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[12px]">
-            <TrendingUp size={14} className={accent} strokeWidth={2.5} />
+            <TrendingUp size={14} className={accent} weight="bold" />
             <span className="font-semibold text-ink-700 tabular-nums">
               {delta.toLocaleString('sv-SE')}
             </span>
