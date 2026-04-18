@@ -117,12 +117,12 @@ export function InsightsPage() {
           {/* Biggest hero — total usage */}
           <div className="col-span-12 lg:col-span-7">
             <HeroCard
-              label="AI-frågor totalt"
+              label="Total användning"
               value={stats?.total_questions ?? 0}
               subValue={stats?.unique_questions ?? 0}
-              subLabel="unika frågor"
+              subLabel="olika frågor (unika)"
               delta={stats?.questions_last_7d ?? 0}
-              deltaLabel="ställda senaste 7 dagarna"
+              deltaLabel="aktiva senaste 7 dagarna"
               icon={<MessageSquareText size={16} strokeWidth={2.25} />}
               tone="brand"
             />
