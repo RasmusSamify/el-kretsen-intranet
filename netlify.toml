@@ -25,6 +25,10 @@
   # Räknar ut El-kretsen-avgift för en produktbeskrivning
   timeout = 26
 
+[functions."ingest-file"]
+  # Chunka + embedda uppladdad TXT-fil
+  timeout = 26
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, BrainCircuit, Calculator, Mail, Trophy } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, BrainCircuit, Calculator, Library, Mail, Trophy } from 'lucide-react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ const items: SidebarItem[] = [
   { to: '/ai-analys', label: 'ELvis', icon: BrainCircuit },
   { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY' },
   { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY' },
+  { to: '/kunskapsbas', label: 'Kunskapsbas', icon: Library, badge: 'NY' },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
   { to: '/duellen', label: 'Avgifts-duellen', icon: ArrowLeftRight, badge: 'NY' },
 ];

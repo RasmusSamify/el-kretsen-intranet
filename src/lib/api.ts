@@ -128,3 +128,29 @@ export async function ingestUrl(url: string): Promise<IngestUrlResponse> {
 
   return res.json();
 }
+
+export interface IngestFileResponse {
+  ok: true;
+  source: string;
+  chunks: number;
+  tokens: number;
+}
+
+export async function ingestFile(filename: string, content: string): Promise<IngestFileResponse> {
+  const res = await fetch('/api/ingest-file', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, content }),
+  });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  return res.json();
+}
