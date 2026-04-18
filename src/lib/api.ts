@@ -27,3 +27,32 @@ export async function aiSearch(req: AISearchRequest): Promise<AISearchResponse> 
 
   return res.json();
 }
+
+export interface IngestUrlResponse {
+  ok: true;
+  source: string;
+  title: string | null;
+  chunks: number;
+  tokens: number;
+}
+
+export async function ingestUrl(url: string): Promise<IngestUrlResponse> {
+  const res = await fetch('/api/ingest-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+
+  return res.json();
+}

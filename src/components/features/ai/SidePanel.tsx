@@ -3,6 +3,8 @@ import { Flame, Lightbulb, Paperclip, Quote } from 'lucide-react';
 import { Card, IconTile, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import type { FAQEntry } from '@/lib/types';
+import { SourcesList } from './SourcesList';
+import { AddSourceModal } from './AddSourceModal';
 
 interface SidePanelProps {
   onPickPrompt: (prompt: string) => void;
@@ -29,6 +31,8 @@ const TIPS = [
 export function SidePanel({ onPickPrompt }: SidePanelProps) {
   const [faqs, setFaqs] = useState<FAQEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sourcesRefreshKey, setSourcesRefreshKey] = useState(0);
+  const [addSourceOpen, setAddSourceOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -48,7 +52,15 @@ export function SidePanel({ onPickPrompt }: SidePanelProps) {
   }, []);
 
   return (
-    <aside className="hidden lg:flex flex-col gap-4 w-80 shrink-0">
+    <aside className="hidden lg:flex flex-col gap-4 w-80 shrink-0 overflow-y-auto">
+      <SourcesList refreshKey={sourcesRefreshKey} onAdd={() => setAddSourceOpen(true)} />
+
+      <AddSourceModal
+        open={addSourceOpen}
+        onClose={() => setAddSourceOpen(false)}
+        onAdded={() => setSourcesRefreshKey((k) => k + 1)}
+      />
+
       <Card variant="glass" className="p-5">
         <div className="flex items-center gap-3 mb-4">
           <IconTile size="sm" tone="warning" icon={<Flame size={14} strokeWidth={2.25} />} />

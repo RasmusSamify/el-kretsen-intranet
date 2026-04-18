@@ -13,6 +13,10 @@
   # Höjt från 10s så Claude-generering med 8 chunks hinner klart
   timeout = 26
 
+[functions."ingest-url"]
+  # URL-fetch + chunking + Voyage embed för en hel sida
+  timeout = 26
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
