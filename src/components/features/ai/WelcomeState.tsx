@@ -2,10 +2,10 @@ import { Sparkles } from 'lucide-react';
 import { IconTile } from '@/components/ui';
 
 const QUICK_PROMPTS = [
-  'Vad kostar produktkod B74?',
-  'Hur deklarerar jag elcykelbatterier?',
-  'Förklara skillnaden mellan P24 och P25',
-  'Vad händer om vi missar deklaration?',
+  'Vad är producentansvar för batterier?',
+  'När tas samlingskoden B77 bort?',
+  'Vilka insamlingsmål gäller för bärbara batterier?',
+  'Vad säger WEEE-direktivet?',
 ];
 
 export function WelcomeState({ onPick }: { onPick: (prompt: string) => void }) {
