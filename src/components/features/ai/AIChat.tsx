@@ -34,7 +34,7 @@ export function AIChat() {
         <div className="px-5 py-4 border-b border-ink-100 flex items-center gap-3">
           <IconTile size="md" tone="brand" icon={<Sparkles size={16} strokeWidth={2.25} />} />
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-ink-900 text-[15px] leading-none">AI-analys</h2>
+            <h2 className="font-bold text-ink-900 text-[15px] leading-none">ELvis</h2>
             <p className="text-[11px] font-semibold text-ink-400 mt-1">
               Grundad i El-kretsens kunskapsbank · Temperature 0 · Källhänvisningar
             </p>

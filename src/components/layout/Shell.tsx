@@ -5,7 +5,7 @@ import { TabNav } from './TabNav';
 
 const tabs = [
   { to: '/', label: 'Insikter', icon: BarChart3 },
-  { to: '/ai-analys', label: 'AI-analys', icon: BrainCircuit },
+  { to: '/ai-analys', label: 'ELvis', icon: BrainCircuit },
   { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY' },
   { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY' },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },

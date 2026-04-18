@@ -48,7 +48,7 @@ export function AddSourceModal({ open, onClose, onAdded }: AddSourceModalProps) 
           <div className="flex-1">
             <p className="text-[13px] text-ink-700 leading-relaxed">
               Klistra in en URL så hämtar systemet sidan, extraherar text och indexerar den semantiskt.
-              Innehållet kan sedan användas som källa i AI-analys.
+              Innehållet kan sedan användas som källa av ELvis.
             </p>
             <p className="text-[11px] text-ink-400 mt-2">
               Observera: JS-renderat innehåll (t.ex. SPA:er) kan inte skrapas. Statiska sidor funkar bäst.
