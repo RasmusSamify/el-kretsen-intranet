@@ -1,16 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
-import { Badge } from '@/components/ui';
+import { Badge, FeatureIcon } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 const LOGO_URL =
   'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew';
+
+type SidebarTone = 'brand' | 'violet' | 'emerald' | 'amber' | 'rose' | 'slate';
 
 export interface SidebarItem {
   to: string;
   label: string;
   icon: LucideIcon;
   badge?: string;
+  tone?: SidebarTone;
 }
 
 interface SidebarProps {
@@ -49,7 +52,7 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Primär navigation">
-        {items.map(({ to, label, icon: Icon, badge }) => (
+        {items.map(({ to, label, icon: Icon, badge, tone = 'brand' }) => (
           <NavLink
             key={to}
             to={to}
@@ -57,25 +60,28 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
             title={collapsed ? label : undefined}
             className={({ isActive }) =>
               cn(
-                'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-bold',
+                'group relative flex items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] font-bold',
                 'transition-all duration-200',
                 collapsed && 'justify-center px-0',
                 isActive
-                  ? 'bg-brand-50 text-brand-700 shadow-[inset_2px_0_0_var(--brand-500)]'
-                  : 'text-ink-500 hover:bg-ink-50 hover:text-ink-800',
+                  ? 'bg-white text-ink-900 shadow-card ring-1 ring-ink-100'
+                  : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900',
               )
             }
           >
             {({ isActive }) => (
               <>
-                <Icon
-                  size={17}
-                  strokeWidth={2.25}
-                  className={cn(
-                    'shrink-0 transition-colors',
-                    isActive ? 'text-brand-500' : 'text-ink-400 group-hover:text-ink-700',
-                  )}
-                />
+                {isActive ? (
+                  <FeatureIcon
+                    icon={<Icon strokeWidth={2.25} />}
+                    tone={tone}
+                    size="sm"
+                  />
+                ) : (
+                  <span className="w-9 h-9 rounded-xl inline-flex items-center justify-center shrink-0 bg-ink-100/70 text-ink-500 group-hover:bg-ink-200/70 group-hover:text-ink-700 transition-colors">
+                    <Icon size={15} strokeWidth={2.25} />
+                  </span>
+                )}
                 {!collapsed && (
                   <>
                     <span className="flex-1 truncate">{label}</span>

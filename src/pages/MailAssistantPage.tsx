@@ -10,7 +10,7 @@ import {
   Sparkles,
   TriangleAlert,
 } from 'lucide-react';
-import { Button, Card, IconTile, Spinner } from '@/components/ui';
+import { Button, Card, FeatureIcon, IconTile, Spinner } from '@/components/ui';
 import { mailAssistant, type MailAssistantResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -64,8 +64,8 @@ export function MailAssistantPage() {
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <IconTile icon={<Mail size={18} strokeWidth={2.25} />} tone="brand" size="md" />
+          <div className="flex items-center gap-4">
+            <FeatureIcon icon={<Mail strokeWidth={2.25} />} tone="emerald" size="lg" />
             <div>
               <h1 className="text-display text-3xl text-ink-900 leading-none">Mail-assistent</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">

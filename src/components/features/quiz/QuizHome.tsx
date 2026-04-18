@@ -1,5 +1,5 @@
 import { Rocket, Trophy, AlertCircle } from 'lucide-react';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, Card, FeatureIcon, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { CATEGORIES, QUESTIONS_PER_ROUND } from './constants';
 
@@ -26,7 +26,13 @@ export function QuizHome({
     <div className="flex flex-col items-center py-10 px-4 animate-slide-up">
       <Card variant="glass" className="p-8 w-full max-w-md">
         <div className="text-center mb-7">
-          <h2 className="text-display text-5xl text-brand-600">Kretskampen</h2>
+          <FeatureIcon
+            icon={<Trophy strokeWidth={2.25} />}
+            tone="violet"
+            size="xl"
+            className="mx-auto mb-4"
+          />
+          <h2 className="text-display text-5xl text-ink-900">Kretskampen</h2>
           <p className="text-ink-500 font-medium mt-2">Utmana kollegorna i El-kretsens kunskapskamp</p>
         </div>
 

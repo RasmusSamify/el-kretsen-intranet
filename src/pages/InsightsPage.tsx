@@ -11,7 +11,7 @@ import {
   TriangleAlert,
   Trophy,
 } from 'lucide-react';
-import { Card, IconTile, Spinner } from '@/components/ui';
+import { Card, FeatureIcon, IconTile, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { formatDate, cn } from '@/lib/utils';
 
@@ -97,8 +97,8 @@ export function InsightsPage() {
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <IconTile icon={<BarChart3 size={18} strokeWidth={2.25} />} tone="brand" size="md" />
+          <div className="flex items-center gap-4">
+            <FeatureIcon icon={<BarChart3 strokeWidth={2.25} />} tone="brand" size="lg" />
             <div>
               <h1 className="text-display text-3xl text-ink-900 leading-none">Insikter</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">

@@ -5,3 +5,4 @@ export { Badge } from './Badge';
 export { Modal } from './Modal';
 export { IconTile } from './IconTile';
 export { Spinner, TypingDots } from './Spinner';
+export { FeatureIcon } from './FeatureIcon';
