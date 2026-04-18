@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Info,
   BadgeCheck,
+  Sparkles,
 } from 'lucide-react';
 import { Button, Card, IconTile, Input, Spinner } from '@/components/ui';
 import { calculateFee, type FeeResponse } from '@/lib/api';
@@ -18,6 +19,7 @@ const EXAMPLES = [
   'Laptop',
   'Monitor 48 tum',
   'Dammsugare',
+  'Induktionshäll',
 ];
 
 export function FeeCalculatorPage() {
@@ -55,271 +57,365 @@ export function FeeCalculatorPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 pb-8">
-        {/* Input */}
-        <Card variant="glass" className="p-6 flex flex-col min-h-[480px]">
-          <div className="flex items-center gap-3 mb-5">
-            <IconTile icon={<Calculator size={16} strokeWidth={2.25} />} tone="brand" size="md" />
-            <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-ink-900 text-[15px] leading-none">Avgifts-kalkylator</h2>
-              <p className="text-[11px] font-semibold text-ink-400 mt-1">
-                AI:n hittar rätt kod och räknar ut total-avgift.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 flex-1">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <IconTile icon={<Calculator size={18} strokeWidth={2.25} />} tone="brand" size="md" />
             <div>
-              <label className="text-eyebrow block mb-2">Produkt</label>
-              <Input
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-                placeholder="T.ex. 'Li-jon batteri 25 kg' eller 'Monitor 48 tum'"
-                onKeyDown={(e) => e.key === 'Enter' && !disabled && submit()}
-                disabled={loading}
-              />
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {EXAMPLES.map((ex) => (
-                  <button
-                    key={ex}
-                    type="button"
-                    onClick={() => setDesc(ex)}
-                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white border border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-700 transition-all"
-                  >
-                    {ex}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <div>
-                <label className="text-eyebrow block mb-2">Antal / vikt</label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  min="0.01"
-                  step="0.01"
-                  onKeyDown={(e) => e.key === 'Enter' && !disabled && submit()}
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className="text-eyebrow block mb-2">Enhet</label>
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-ink-100/60 border border-ink-100 h-12">
-                  <button
-                    onClick={() => setUnit('st')}
-                    className={cn(
-                      'px-4 h-full rounded-lg text-[13px] font-bold transition-all',
-                      unit === 'st'
-                        ? 'bg-white text-brand-700 shadow-sm'
-                        : 'text-ink-500 hover:text-ink-800',
-                    )}
-                  >
-                    st
-                  </button>
-                  <button
-                    onClick={() => setUnit('kg')}
-                    className={cn(
-                      'px-4 h-full rounded-lg text-[13px] font-bold transition-all',
-                      unit === 'kg'
-                        ? 'bg-white text-brand-700 shadow-sm'
-                        : 'text-ink-500 hover:text-ink-800',
-                    )}
-                  >
-                    kg
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-ink-50 border border-ink-100 flex items-start gap-2">
-              <Info size={14} className="text-ink-400 shrink-0 mt-0.5" strokeWidth={2.25} />
-              <p className="text-[11.5px] text-ink-600 leading-relaxed">
-                AI:n matchar produkten mot prislistan och räknar total = antal × avgift per enhet.
-                Grön variant visas om den finns (10% lägre avgift vid grön dokumentation).
+              <h1 className="text-display text-3xl text-ink-900 leading-none">Avgifts-kalkylator</h1>
+              <p className="text-[12px] font-semibold text-ink-400 mt-1">
+                AI-driven prissökning över hela El-kretsens prislista · temperature 0 · grundat i prislistan
               </p>
             </div>
           </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
+            <Sparkles size={12} strokeWidth={2.25} />
+            <span>Realtid</span>
+          </div>
+        </header>
 
-          <Button
-            onClick={submit}
-            disabled={disabled}
-            loading={loading}
-            fullWidth
-            rightIcon={<ArrowRight size={16} strokeWidth={2.25} />}
-            className="mt-5"
-          >
-            Räkna ut avgift
-          </Button>
-        </Card>
+        <div className="grid grid-cols-12 gap-5">
+          {/* Input side — compact */}
+          <div className="col-span-12 lg:col-span-5 xl:col-span-4">
+            <Card variant="glass" className="p-6 lg:sticky lg:top-5">
+              <div className="flex items-center gap-3 mb-5">
+                <IconTile icon={<Calculator size={14} strokeWidth={2.25} />} tone="brand" size="sm" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-500">
+                  Ange produkt
+                </span>
+              </div>
 
-        {/* Result */}
-        <Card variant="glass" className="p-6 flex flex-col min-h-[480px]">
-          {!result && !loading && !error && <EmptyResult />}
-          {loading && <LoadingResult />}
-          {error && <ErrorResult message={error} />}
-
-          {result && (
-            <div className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <IconTile
-                    icon={result.matched ? <BadgeCheck size={16} strokeWidth={2.25} /> : <TriangleAlert size={16} strokeWidth={2.25} />}
-                    tone={result.matched ? 'success' : 'warning'}
-                    size="md"
+              <div className="space-y-4">
+                <div>
+                  <label className="text-eyebrow block mb-2">Produkt</label>
+                  <Input
+                    value={desc}
+                    onChange={(e) => setDesc(e.target.value)}
+                    placeholder="T.ex. 'Li-jon batteri 25 kg'"
+                    onKeyDown={(e) => e.key === 'Enter' && !disabled && submit()}
+                    disabled={loading}
                   />
-                  <div>
-                    <h2 className="font-bold text-ink-900 text-[15px] leading-none">
-                      {result.matched ? 'Avgift uträknad' : 'Osäker matchning'}
-                    </h2>
-                    <p className="text-[11px] font-semibold text-ink-400 mt-1">
-                      {result.matched ? 'Grundat i kunskapsbasen' : 'Kontrollera manuellt'}
-                    </p>
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {EXAMPLES.map((ex) => (
+                      <button
+                        key={ex}
+                        type="button"
+                        onClick={() => setDesc(ex)}
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white border border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-700 hover:bg-brand-50/40 transition-all"
+                      >
+                        {ex}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={reset} leftIcon={<RotateCcw size={14} strokeWidth={2.25} />}>
-                  Rensa
+
+                <div className="grid grid-cols-[1fr_auto] gap-3">
+                  <div>
+                    <label className="text-eyebrow block mb-2">Antal / vikt</label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      min="0.01"
+                      step="0.01"
+                      onKeyDown={(e) => e.key === 'Enter' && !disabled && submit()}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-eyebrow block mb-2">Enhet</label>
+                    <div className="flex items-center gap-1 p-1 rounded-xl bg-ink-100/60 border border-ink-100 h-12">
+                      <button
+                        onClick={() => setUnit('st')}
+                        className={cn(
+                          'px-4 h-full rounded-lg text-[13px] font-bold transition-all',
+                          unit === 'st'
+                            ? 'bg-white text-brand-700 shadow-sm'
+                            : 'text-ink-500 hover:text-ink-800',
+                        )}
+                      >
+                        st
+                      </button>
+                      <button
+                        onClick={() => setUnit('kg')}
+                        className={cn(
+                          'px-4 h-full rounded-lg text-[13px] font-bold transition-all',
+                          unit === 'kg'
+                            ? 'bg-white text-brand-700 shadow-sm'
+                            : 'text-ink-500 hover:text-ink-800',
+                        )}
+                      >
+                        kg
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-ink-50 border border-ink-100 flex items-start gap-2">
+                  <Info size={13} className="text-ink-400 shrink-0 mt-0.5" strokeWidth={2.25} />
+                  <p className="text-[11.5px] text-ink-600 leading-relaxed">
+                    AI:n matchar produkten mot prislistan och räknar total = antal × avgift.
+                    Grön variant visas separat (−10% vid grön dokumentation).
+                  </p>
+                </div>
+
+                <Button
+                  onClick={submit}
+                  disabled={disabled}
+                  loading={loading}
+                  fullWidth
+                  size="lg"
+                  rightIcon={<ArrowRight size={16} strokeWidth={2.25} />}
+                >
+                  Räkna ut avgift
                 </Button>
               </div>
+            </Card>
+          </div>
 
-              <p className="text-[13px] text-ink-700 leading-relaxed mb-5">{result.reasoning}</p>
+          {/* Result side — dominant */}
+          <div className="col-span-12 lg:col-span-7 xl:col-span-8">
+            {!result && !loading && !error && <EmptyHero />}
+            {loading && <LoadingHero />}
+            {error && <ErrorHero message={error} />}
 
-              {result.primary && <FeeBreakdownCard breakdown={result.primary} tone="primary" />}
-              {result.green && (
-                <div className="mt-3">
-                  <FeeBreakdownCard breakdown={result.green} tone="green" />
+            {result && (
+              <div className="space-y-4 animate-slide-up">
+                {/* Hero result card */}
+                {result.primary ? (
+                  <HeroResultCard
+                    breakdown={result.primary}
+                    green={result.green}
+                    matched={result.matched}
+                    reasoning={result.reasoning}
+                    quantity={Number(quantity)}
+                    unitInput={unit}
+                  />
+                ) : (
+                  <Card variant="glass" className="p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <IconTile
+                        icon={<TriangleAlert size={16} strokeWidth={2.25} />}
+                        tone="warning"
+                        size="md"
+                      />
+                      <div>
+                        <h2 className="text-display text-2xl text-ink-900 leading-tight">
+                          Ingen säker matchning
+                        </h2>
+                        <p className="text-[12px] font-semibold text-ink-400 mt-1">
+                          AI:n hittade ingen entydig kod i prislistan
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-ink-700 leading-relaxed">{result.reasoning}</p>
+                  </Card>
+                )}
+
+                {/* Action row — clear + source info */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={reset}
+                    leftIcon={<RotateCcw size={14} strokeWidth={2.25} />}
+                  >
+                    Ny beräkning
+                  </Button>
+                  {result.citations.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400">
+                        Källa
+                      </span>
+                      {result.citations.map((c) => (
+                        <span
+                          key={c}
+                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-ink-50 border border-ink-100 text-[11px] font-semibold text-ink-600"
+                          title={c}
+                        >
+                          {c.replace(/\.[^/.]+$/, '')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {result.warning && (
+                    <div className="flex-1 min-w-[200px] ml-auto flex items-center gap-2 p-2 px-3 rounded-xl bg-amber-50 border border-amber-200">
+                      <TriangleAlert
+                        size={13}
+                        className="text-amber-700 shrink-0"
+                        strokeWidth={2.25}
+                      />
+                      <p className="text-[11.5px] text-amber-900 leading-snug">{result.warning}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {result.warning && (
-                <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2">
-                  <TriangleAlert size={14} className="text-amber-700 shrink-0 mt-0.5" strokeWidth={2.25} />
-                  <p className="text-[12.5px] text-amber-900 leading-relaxed">{result.warning}</p>
-                </div>
-              )}
-
-              {result.citations.length > 0 && (
-                <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400">Källor</span>
-                  {result.citations.map((c) => (
-                    <span
-                      key={c}
-                      className="inline-flex items-center px-2 py-0.5 rounded-md bg-ink-50 border border-ink-100 text-[11px] font-semibold text-ink-600"
-                      title={c}
-                    >
-                      {c.replace(/\.[^/.]+$/, '')}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </Card>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function FeeBreakdownCard({
+function HeroResultCard({
   breakdown,
-  tone,
+  green,
+  matched,
+  reasoning,
+  quantity,
+  unitInput,
 }: {
   breakdown: { code: string; productName: string; unitFee: number; feeUnit: string; totalFee: number };
-  tone: 'primary' | 'green';
+  green: { code: string; productName: string; unitFee: number; feeUnit: string; totalFee: number } | null;
+  matched: boolean;
+  reasoning: string;
+  quantity: number;
+  unitInput: 'st' | 'kg';
 }) {
-  const isGreen = tone === 'green';
+  const formula = `${quantity.toLocaleString('sv-SE', { maximumFractionDigits: 2 })} ${unitInput} × ${breakdown.unitFee.toLocaleString('sv-SE', { maximumFractionDigits: 2 })} ${breakdown.feeUnit}`;
   return (
-    <div
-      className={cn(
-        'p-5 rounded-2xl border',
-        isGreen
-          ? 'bg-emerald-50/60 border-emerald-200'
-          : 'bg-gradient-to-br from-white to-brand-50/30 border-brand-100 shadow-card',
-      )}
-    >
-      <div className="flex items-center gap-2 mb-3">
-        {isGreen ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
-            <Leaf size={10} strokeWidth={2.5} />
-            Grön avgift
-          </span>
-        ) : (
-          <span className="text-[10px] font-black uppercase tracking-wider text-brand-700">
-            Kod
-          </span>
+    <div className="rounded-3xl p-8 sm:p-10 border border-brand-100 shadow-card-lg bg-gradient-to-br from-white via-brand-50/40 to-brand-100/40 relative overflow-hidden">
+      {/* decorative blob */}
+      <div
+        className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-brand-200/30 blur-3xl pointer-events-none"
+        aria-hidden
+      />
+
+      <div className="relative z-10 flex flex-col gap-7">
+        {/* Top: code + product */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-brand-100 shadow-sm">
+              <BadgeCheck size={14} className="text-emerald-600" strokeWidth={2.5} />
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700">
+                {matched ? 'Kod matchad' : 'Osäker matchning'}
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-brand-700 mb-1">
+                El-kretsen produktkod
+              </p>
+              <p className="text-display text-5xl text-brand-700 leading-none tabular-nums">
+                {breakdown.code}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Product name and reasoning */}
+        <div>
+          <p className="text-[15px] font-bold text-ink-900 leading-snug mb-2">
+            {breakdown.productName}
+          </p>
+          <p className="text-[12.5px] text-ink-600 leading-relaxed">{reasoning}</p>
+        </div>
+
+        {/* Formula + total — hero number */}
+        <div className="rounded-2xl bg-white border border-ink-100 p-6 shadow-card">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-ink-500 mb-2">
+                Beräkning
+              </p>
+              <p className="text-[18px] font-bold text-ink-800 tabular-nums leading-tight">
+                {formula}
+              </p>
+            </div>
+            <div className="md:text-right">
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-ink-500 mb-1">
+                Total avgift (exkl. moms)
+              </p>
+              <p className="text-display text-6xl text-brand-700 tabular-nums leading-none">
+                {breakdown.totalFee.toLocaleString('sv-SE', { maximumFractionDigits: 2 })}
+                <span className="text-3xl ml-1">kr</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Green comparison */}
+        {green && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                <Leaf size={11} strokeWidth={2.5} />
+                Grön avgift
+              </span>
+              <span className="text-display text-2xl text-emerald-800 tabular-nums leading-none">
+                {green.code}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 ml-auto">
+                −10 % vid grön dokumentation
+              </span>
+            </div>
+            <div className="flex items-end justify-between gap-4">
+              <p className="text-[12.5px] font-medium text-ink-700 leading-relaxed flex-1 min-w-0">
+                Samma produkt med dokumenterade miljö-fördelar kostar{' '}
+                <strong className="text-emerald-800">
+                  {green.unitFee.toLocaleString('sv-SE', { maximumFractionDigits: 2 })} {green.feeUnit}
+                </strong>{' '}
+                istället.
+              </p>
+              <div className="text-right shrink-0">
+                <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600 mb-1">
+                  Total
+                </p>
+                <p className="text-display text-3xl text-emerald-800 tabular-nums leading-none">
+                  {green.totalFee.toLocaleString('sv-SE', { maximumFractionDigits: 2 })} kr
+                </p>
+              </div>
+            </div>
+          </div>
         )}
-        <span
-          className={cn(
-            'text-display text-2xl tabular-nums',
-            isGreen ? 'text-emerald-800' : 'text-brand-700',
-          )}
-        >
-          {breakdown.code}
-        </span>
       </div>
+    </div>
+  );
+}
 
-      <p className="text-[13px] font-semibold text-ink-800 leading-snug mb-4">
-        {breakdown.productName}
+function EmptyHero() {
+  return (
+    <Card variant="glass" className="p-12 text-center min-h-[400px] flex flex-col items-center justify-center">
+      <IconTile icon={<Calculator size={22} strokeWidth={2.25} />} tone="neutral" size="lg" />
+      <h3 className="text-display text-3xl text-ink-900 mt-5 mb-2">
+        Räkna ut El-kretsen-avgift
+      </h3>
+      <p className="text-[14px] text-ink-500 max-w-md leading-relaxed">
+        Skriv in en produkt och antal/vikt till vänster. AI:n hittar rätt produktkod,
+        läser priset från prislistan och räknar ut totalbeloppet direkt.
       </p>
-
-      <div className="grid grid-cols-3 gap-3 items-end">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400 mb-1">Avgift</p>
-          <p className="text-[15px] font-bold text-ink-800 tabular-nums">
-            {breakdown.unitFee.toLocaleString('sv-SE', { maximumFractionDigits: 2 })} {breakdown.feeUnit}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400 mb-1">Totalt</p>
-          <p
-            className={cn(
-              'text-display tabular-nums leading-none',
-              isGreen ? 'text-emerald-800 text-3xl' : 'text-brand-700 text-4xl',
-            )}
+      <div className="mt-8 flex flex-wrap justify-center gap-2 max-w-md">
+        {['B74 batteri', 'Kylskåp', 'Monitor 48 tum'].map((ex) => (
+          <span
+            key={ex}
+            className="text-[11px] font-semibold px-3 py-1 rounded-full bg-brand-50 text-brand-700 border border-brand-100"
           >
-            {breakdown.totalFee.toLocaleString('sv-SE', { maximumFractionDigits: 2 })} kr
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400">Exkl. moms</p>
-        </div>
+            {ex}
+          </span>
+        ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
-function EmptyResult() {
+function LoadingHero() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-      <IconTile icon={<Calculator size={18} strokeWidth={2.25} />} tone="neutral" size="md" />
-      <h3 className="text-display text-xl text-ink-900 mt-4 mb-1">Räkna ut El-kretsen-avgift</h3>
-      <p className="text-[13px] text-ink-500 max-w-xs leading-relaxed">
-        Skriv in en produkt och antal/vikt. AI:n hittar rätt produktkod och räknar ut
-        totalbeloppet direkt från prislistan.
-      </p>
-    </div>
+    <Card variant="glass" className="p-12 text-center min-h-[400px] flex flex-col items-center justify-center">
+      <Spinner size={36} className="text-brand-500 mb-5" />
+      <p className="text-display text-xl text-ink-900">Söker rätt produktkod…</p>
+      <p className="text-[12px] text-ink-500 mt-2">Matchar mot 149 koder i prislistan</p>
+    </Card>
   );
 }
 
-function LoadingResult() {
+function ErrorHero({ message }: { message: string }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-      <Spinner size={26} className="text-brand-500 mb-4" />
-      <p className="text-display text-lg text-ink-900">Söker rätt produktkod…</p>
-    </div>
-  );
-}
-
-function ErrorResult({ message }: { message: string }) {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-      <IconTile icon={<TriangleAlert size={18} strokeWidth={2.25} />} tone="danger" size="md" />
-      <h3 className="text-display text-xl text-ink-900 mt-4 mb-1">Kunde inte räkna</h3>
-      <p className="text-[12.5px] text-red-700 max-w-sm font-medium leading-relaxed">{message}</p>
-    </div>
+    <Card variant="glass" className="p-10 min-h-[360px] flex flex-col items-center justify-center text-center">
+      <IconTile icon={<TriangleAlert size={18} strokeWidth={2.25} />} tone="danger" size="lg" />
+      <h3 className="text-display text-2xl text-ink-900 mt-5 mb-2">Kunde inte räkna</h3>
+      <p className="text-[13px] text-red-700 max-w-md font-medium leading-relaxed">{message}</p>
+    </Card>
   );
 }
