@@ -67,9 +67,9 @@ export function SourcesList({ refreshKey, onAdd, embedded }: SourcesListProps) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [openGroups, setOpenGroups] = useState<Record<GroupId, boolean>>({
-    laws: true,
+    laws: false,
     elkretsen: false,
-    internal: true,
+    internal: false,
   });
 
   useEffect(() => {
