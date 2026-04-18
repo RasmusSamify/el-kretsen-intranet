@@ -124,8 +124,15 @@ export default async (req: Request) => {
 
   const chunks = (matches ?? []) as MatchedChunk[];
 
-  // Step 3: No matches → return not-found answer directly
+  // Step 3: No matches → log + notify + return not-found answer
   if (chunks.length === 0) {
+    void logAndNotifyUnanswered({
+      question: query,
+      supabaseUrl,
+      serviceKey: supabaseServiceKey,
+      topFilename: null,
+      topSimilarity: null,
+    });
     return json(
       {
         answer: NO_MATCH_RESPONSE,
@@ -189,16 +196,125 @@ export default async (req: Request) => {
   // Extract which source files Claude actually referenced
   const referencedFiles = extractReferencedFiles(answer, chunks);
 
+  // If Claude used the fall-back phrase, it means even the retrieved
+  // chunks were insufficient. Still log as unanswered.
+  const looksUnanswered = /Jag hittar inte svaret i kunskapsbanken/i.test(answer);
+  if (looksUnanswered) {
+    void logAndNotifyUnanswered({
+      question: query,
+      supabaseUrl,
+      serviceKey: supabaseServiceKey,
+      topFilename: chunks[0]?.filename ?? null,
+      topSimilarity: chunks[0]?.similarity ?? null,
+    });
+  }
+
   return json(
     {
       answer,
       citations,
       sourceFiles: referencedFiles,
-      grounded: true,
+      grounded: !looksUnanswered,
     },
     200,
   );
 };
+
+async function logAndNotifyUnanswered(params: {
+  question: string;
+  supabaseUrl: string;
+  serviceKey: string;
+  topFilename: string | null;
+  topSimilarity: number | null;
+}) {
+  const { question, supabaseUrl, serviceKey, topFilename, topSimilarity } = params;
+  try {
+    const client = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: inserted } = await client
+      .from('ai_unanswered')
+      .insert({
+        question_text: question,
+        top_match_filename: topFilename,
+        top_match_similarity: topSimilarity,
+      })
+      .select('id')
+      .single();
+
+    const resendKey = process.env.RESEND_API_KEY;
+    const notifyTo = process.env.NOTIFICATION_EMAIL;
+    if (!resendKey || !notifyTo) return; // email is optional
+
+    const subject = `[ELvis Hub] Obesvarad fråga: "${question.slice(0, 60)}${question.length > 60 ? '…' : ''}"`;
+    const similarityLine = topSimilarity != null
+      ? `Närmast matchning: <code>${topFilename}</code> (${(topSimilarity * 100).toFixed(1)} %)`
+      : 'Inga chunks passerade tröskeln — kunskapsbasen saknade något liknande helt.';
+
+    const body = `
+      <div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 560px; color: #1e293b;">
+        <h2 style="color: #0369a1; margin-bottom: 8px;">Obesvarad AI-fråga</h2>
+        <p style="color: #475569; margin: 0 0 20px;">
+          En användare ställde en fråga som inte kunde besvaras från kunskapsbasen.
+        </p>
+
+        <div style="background: #f1f5f9; border-left: 4px solid #0284c7; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
+          <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Fråga</strong>
+          <p style="margin: 6px 0 0; font-size: 15px; line-height: 1.5;">${escapeHtml(question)}</p>
+        </div>
+
+        <p style="font-size: 14px; color: #475569;">${similarityLine}</p>
+
+        <p style="font-size: 13px; color: #64748b; margin-top: 24px;">
+          <strong>Åtgärd:</strong> Lägg till en källa som täcker ämnet — klistra in en URL i "Källor"-fliken i ELvis Hub, eller ladda upp TXT/PDF till Supabase-bucketen och kör backfill.
+        </p>
+
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+          ELvis Hub · El-kretsen · <a href="https://elkretsen.netlify.app" style="color:#0284c7">Öppna</a>
+        </p>
+      </div>`.trim();
+
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${resendKey}`,
+      },
+      body: JSON.stringify({
+        from: 'ELvis Hub <onboarding@resend.dev>',
+        to: notifyTo.split(',').map((s) => s.trim()).filter(Boolean),
+        subject,
+        html: body,
+      }),
+    });
+
+    if (emailRes.ok && inserted) {
+      await client.from('ai_unanswered').update({ notified: true }).eq('id', inserted.id);
+    }
+  } catch (e) {
+    // Non-fatal — logging should never break the user-facing response.
+    console.warn('logAndNotifyUnanswered failed:', (e as Error).message);
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#39;';
+      default:
+        return c;
+    }
+  });
+}
 
 async function embedText(text: string, apiKey: string): Promise<number[]> {
   const response = await fetch(VOYAGE_EMBEDDING_URL, {
