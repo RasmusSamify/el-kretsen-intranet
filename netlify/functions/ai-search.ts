@@ -168,7 +168,7 @@ export default async (req: Request) => {
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 2000,
+      max_tokens: 1400,
       temperature: 0,
       system: SYSTEM_PROMPT,
       messages: apiMessages,
@@ -268,3 +268,7 @@ function json(body: unknown, status: number) {
 export const config: Config = {
   path: '/api/ai-search',
 };
+
+// Netlify serverless cap — raise from 10s default to 26s to cover Claude
+// generation latency on longer RAG queries.
+export const timeout = 26;
