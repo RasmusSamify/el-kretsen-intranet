@@ -2,9 +2,6 @@ import { NavLink } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const LOGO_URL =
-  'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew';
-
 export interface SidebarItem {
   to: string;
   label: string;
@@ -28,20 +25,8 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
         collapsed ? 'w-[72px]' : 'w-[240px]',
       )}
     >
-      {/* Brand */}
-      <div className="flex items-center justify-center px-4 py-6 border-b border-ink-100">
-        <img
-          src={LOGO_URL}
-          alt="El-kretsen · ELvis Hub"
-          className={cn(
-            'w-auto shrink-0 transition-all duration-300',
-            collapsed ? 'h-8' : 'h-10',
-          )}
-        />
-      </div>
-
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Primär navigation">
+      <nav className="flex-1 p-3 pt-4 space-y-1 overflow-y-auto" aria-label="Primär navigation">
         {items.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
