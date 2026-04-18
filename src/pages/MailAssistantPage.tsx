@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ArrowRight, Check, Copy, Flag, Languages, Mail, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react';
-import { EnvelopeSimple } from '@phosphor-icons/react';
-import { Button, Card, FeatureIcon, IconTile, Spinner } from '@/components/ui';
+import { Button, Card, IconTile, Spinner } from '@/components/ui';
 import { mailAssistant, type MailAssistantResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -56,7 +55,7 @@ export function MailAssistantPage() {
       <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <FeatureIcon icon={<EnvelopeSimple weight="duotone" />} tone="emerald" size="lg" />
+            <Mail size={30} strokeWidth={1.5} className="text-ink-800" />
             <div>
               <h1 className="text-display text-3xl text-ink-900 leading-none">Mail-assistent</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">

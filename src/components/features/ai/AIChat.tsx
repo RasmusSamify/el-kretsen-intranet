@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Eraser, Sparkles } from 'lucide-react';
-import { Sparkle as SparkleDuo } from '@phosphor-icons/react';
-import { Card, Button, FeatureIcon, IconTile, TypingDots } from '@/components/ui';
+import { Card, Button, IconTile, TypingDots } from '@/components/ui';
 import { useAIChat } from '@/hooks/useAIChat';
 import { Message } from './Message';
 import { Composer } from './Composer';
@@ -33,7 +32,7 @@ export function AIChat() {
     <>
       <Card variant="glass" className="flex-1 flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-ink-100 flex items-center gap-3">
-          <FeatureIcon tone="violet" size="md" icon={<SparkleDuo weight="duotone" />} />
+          <IconTile tone="brand" size="md" icon={<Sparkles size={16} strokeWidth={1.75} />} />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-ink-900 text-[15px] leading-none">ELvis</h2>
             <p className="text-[11px] font-semibold text-ink-400 mt-1">

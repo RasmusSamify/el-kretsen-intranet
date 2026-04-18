@@ -1,26 +1,15 @@
-import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
-import { SidebarSimple } from '@phosphor-icons/react';
-import { Badge, FeatureIcon } from '@/components/ui';
+import { PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-type PhosphorIcon = ComponentType<{
-  size?: number | string;
-  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
-  className?: string;
-}>;
 
 const LOGO_URL =
   'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/logo_large.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL2xvZ29fbGFyZ2UucG5nIiwiaWF0IjoxNzcyNjYwMDQ2LCJleHAiOjMzMzA4NjYwMDQ2fQ.C4CUV_phYLpJZrHCl1dYCO_X1X7b5fKiIli6IKTn4Ew';
 
-type SidebarTone = 'brand' | 'violet' | 'emerald' | 'amber' | 'rose' | 'slate';
-
 export interface SidebarItem {
   to: string;
   label: string;
-  icon: PhosphorIcon;
+  icon: LucideIcon;
   badge?: string;
-  tone?: SidebarTone;
 }
 
 interface SidebarProps {
@@ -40,11 +29,7 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
       )}
     >
       {/* Brand */}
-      <div
-        className={cn(
-          'flex items-center justify-center px-4 py-6 border-b border-ink-100',
-        )}
-      >
+      <div className="flex items-center justify-center px-4 py-6 border-b border-ink-100">
         <img
           src={LOGO_URL}
           alt="El-kretsen · ELvis Hub"
@@ -57,7 +42,7 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Primär navigation">
-        {items.map(({ to, label, icon: Icon, badge, tone = 'brand' }) => (
+        {items.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -65,35 +50,39 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
             title={collapsed ? label : undefined}
             className={({ isActive }) =>
               cn(
-                'group relative flex items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] font-bold',
+                'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-bold',
                 'transition-all duration-200',
                 collapsed && 'justify-center px-0',
                 isActive
-                  ? 'bg-white text-ink-900 shadow-card ring-1 ring-ink-100'
-                  : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900',
+                  ? 'bg-ink-900 text-white shadow-sm'
+                  : 'text-ink-600 hover:bg-ink-100/70 hover:text-ink-900',
               )
             }
           >
             {({ isActive }) => (
               <>
-                {isActive ? (
-                  <FeatureIcon
-                    icon={<Icon weight="duotone" />}
-                    tone={tone}
-                    size="sm"
-                  />
-                ) : (
-                  <span className="w-9 h-9 rounded-xl inline-flex items-center justify-center shrink-0 bg-ink-100/70 text-ink-500 group-hover:bg-ink-200/70 group-hover:text-ink-700 transition-colors">
-                    <Icon weight="duotone" size={18} />
-                  </span>
-                )}
+                <Icon
+                  size={17}
+                  strokeWidth={isActive ? 2 : 1.75}
+                  className={cn(
+                    'shrink-0 transition-colors',
+                    isActive ? 'text-white' : 'text-ink-500 group-hover:text-ink-900',
+                  )}
+                />
                 {!collapsed && (
                   <>
                     <span className="flex-1 truncate">{label}</span>
                     {badge && (
-                      <Badge variant="brand" className="!text-[9px] !py-0.5 !px-1.5">
+                      <span
+                        className={cn(
+                          'text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md',
+                          isActive
+                            ? 'bg-white/15 text-white'
+                            : 'bg-ink-100 text-ink-500 group-hover:bg-white group-hover:text-ink-700',
+                        )}
+                      >
                         {badge}
-                      </Badge>
+                      </span>
                     )}
                   </>
                 )}
@@ -115,8 +104,14 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
           )}
           aria-label={collapsed ? 'Expandera sidopanelen' : 'Minimera sidopanelen'}
         >
-          <SidebarSimple size={16} weight="duotone" className={cn('transition-transform', collapsed && 'rotate-180')} />
-          {!collapsed && <span>Minimera</span>}
+          {collapsed ? (
+            <PanelLeftOpen size={15} strokeWidth={1.75} />
+          ) : (
+            <>
+              <PanelLeftClose size={15} strokeWidth={1.75} />
+              <span>Minimera</span>
+            </>
+          )}
         </button>
       </div>
     </aside>

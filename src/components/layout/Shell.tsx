@@ -1,22 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import {
-  ChartLineUp,
-  Sparkle,
-  EnvelopeSimple,
-  Calculator,
-  Trophy,
-} from '@phosphor-icons/react';
+import { BarChart3, BrainCircuit, Calculator, Mail, Trophy } from 'lucide-react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '@/lib/utils';
 
 const items: SidebarItem[] = [
-  { to: '/', label: 'Insikter', icon: ChartLineUp, tone: 'brand' },
-  { to: '/ai-analys', label: 'ELvis', icon: Sparkle, tone: 'violet' },
-  { to: '/mail', label: 'Mail-assistent', icon: EnvelopeSimple, badge: 'NY', tone: 'emerald' },
-  { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY', tone: 'amber' },
-  { to: '/kretskampen', label: 'Kretskampen', icon: Trophy, tone: 'rose' },
+  { to: '/', label: 'Insikter', icon: BarChart3 },
+  { to: '/ai-analys', label: 'ELvis', icon: BrainCircuit },
+  { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY' },
+  { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY' },
+  { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
 ];
 
 const STORAGE_KEY = 'elvis-sidebar-collapsed';

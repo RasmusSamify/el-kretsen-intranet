@@ -9,8 +9,7 @@ import {
   BadgeCheck,
   Sparkles,
 } from 'lucide-react';
-import { Calculator as CalculatorDuo } from '@phosphor-icons/react';
-import { Button, Card, FeatureIcon, IconTile, Input, Spinner } from '@/components/ui';
+import { Button, Card, IconTile, Input, Spinner } from '@/components/ui';
 import { calculateFee, type FeeResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -62,7 +61,7 @@ export function FeeCalculatorPage() {
       <div className="max-w-[1400px] mx-auto pb-10 space-y-5">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <FeatureIcon icon={<CalculatorDuo weight="duotone" />} tone="amber" size="lg" />
+            <Calculator size={30} strokeWidth={1.5} className="text-ink-800" />
             <div>
               <h1 className="text-display text-3xl text-ink-900 leading-none">Avgifts-kalkylator</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">
