@@ -13,20 +13,37 @@ interface SidebarProps {
   items: SidebarItem[];
   collapsed: boolean;
   onToggle: () => void;
+  topOffset?: number;
 }
 
-export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ items, collapsed, onToggle, topOffset = 0 }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 bottom-0 z-30 flex flex-col',
+        'fixed left-0 bottom-0 z-30 flex flex-col',
         'bg-white/85 backdrop-blur-xl border-r border-ink-100 shadow-[1px_0_0_rgba(15,23,42,0.03)]',
         'transition-[width] duration-300 ease-out',
         collapsed ? 'w-[72px]' : 'w-[240px]',
       )}
+      style={{ top: topOffset }}
     >
+      {/* Section label (only when expanded) */}
+      {!collapsed && (
+        <div className="px-5 pt-6 pb-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
+            Navigation
+          </span>
+        </div>
+      )}
+
       {/* Nav */}
-      <nav className="flex-1 p-3 pt-4 space-y-1 overflow-y-auto" aria-label="Primär navigation">
+      <nav
+        className={cn(
+          'flex-1 p-3 space-y-1.5 overflow-y-auto',
+          collapsed && 'pt-5',
+        )}
+        aria-label="Primär navigation"
+      >
         {items.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
@@ -35,9 +52,9 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
             title={collapsed ? label : undefined}
             className={({ isActive }) =>
               cn(
-                'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-bold',
+                'group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-[14px] font-bold',
                 'transition-all duration-200',
-                collapsed && 'justify-center px-0',
+                collapsed && 'justify-center px-0 py-3',
                 isActive
                   ? 'bg-ink-900 text-white shadow-sm'
                   : 'text-ink-600 hover:bg-ink-100/70 hover:text-ink-900',
@@ -47,7 +64,7 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
             {({ isActive }) => (
               <>
                 <Icon
-                  size={17}
+                  size={18}
                   strokeWidth={isActive ? 2 : 1.75}
                   className={cn(
                     'shrink-0 transition-colors',
@@ -82,7 +99,7 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
         <button
           onClick={onToggle}
           className={cn(
-            'w-full inline-flex items-center gap-2.5 px-3 py-2 rounded-xl',
+            'w-full inline-flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
             'text-[11px] font-bold uppercase tracking-wider text-ink-500 hover:text-ink-800',
             'hover:bg-ink-50 transition-colors',
             collapsed && 'justify-center px-0',
@@ -90,10 +107,10 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
           aria-label={collapsed ? 'Expandera sidopanelen' : 'Minimera sidopanelen'}
         >
           {collapsed ? (
-            <PanelLeftOpen size={15} strokeWidth={1.75} />
+            <PanelLeftOpen size={16} strokeWidth={1.75} />
           ) : (
             <>
-              <PanelLeftClose size={15} strokeWidth={1.75} />
+              <PanelLeftClose size={16} strokeWidth={1.75} />
               <span>Minimera</span>
             </>
           )}

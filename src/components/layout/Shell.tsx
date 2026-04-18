@@ -16,6 +16,7 @@ const items: SidebarItem[] = [
 ];
 
 const STORAGE_KEY = 'elvis-sidebar-collapsed';
+const HEADER_HEIGHT = 68;
 
 export function Shell() {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -31,19 +32,27 @@ export function Shell() {
     <div className="relative min-h-screen">
       <div className="app-backdrop" />
 
+      {/* Top header — full width, above sidebar */}
+      <div className="fixed top-0 left-0 right-0 z-40">
+        <Header />
+      </div>
+
+      {/* Sidebar — starts below header */}
       <Sidebar
         items={items}
         collapsed={collapsed}
         onToggle={() => setCollapsed((c) => !c)}
+        topOffset={HEADER_HEIGHT}
       />
 
+      {/* Main content — pushed right by sidebar, down by header */}
       <div
         className={cn(
           'min-h-screen flex flex-col transition-[margin] duration-300 ease-out',
           collapsed ? 'ml-[72px]' : 'ml-[240px]',
         )}
+        style={{ paddingTop: HEADER_HEIGHT }}
       >
-        <Header />
         <main className="flex-1 flex flex-col overflow-hidden">
           <Outlet />
         </main>
