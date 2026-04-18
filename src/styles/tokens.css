@@ -1,0 +1,58 @@
+/* Design tokens — professional/exclusive palette with depth */
+
+:root {
+  /* Brand — dyphed tight blue */
+  --brand-50:  #E0F7FE;
+  --brand-100: #BAE6FD;
+  --brand-400: #06B4E4;
+  --brand-500: #0284C7;
+  --brand-600: #0369A1;
+  --brand-700: #075985;
+  --brand-gradient: linear-gradient(135deg, #06B4E4 0%, #0369A1 55%, #075985 100%);
+
+  /* Ink (neutrals) */
+  --ink-50:  #F8FAFC;
+  --ink-100: #F1F5F9;
+  --ink-200: #E2E8F0;
+  --ink-300: #CBD5E1;
+  --ink-400: #94A3B8;
+  --ink-500: #64748B;
+  --ink-600: #475569;
+  --ink-700: #334155;
+  --ink-800: #1E293B;
+  --ink-900: #0F172A;
+
+  /* Semantic */
+  --success: #059669;
+  --warning: #D97706;
+  --danger:  #DC2626;
+
+  /* Surfaces */
+  --surface-0: #FFFFFF;
+  --surface-1: rgba(255, 255, 255, 0.85);
+  --surface-2: rgba(255, 255, 255, 0.72);
+  --surface-overlay: rgba(15, 23, 42, 0.55);
+
+  /* Shadows — layered for depth */
+  --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md:  0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px -12px rgba(15, 23, 42, 0.15);
+  --shadow-lg:  0 4px 8px rgba(15, 23, 42, 0.04), 0 30px 60px -20px rgba(15, 23, 42, 0.18);
+  --shadow-xl:  0 10px 20px rgba(15, 23, 42, 0.06), 0 40px 80px -20px rgba(15, 23, 42, 0.24);
+  --shadow-inner-soft: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 160ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Backdrop */
+  --app-bg-image: url('https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Logotyper/Untitled%20folder/Havet.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMb2dvdHlwZXIvVW50aXRsZWQgZm9sZGVyL0hhdmV0LmpwZyIsImlhdCI6MTc3MjY2NTE2NSwiZXhwIjozMTcxMzI2NjUxNjV9.5ZtZ6-Ft0mIWkYS2uAkfcCPLOtmNjOt9U-4Y7Jte5Lw');
+  --app-bg-overlay: rgba(248, 250, 252, 0.82);
+}
