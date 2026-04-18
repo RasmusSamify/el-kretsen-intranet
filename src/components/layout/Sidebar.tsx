@@ -35,19 +35,17 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
       {/* Brand */}
       <div
         className={cn(
-          'flex items-center gap-3 px-4 py-5 border-b border-ink-100',
-          collapsed && 'justify-center px-0',
+          'flex items-center justify-center px-4 py-6 border-b border-ink-100',
         )}
       >
-        <img src={LOGO_URL} alt="El-kretsen" className="h-8 w-auto shrink-0" />
-        {!collapsed && (
-          <div className="flex flex-col leading-none min-w-0 animate-fade-in">
-            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-ink-400">
-              El-kretsen
-            </span>
-            <h1 className="text-display text-[20px] text-ink-900 mt-1">ELvis Hub</h1>
-          </div>
-        )}
+        <img
+          src={LOGO_URL}
+          alt="El-kretsen · ELvis Hub"
+          className={cn(
+            'w-auto shrink-0 transition-all duration-300',
+            collapsed ? 'h-8' : 'h-10',
+          )}
+        />
       </div>
 
       {/* Nav */}
