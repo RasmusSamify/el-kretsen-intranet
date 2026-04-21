@@ -15,9 +15,25 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.2.0';
+export const CURRENT_VERSION = '1.3.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.3.0',
+    date: '2026-04-21',
+    title: 'Bättre sökning: hybrid search + contextualized embeddings',
+    highlights: [
+      'Hybrid retrieval: BM25 (full-text) + embeddings merged via Reciprocal Rank Fusion',
+      'Produktkoder (B74, P24), paragrafreferenser (§ 12) och SFS-nummer fångas nu pålitligt',
+      'Ny RPC match_kb_chunks_hybrid · GIN-index på svensk tsvector · RRF k=60',
+      'ELvis chat, Mail-assistent och Avgifts-kalkylator använder hybrid automatiskt',
+      'Contextualized chunk embeddings: Voyage embeddar "{dokumentnamn} · stycke N" + text',
+      'Nya ingestioner/redigeringar får kontext-prefix automatiskt',
+      'Script scripts/reembed-with-context.py för att uppgradera befintliga 1 661 chunks',
+      'Citation highlight + sammanfattad snippet-vy (visa bara relevant del som default)',
+      'Cosine-display oförändrad för användare — ändringar är helt osynliga i UI',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-04-21',
