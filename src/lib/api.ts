@@ -154,3 +154,53 @@ export async function ingestFile(filename: string, content: string): Promise<Ing
   }
   return res.json();
 }
+
+// ---------- Admin-operationer (kräver admin-email i ADMIN_EMAILS) ----------
+
+export interface AdminGetResponse {
+  filename: string;
+  content: string;
+  chunk_count: number;
+  warning: string | null;
+}
+
+async function adminRequest<T>(body: object, token: string): Promise<T> {
+  const res = await fetch('/api/admin-source-ops', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) message = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function adminGetSource(filename: string, token: string): Promise<AdminGetResponse> {
+  return adminRequest<AdminGetResponse>({ action: 'get', filename }, token);
+}
+
+export async function adminUpdateSource(
+  filename: string,
+  content: string,
+  token: string,
+): Promise<{ ok: true; filename: string; chunks: number }> {
+  return adminRequest({ action: 'update', filename, content }, token);
+}
+
+export async function adminDeleteSource(
+  filename: string,
+  token: string,
+): Promise<{ ok: true; filename: string; chunks_removed: number }> {
+  return adminRequest({ action: 'delete', filename }, token);
+}

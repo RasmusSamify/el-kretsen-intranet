@@ -11,16 +11,22 @@ import {
   HelpCircle,
   Library,
   Link2,
+  Pencil,
   Scale,
   Search,
+  ShieldCheck,
   Sparkles,
+  Trash2,
   X,
 } from 'lucide-react';
 import { Button, Card, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { useAdmin } from '@/hooks/useAdmin';
 import { AddSourceModal } from '@/components/features/ai/AddSourceModal';
 import { AddFileModal } from '@/components/features/kb/AddFileModal';
+import { EditSourceModal } from '@/components/features/kb/EditSourceModal';
+import { DeleteSourceDialog } from '@/components/features/kb/DeleteSourceDialog';
 
 interface SourceRow {
   filename: string;
@@ -43,11 +49,14 @@ function displayName(src: SourceRow) {
 }
 
 export function KnowledgeBasePage() {
+  const { isAdmin } = useAdmin();
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [addUrlOpen, setAddUrlOpen] = useState(false);
   const [addFileOpen, setAddFileOpen] = useState(false);
+  const [editSource, setEditSource] = useState<SourceRow | null>(null);
+  const [deleteSource, setDeleteSource] = useState<SourceRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [openGroups, setOpenGroups] = useState<Record<GroupId, boolean>>({
     laws: false,
@@ -95,9 +104,17 @@ export function KnowledgeBasePage() {
               </p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
-            <Sparkles size={12} strokeWidth={1.75} />
-            <span>Semantisk indexering</span>
+          <div className="hidden sm:flex items-center gap-3">
+            {isAdmin && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-ink-900 text-white text-[10px] font-black uppercase tracking-wider">
+                <ShieldCheck size={12} strokeWidth={2} />
+                Admin
+              </span>
+            )}
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
+              <Sparkles size={12} strokeWidth={1.75} />
+              <span>Semantisk indexering</span>
+            </div>
           </div>
         </header>
 
@@ -184,6 +201,9 @@ export function KnowledgeBasePage() {
                   items={grouped.laws}
                   open={!!query || openGroups.laws}
                   onToggle={() => setOpenGroups((g) => ({ ...g, laws: !g.laws }))}
+                  isAdmin={isAdmin}
+                  onEdit={setEditSource}
+                  onDelete={setDeleteSource}
                 />
                 <Group
                   label="el-kretsen.se"
@@ -191,6 +211,9 @@ export function KnowledgeBasePage() {
                   items={grouped.elkretsen}
                   open={!!query || openGroups.elkretsen}
                   onToggle={() => setOpenGroups((g) => ({ ...g, elkretsen: !g.elkretsen }))}
+                  isAdmin={isAdmin}
+                  onEdit={setEditSource}
+                  onDelete={setDeleteSource}
                 />
                 <Group
                   label="Interna dokument"
@@ -198,6 +221,9 @@ export function KnowledgeBasePage() {
                   items={grouped.internal}
                   open={!!query || openGroups.internal}
                   onToggle={() => setOpenGroups((g) => ({ ...g, internal: !g.internal }))}
+                  isAdmin={isAdmin}
+                  onEdit={setEditSource}
+                  onDelete={setDeleteSource}
                 />
               </div>
             )}
@@ -216,6 +242,19 @@ export function KnowledgeBasePage() {
           open={addFileOpen}
           onClose={() => setAddFileOpen(false)}
           onAdded={() => setRefreshKey((k) => k + 1)}
+        />
+        <EditSourceModal
+          open={editSource !== null}
+          filename={editSource?.filename ?? null}
+          onClose={() => setEditSource(null)}
+          onSaved={() => setRefreshKey((k) => k + 1)}
+        />
+        <DeleteSourceDialog
+          open={deleteSource !== null}
+          filename={deleteSource?.filename ?? null}
+          chunkCount={deleteSource?.chunk_count ?? 0}
+          onClose={() => setDeleteSource(null)}
+          onDeleted={() => setRefreshKey((k) => k + 1)}
         />
       </div>
     </div>
@@ -239,12 +278,18 @@ function Group({
   items,
   open,
   onToggle,
+  isAdmin,
+  onEdit,
+  onDelete,
 }: {
   label: string;
   icon: React.ReactNode;
   items: SourceRow[];
   open: boolean;
   onToggle: () => void;
+  isAdmin: boolean;
+  onEdit: (src: SourceRow) => void;
+  onDelete: (src: SourceRow) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -266,11 +311,13 @@ function Group({
       {open && (
         <ul className="border-t border-ink-100 divide-y divide-ink-100">
           {items.map((src) => {
-            const isUrl = classify(src.filename) !== 'internal';
+            const group = classify(src.filename);
+            const isUrl = group !== 'internal';
+            const isEditable = group === 'internal';
             const href = isUrl ? `https://${src.filename}` : null;
             return (
               <li key={src.filename}>
-                <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50 transition-colors">
+                <div className="group/row flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50 transition-colors">
                   {isUrl ? (
                     <Link2 size={12} strokeWidth={1.75} className="text-ink-500 shrink-0" />
                   ) : (
@@ -295,6 +342,36 @@ function Group({
                     >
                       <ExternalLink size={11} strokeWidth={1.75} />
                     </a>
+                  )}
+                  {isAdmin && (
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                      {isEditable && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(src);
+                          }}
+                          className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-900 transition-colors"
+                          title="Redigera innehåll"
+                          aria-label={`Redigera ${src.filename}`}
+                        >
+                          <Pencil size={12} strokeWidth={1.75} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(src);
+                        }}
+                        className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-700 transition-colors"
+                        title="Ta bort källa"
+                        aria-label={`Ta bort ${src.filename}`}
+                      >
+                        <Trash2 size={12} strokeWidth={1.75} />
+                      </button>
+                    </div>
                   )}
                 </div>
               </li>

@@ -15,9 +15,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.1.0';
+export const CURRENT_VERSION = '1.2.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.2.0',
+    date: '2026-04-21',
+    title: 'Admin-roll: redigera och radera källor',
+    highlights: [
+      'Ny admin-roll via ADMIN_EMAILS env var (kommaseparerad e-postlista)',
+      'Admin-badge i Kunskapsbas-sidans header när inloggad user är admin',
+      'Redigera-knapp på varje TXT-fil — hela texten återskapas från chunks, kan ändras och sparas',
+      'Vid sparning: re-chunkas och re-embeddas automatiskt via Voyage',
+      'Radera-knapp med TA BORT-bekräftelse (oåterkalleligt)',
+      'URL-källor (riksdagen.se, el-kretsen.se m.fl.) kan bara raderas — redigering skulle bryta spårbarhet mot original',
+      'Backend verifierar admin via Supabase JWT på varje anrop',
+    ],
+  },
   {
     version: '1.1.0',
     date: '2026-04-21',

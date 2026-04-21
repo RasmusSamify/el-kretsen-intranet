@@ -37,6 +37,10 @@
   # Mark resolve/ignore/reopen på en review-rad
   timeout = 10
 
+[functions."admin-source-ops"]
+  # Admin: get / update / delete källa i kb_chunks (re-embed vid update)
+  timeout = 26
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
