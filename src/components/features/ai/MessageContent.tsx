@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import type { Citation } from '@/lib/types';
+import { extractClaimSentence } from '@/lib/chunkHighlight';
 import { CitationChip } from './CitationChip';
 
 const CITATION_REGEX = /\[källa:\s*([^,\]]+?)(?:,\s*stycke\s*(\d+))?\]/gi;
@@ -26,7 +27,7 @@ function parseWithCitations(text: string, citations: Citation[]): ReactNode[] {
     }
   }
 
-  return blocks.map((block, i) => renderBlock(block, i, citations, citationIndex));
+  return blocks.map((block, i) => renderBlock(block, i, citations, citationIndex, text));
 }
 
 function citationKey(filename: string, chunkIndex: number): string {
@@ -110,25 +111,26 @@ function renderBlock(
   key: number,
   citations: Citation[],
   index: Map<string, { citation: Citation; number: number }>,
+  fullText: string,
 ): ReactNode {
   switch (block.type) {
     case 'h2':
       return (
         <h3 key={key} className="text-[15px] font-bold text-ink-900 mt-4 mb-2 first:mt-0 border-b border-ink-100 pb-1.5">
-          {renderInline(block.text, citations, index)}
+          {renderInline(block.text, citations, index, fullText)}
         </h3>
       );
     case 'h3':
       return (
         <h4 key={key} className="text-[13px] font-bold text-ink-800 mt-3 mb-1.5 first:mt-0">
-          {renderInline(block.text, citations, index)}
+          {renderInline(block.text, citations, index, fullText)}
         </h4>
       );
     case 'ul':
       return (
         <ul key={key} className="list-disc pl-5 my-2 space-y-1 text-[14px] marker:text-brand-400">
           {block.items.map((item, i) => (
-            <li key={i}>{renderInline(item, citations, index)}</li>
+            <li key={i}>{renderInline(item, citations, index, fullText)}</li>
           ))}
         </ul>
       );
@@ -136,14 +138,14 @@ function renderBlock(
       return (
         <ol key={key} className="list-decimal pl-5 my-2 space-y-1 text-[14px] marker:text-brand-500 marker:font-bold">
           {block.items.map((item, i) => (
-            <li key={i}>{renderInline(item, citations, index)}</li>
+            <li key={i}>{renderInline(item, citations, index, fullText)}</li>
           ))}
         </ol>
       );
     case 'p':
       return (
         <p key={key} className="text-[14px] text-ink-800 leading-relaxed my-2 first:mt-0 last:mb-0">
-          {renderInline(block.text, citations, index)}
+          {renderInline(block.text, citations, index, fullText)}
         </p>
       );
   }
@@ -153,6 +155,7 @@ function renderInline(
   text: string,
   citations: Citation[],
   index: Map<string, { citation: Citation; number: number }>,
+  fullText: string,
 ): ReactNode[] {
   const nodes: ReactNode[] = [];
   let cursor = 0;
@@ -195,7 +198,16 @@ function renderInline(
     }
 
     if (citation && number !== undefined) {
-      nodes.push(<CitationChip key={key++} citation={citation} index={number} />);
+      const globalPos = fullText.indexOf(fullMatch);
+      const claimText = globalPos >= 0 ? extractClaimSentence(fullText, globalPos) : text;
+      nodes.push(
+        <CitationChip
+          key={key++}
+          citation={citation}
+          index={number}
+          claimText={claimText}
+        />,
+      );
     } else {
       nodes.push(<span key={key++} className="text-ink-400 text-[11px]">{fullMatch}</span>);
     }

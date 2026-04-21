@@ -1,15 +1,18 @@
-import { useRef, useState, useEffect } from 'react';
-import { FileText, X } from 'lucide-react';
+import { useRef, useState, useEffect, useMemo, type ReactNode } from 'react';
+import { ChevronDown, ChevronUp, FileText, Sparkles, X } from 'lucide-react';
 import type { Citation } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { findBestMatchSentence, snippetAround, type Sentence } from '@/lib/chunkHighlight';
 
 interface CitationChipProps {
   citation: Citation;
   index: number;
+  claimText?: string;
 }
 
-export function CitationChip({ citation, index }: CitationChipProps) {
+export function CitationChip({ citation, index, claimText }: CitationChipProps) {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -20,6 +23,16 @@ export function CitationChip({ citation, index }: CitationChipProps) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  // Reset expanded när man stänger och öppnar igen
+  useEffect(() => {
+    if (!open) setExpanded(false);
+  }, [open]);
+
+  const highlight = useMemo<Sentence | null>(() => {
+    if (!claimText) return null;
+    return findBestMatchSentence(citation.text, claimText);
+  }, [citation.text, claimText]);
 
   const displayName = citation.filename.replace(/\.[^/.]+$/, '');
 
@@ -44,8 +57,8 @@ export function CitationChip({ citation, index }: CitationChipProps) {
       {open && (
         <span
           role="tooltip"
-          className="absolute z-40 bottom-full left-0 mb-2 w-80 max-w-[90vw] text-left animate-fade-in"
-          style={{ transform: 'translateX(-20%)' }}
+          className="absolute z-40 bottom-full left-0 mb-2 w-[420px] max-w-[90vw] text-left animate-fade-in"
+          style={{ transform: 'translateX(-15%)' }}
         >
           <span className="block bg-white rounded-2xl shadow-xl border border-ink-100 overflow-hidden">
             <span className="flex items-center justify-between px-4 py-2.5 border-b border-ink-100 bg-ink-50">
@@ -68,15 +81,94 @@ export function CitationChip({ citation, index }: CitationChipProps) {
                 <X size={14} strokeWidth={2.5} />
               </button>
             </span>
-            <span className="block p-4 text-[12px] text-ink-700 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
-              {citation.text}
-            </span>
-            <span className="block px-4 py-2 bg-ink-50 text-[10px] font-bold uppercase tracking-wider text-ink-400">
-              Relevans: {Math.round(citation.similarity * 100)} %
+
+            {highlight && !expanded ? (
+              <SnippetView citation={citation} highlight={highlight} />
+            ) : (
+              <FullChunkView citation={citation} highlight={highlight} />
+            )}
+
+            {highlight && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((v) => !v);
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-2 text-[10px] font-bold uppercase tracking-wider text-ink-500 hover:text-ink-900 hover:bg-ink-50 transition-colors border-t border-ink-100"
+              >
+                {expanded ? (
+                  <>
+                    <ChevronUp size={12} strokeWidth={2} />
+                    Visa bara relevant del
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={12} strokeWidth={2} />
+                    Visa hela stycket ({citation.text.length.toLocaleString('sv-SE')} tecken)
+                  </>
+                )}
+              </button>
+            )}
+
+            <span className="flex items-center justify-between px-4 py-2 bg-ink-50 text-[10px] font-bold uppercase tracking-wider text-ink-400">
+              <span>Relevans: {Math.round(citation.similarity * 100)} %</span>
+              {highlight && (
+                <span className="inline-flex items-center gap-1 normal-case tracking-normal">
+                  <Sparkles size={10} strokeWidth={2} className="text-amber-600" />
+                  <span className="text-amber-700">Gul = mest relevant</span>
+                </span>
+              )}
             </span>
           </span>
         </span>
       )}
     </span>
+  );
+}
+
+function SnippetView({ citation, highlight }: { citation: Citation; highlight: Sentence }) {
+  const snip = snippetAround(citation.text, highlight, 140);
+  return (
+    <span className="block p-4 text-[12.5px] text-ink-700 leading-relaxed">
+      {snip.trimmedStart && <span className="text-ink-400">…</span>}
+      {snip.before}
+      <Mark>{snip.highlight}</Mark>
+      {snip.after}
+      {snip.trimmedEnd && <span className="text-ink-400">…</span>}
+    </span>
+  );
+}
+
+function FullChunkView({
+  citation,
+  highlight,
+}: {
+  citation: Citation;
+  highlight: Sentence | null;
+}) {
+  const content: ReactNode = useMemo(() => {
+    if (!highlight) return citation.text;
+    return (
+      <>
+        {citation.text.slice(0, highlight.start)}
+        <Mark>{citation.text.slice(highlight.start, highlight.end)}</Mark>
+        {citation.text.slice(highlight.end)}
+      </>
+    );
+  }, [citation.text, highlight]);
+
+  return (
+    <span className="block p-4 text-[12.5px] text-ink-700 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+      {content}
+    </span>
+  );
+}
+
+function Mark({ children }: { children: ReactNode }) {
+  return (
+    <mark className="bg-amber-100 text-ink-900 rounded-sm px-0.5 -mx-0.5 border border-amber-200/60">
+      {children}
+    </mark>
   );
 }
