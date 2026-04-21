@@ -1,5 +1,6 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { embeddingInput } from './_shared/contextPrefix';
 
 interface IngestFileRequest {
   filename: string;
@@ -75,7 +76,8 @@ export default async (req: Request) => {
       },
       body: JSON.stringify({
         model: EMBEDDING_MODEL,
-        input: batch.map((c) => c.text),
+        // Embedda med kontext-prefix för bättre dokumentsäparation
+        input: batch.map((c) => embeddingInput(c.filename, c.chunk_index, c.text)),
         input_type: 'document',
       }),
     });

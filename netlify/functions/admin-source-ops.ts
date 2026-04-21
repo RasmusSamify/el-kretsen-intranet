@@ -1,5 +1,6 @@
 import type { Config } from '@netlify/functions';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { embeddingInput } from './_shared/contextPrefix';
 
 type Admin = SupabaseClient;
 
@@ -171,7 +172,7 @@ async function handleUpdate(
       },
       body: JSON.stringify({
         model: EMBEDDING_MODEL,
-        input: batch.map((c) => c.text),
+        input: batch.map((c) => embeddingInput(c.filename, c.chunk_index, c.text)),
         input_type: 'document',
       }),
     });
