@@ -28,7 +28,6 @@ const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const EMBEDDING_MODEL = 'voyage-3';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
-const MATCH_THRESHOLD = 0.25;
 const MATCH_COUNT = 10;
 
 const SYSTEM_PROMPT = `Du är El-kretsens interna avgifts-kalkylator. Din uppgift är att:
@@ -121,9 +120,10 @@ export default async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks', {
+  // Hybrid: BM25 fångar exakta produktkoder (B74, P24) som embeddings missar.
+  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid', {
+    query_text: embedInput,
     query_embedding: embedding,
-    match_threshold: MATCH_THRESHOLD,
     match_count: MATCH_COUNT,
   });
   if (matchError) return json({ error: `DB match failed: ${matchError.message}` }, 502);
