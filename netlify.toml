@@ -29,6 +29,14 @@
   # Chunka + embedda uppladdad TXT-fil
   timeout = 26
 
+[functions."kb-audit-contradictions"]
+  # Nattlig motsägelsedetektion mellan chunks — 26s hård gräns
+  timeout = 26
+
+[functions."review-action"]
+  # Mark resolve/ignore/reopen på en review-rad
+  timeout = 10
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

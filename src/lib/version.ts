@@ -15,9 +15,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.0.0';
+export const CURRENT_VERSION = '1.1.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.1.0',
+    date: '2026-04-21',
+    title: 'Kunskapsbas-audit: motsägelsedetektion',
+    highlights: [
+      'Ny flik "Granskning" med alla AI-detekterade motsägelser mellan chunks',
+      'Nattlig körning via pg_cron kl 03:15 som skannar kunskapsbasen',
+      'Severity-skala 1-5 + filtrering på status/severity/filnamn',
+      'Claude Sonnet 4 bedömer par med sim 0.75-0.95, parallellt 8 i taget',
+      'Resolve/Ignore/Reopen-åtgärder med audit trail (vem och när)',
+      'Unique constraint på least/greatest så varje par bara testas en gång',
+      'Kostnad: ~400 kr för första fulla audit, ~1 kr/natt därefter',
+    ],
+  },
   {
     version: '1.0.0',
     date: '2026-04-19',

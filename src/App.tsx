@@ -7,6 +7,7 @@ import { FeeCalculatorPage } from '@/pages/FeeCalculatorPage';
 import { InsightsPage } from '@/pages/InsightsPage';
 import { FeeDuelPage } from '@/pages/FeeDuelPage';
 import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
+import { GranskningPage } from '@/pages/GranskningPage';
 import { Shell } from '@/components/layout/Shell';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/kretskampen" element={<KretskampenPage />} />
         <Route path="/duellen" element={<FeeDuelPage />} />
         <Route path="/kunskapsbas" element={<KnowledgeBasePage />} />
+        <Route path="/granskning" element={<GranskningPage />} />
         <Route path="/insikter" element={<Navigate to="/" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
