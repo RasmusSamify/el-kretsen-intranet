@@ -101,7 +101,7 @@ export default async (req: Request) => {
   const text = rawText
     .split('\n')
     .map((line) => line.replace(/\s+/g, ' ').trim())
-    .filter((line) => line.length > 0)
+    .filter((line) => line.length > 0 && !isKnownBoilerplate(line))
     .join('\n');
 
   if (text.length < 200) {
@@ -165,6 +165,20 @@ export default async (req: Request) => {
   };
   return json(payload, 200);
 };
+
+const BOILERPLATE_PATTERNS: RegExp[] = [
+  /^<!DOCTYPE svg PUBLIC .+?svg11\.dtd">$/i,
+  /^Skriv ut<\?xml version=.+?\?>$/i,
+  /^<\?xml version=.+?\?>$/i,
+  /^Skriv ut$/i,
+  /^Nyare artiklar.{0,3}Äldre artiklar$/i,
+  /^Cookie.?installningar$/i,
+  /^Acceptera alla cookies$/i,
+];
+
+function isKnownBoilerplate(line: string): boolean {
+  return BOILERPLATE_PATTERNS.some((p) => p.test(line));
+}
 
 function canonicalFilename(url: URL): string {
   // Store URL as filename — strip fragment, keep host + path for readability
