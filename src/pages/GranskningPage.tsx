@@ -366,6 +366,12 @@ function ReviewCard({
           Severity {row.severity} · {tone.label}
         </span>
 
+        {row.issue_type === 'drift' && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200">
+            Drift · Intern vs lag
+          </span>
+        )}
+
         {row.similarity != null && (
           <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400">
             Likhet {(Number(row.similarity) * 100).toFixed(1)} %

@@ -22,6 +22,7 @@ interface ChunkRow {
   chunk_index: number;
   text: string;
   embedding: number[] | string;
+  source_category: string;
 }
 
 interface MatchedChunk {
@@ -219,11 +220,18 @@ export default async (req: Request) => {
 
         // Normalisera ordning (chunk med lägre uuid först) för att matcha unique idx
         const [chunkA, chunkB] = chunk.id < other.id ? [chunk, other] : [other, chunk];
+
+        // Om paret är internal↔law = drift (intern dokumentation har glidit
+        // från aktuell lagtext) snarare än en contradiction mellan två lagar.
+        const otherCategory = metaMap.get(other.id)?.source_category;
+        const cats = [chunk.source_category, otherCategory].sort().join(':');
+        const issueType = cats === 'internal:law' ? 'drift' : 'contradiction';
+
         const { error: insertError } = await supabase.from('kb_review_queue').insert(
           {
             chunk_a_id: chunkA.id,
             chunk_b_id: chunkB.id,
-            issue_type: 'contradiction',
+            issue_type: issueType,
             severity: Math.max(1, Math.min(5, Math.round(verdict.severity))),
             similarity: other.similarity.toFixed(3),
             ai_reasoning: verdict.reasoning,
