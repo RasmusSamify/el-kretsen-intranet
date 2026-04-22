@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Check, Info, Sparkles } from 'lucide-react';
 import { Modal } from '@/components/ui';
 import { CHANGELOG, CURRENT_VERSION } from '@/lib/version';
 
@@ -14,60 +14,91 @@ function formatDate(iso: string) {
 
 export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title="Uppdateringar & versioner" size="lg">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-ink-900 text-white">
-          <Sparkles size={16} strokeWidth={1.75} className="text-white/70 shrink-0" />
-          <div className="flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
-              Nuvarande version
-            </p>
-            <p className="text-display text-2xl leading-none mt-1 tabular-nums">
-              v{CURRENT_VERSION}
+    <Modal open={open} onClose={onClose} title="Vad är nytt i ELvis Hub" size="xl">
+      <div className="flex flex-col max-h-[85vh]">
+        {/* Hero header */}
+        <div className="px-8 pt-6 pb-5 bg-gradient-to-br from-ink-900 via-ink-900 to-brand-700 text-white">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm">
+              <Sparkles size={22} strokeWidth={1.75} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">
+                Nuvarande version
+              </p>
+              <div className="flex items-baseline gap-3 mt-1">
+                <p className="text-display text-3xl leading-none tabular-nums">
+                  v{CURRENT_VERSION}
+                </p>
+                <p className="text-[13px] font-semibold text-white/70">
+                  {formatDate(CHANGELOG[0].date)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-start gap-2 p-3 rounded-xl bg-white/8 border border-white/10">
+            <Info size={14} className="text-white/60 shrink-0 mt-0.5" strokeWidth={1.75} />
+            <p className="text-[12.5px] text-white/85 leading-relaxed">
+              Här samlar vi alla förbättringar och nya funktioner vi lägger till i ELvis Hub.
+              Senaste uppdateringen står överst. Klicka på versionsnumret längst ner i sidomenyn när du vill komma hit.
             </p>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">
-            {formatDate(CHANGELOG[0].date)}
-          </span>
         </div>
 
-        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
+        {/* Changelog list */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-7">
           {CHANGELOG.map((entry, idx) => (
-            <div key={entry.version} className="relative">
-              {idx === 0 && (
-                <span className="absolute -left-1 top-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-wider">
-                  Senaste
-                </span>
-              )}
-              <div className={idx === 0 ? 'pt-7' : 'pt-1'}>
-                <div className="flex items-baseline gap-3 mb-2">
-                  <h3 className="text-display text-xl text-ink-900 tabular-nums">
+            <article key={entry.version} className="relative">
+              <header className="mb-3">
+                <div className="flex items-center gap-3 flex-wrap mb-2">
+                  <span className="text-display text-2xl text-ink-900 tabular-nums leading-none">
                     v{entry.version}
-                  </h3>
+                  </span>
+                  {idx === 0 && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                      <Check size={10} strokeWidth={3} />
+                      Senaste
+                    </span>
+                  )}
                   <span className="text-[11px] font-bold uppercase tracking-wider text-ink-400">
                     {formatDate(entry.date)}
                   </span>
                 </div>
-                <p className="text-[13.5px] font-bold text-ink-700 mb-3">{entry.title}</p>
-                <ul className="space-y-1.5">
-                  {entry.highlights.map((h, i) => (
-                    <li
-                      key={i}
-                      className="text-[12.5px] text-ink-600 leading-relaxed pl-4 relative"
-                    >
-                      <span className="absolute left-0 top-[8px] w-1.5 h-1.5 rounded-full bg-ink-400" />
-                      {h}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+                <h3 className="text-display text-[22px] text-ink-900 leading-tight">
+                  {entry.title}
+                </h3>
+                {entry.summary && (
+                  <p className="text-[14px] text-ink-600 leading-relaxed mt-2">{entry.summary}</p>
+                )}
+              </header>
+
+              <ul className="space-y-2.5 mt-4">
+                {entry.highlights.map((h, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-ink-50/60 border border-ink-100"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-white border border-ink-200 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check size={11} strokeWidth={2.5} className="text-brand-500" />
+                    </span>
+                    <span className="text-[13.5px] text-ink-700 leading-relaxed flex-1">{h}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
           ))}
         </div>
 
-        <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400 text-center mt-6 pt-6 border-t border-ink-100">
-          ELvis Hub · byggt av Samify
-        </p>
+        {/* Footer */}
+        <div className="px-8 py-4 bg-ink-50 border-t border-ink-100 text-center">
+          <p className="text-[11px] font-semibold text-ink-500">
+            Bygger du något nytt med oss? Hör av dig till{' '}
+            <a href="mailto:info@samify.se" className="font-bold text-ink-900 underline">
+              info@samify.se
+            </a>
+          </p>
+        </div>
       </div>
     </Modal>
   );
