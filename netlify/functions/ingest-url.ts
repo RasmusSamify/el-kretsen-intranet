@@ -156,6 +156,12 @@ export default async (req: Request) => {
     return json({ error: `DB-insert misslyckades: ${insertError.message}` }, 502);
   }
 
+  // Ensure kb_sources has a row so admin kan sätta effective dates
+  await supabase.from('kb_sources').upsert(
+    { filename, title, source_category: 'website' },
+    { onConflict: 'filename', ignoreDuplicates: false },
+  );
+
   const payload: IngestResponse = {
     ok: true,
     source: filename,

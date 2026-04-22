@@ -88,7 +88,7 @@ export default async (req: Request) => {
     case 'get':
       return handleGet(admin, body.filename);
     case 'update':
-      return handleUpdate(admin, voyageKey, body.filename, body.content);
+      return handleUpdate(admin, voyageKey, body.filename, body.content, userData.user.id);
     case 'delete':
       return handleDelete(admin, body.filename);
     default:
@@ -144,12 +144,36 @@ async function handleUpdate(
   voyageKey: string,
   filename: string,
   content: string,
+  editedBy: string,
 ): Promise<Response> {
   if (!content || content.length < 100) {
     return json({ error: 'För lite text — minst 100 tecken krävs' }, 400);
   }
   if (new Blob([content]).size > MAX_CONTENT_BYTES) {
     return json({ error: `För stort innehåll (max ${MAX_CONTENT_BYTES / 1024} KB)` }, 413);
+  }
+
+  // Snapshot nuvarande chunks till kb_chunk_history INNAN uppdateringen
+  const { data: currentChunks } = await admin
+    .from('kb_chunks')
+    .select('id, text, token_count, quality_score')
+    .eq('filename', filename);
+
+  if (currentChunks && currentChunks.length > 0) {
+    const historyRows = await Promise.all(
+      currentChunks.map(async (c) => {
+        const { data: version } = await admin.rpc('kb_chunk_next_version', { p_chunk_id: c.id });
+        return {
+          chunk_id: c.id,
+          version_number: (version as number | null) ?? 1,
+          text: c.text,
+          token_count: c.token_count,
+          quality_score: c.quality_score,
+          edited_by: editedBy,
+        };
+      }),
+    );
+    await admin.from('kb_chunk_history').insert(historyRows);
   }
 
   const chunks = chunkText(content, filename);
@@ -197,6 +221,12 @@ async function handleUpdate(
 
   const { error: insError } = await admin.from('kb_chunks').insert(rows);
   if (insError) return json({ error: `Insert new chunks failed: ${insError.message}` }, 502);
+
+  // Ensure kb_sources exists and bump updated_at
+  await admin.from('kb_sources').upsert(
+    { filename, title: filename, source_category: 'internal' },
+    { onConflict: 'filename', ignoreDuplicates: false },
+  );
 
   return json({ ok: true, filename, chunks: rows.length }, 200);
 }

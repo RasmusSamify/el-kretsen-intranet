@@ -110,6 +110,11 @@ export default async (req: Request) => {
     return json({ error: `DB-insert misslyckades: ${insertError.message}` }, 502);
   }
 
+  await supabase.from('kb_sources').upsert(
+    { filename: normalisedName, title: normalisedName, source_category: 'internal' },
+    { onConflict: 'filename', ignoreDuplicates: false },
+  );
+
   const payload: IngestFileResponse = {
     ok: true,
     source: normalisedName,
