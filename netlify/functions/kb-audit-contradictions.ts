@@ -160,9 +160,13 @@ export default async (req: Request) => {
     // Vi gör detta genom att fråga för varje match-id — men för prestanda
     // accepterar vi att match_kb_chunks returnerar även website-chunks och
     // filtrerar bort dem här via ett separat lookup.
+    // Same-filename pairs produce massive noise from chunk overlap — ett
+    // enskilt dokument är per definition internt konsistent. Riktiga
+    // contradictions lever mellan DOKUMENT (lag vs. intern instruktion etc).
     const rawCandidates = (matches ?? [])
       .filter((m: MatchedChunk) =>
         m.id !== chunk.id &&
+        m.filename !== chunk.filename &&
         m.similarity >= SIMILARITY_LOW &&
         m.similarity <= SIMILARITY_HIGH,
       ) as MatchedChunk[];
