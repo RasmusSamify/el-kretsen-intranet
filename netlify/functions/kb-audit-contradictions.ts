@@ -46,6 +46,11 @@ const SIMILARITY_HIGH = 0.95;
 const MAX_CANDIDATES_PER_CHUNK = 5;
 const MATCH_COUNT = 10;
 
+// Audit fokuserar på primärkällor — lagar och interna dokument.
+// Webbsidor (el-kretsen.se) är sekundära och har mycket noise.
+const AUDIT_CATEGORIES = ['law', 'internal'];
+const MIN_QUALITY = 40;
+
 // Respektera Netlifys 26s-tak — bryt vid 22s så vi hinner skriva state + respons
 const TIME_BUDGET_MS = 22_000;
 // Anthropic-anrop kan parallelliseras. 8 samtidiga gånger 1-2s = 2s per grupp.
@@ -98,19 +103,23 @@ export default async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Hämta total count för completed-bedömning
+  // Hämta total count — bara chunks som kvalificerar för audit
   const { count: totalChunks } = await supabase
     .from('kb_chunks')
-    .select('id', { count: 'exact', head: true });
+    .select('id', { count: 'exact', head: true })
+    .in('source_category', AUDIT_CATEGORIES)
+    .gte('quality_score', MIN_QUALITY);
 
   if (totalChunks == null) {
     return json({ error: 'Failed to count kb_chunks' }, 502);
   }
 
-  // Hämta en batch chunks ordnade på id
+  // Hämta en batch chunks ordnade på id — endast primärkällor med bra kvalitet
   const { data: chunks, error: chunksError } = await supabase
     .from('kb_chunks')
-    .select('id, filename, chunk_index, text, embedding')
+    .select('id, filename, chunk_index, text, embedding, source_category')
+    .in('source_category', AUDIT_CATEGORIES)
+    .gte('quality_score', MIN_QUALITY)
     .order('id', { ascending: true })
     .range(offset, offset + batchSize - 1);
 
@@ -147,13 +156,34 @@ export default async (req: Request) => {
       continue;
     }
 
-    const candidates = (matches ?? [])
+    // Filtrera bort kandidater från website-kategorin och lågkvalitet
+    // Vi gör detta genom att fråga för varje match-id — men för prestanda
+    // accepterar vi att match_kb_chunks returnerar även website-chunks och
+    // filtrerar bort dem här via ett separat lookup.
+    const rawCandidates = (matches ?? [])
       .filter((m: MatchedChunk) =>
         m.id !== chunk.id &&
         m.similarity >= SIMILARITY_LOW &&
         m.similarity <= SIMILARITY_HIGH,
-      )
-      .slice(0, MAX_CANDIDATES_PER_CHUNK) as MatchedChunk[];
+      ) as MatchedChunk[];
+
+    // Hämta source_category + quality för kandidaterna
+    const candidateIds = rawCandidates.map((c) => c.id);
+    const { data: meta } = candidateIds.length > 0
+      ? await supabase
+          .from('kb_chunks')
+          .select('id, source_category, quality_score')
+          .in('id', candidateIds)
+      : { data: [] };
+    const metaMap = new Map((meta ?? []).map((m) => [m.id, m]));
+
+    const candidates = rawCandidates
+      .filter((c) => {
+        const m = metaMap.get(c.id);
+        if (!m) return false;
+        return AUDIT_CATEGORIES.includes(m.source_category) && m.quality_score >= MIN_QUALITY;
+      })
+      .slice(0, MAX_CANDIDATES_PER_CHUNK);
 
     // Dedupera par inom batchen (chunk a<->b ska bara testas en gång)
     const pairsToCheck: Array<{
