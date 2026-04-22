@@ -16,9 +16,25 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.3.0';
+export const CURRENT_VERSION = '1.4.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.4.0',
+    date: '2026-04-22',
+    title: 'Renare kunskapsbas och bättre kontroll över era källor',
+    summary:
+      'Vi har städat bort skräp från webbsidor i kunskapsbasen, förbättrat granskningsfliken så den bara visar riktiga motsägelser, och lagt grunden för att hantera när lagar ersätts eller interna dokument redigeras.',
+    highlights: [
+      'Granskningsfliken visar nu bara ÄKTA motsägelser — tidigare flaggades olika stycken i samma dokument som motsägelser (t.ex. när en lag listade olika datum för olika batterityper). Systemet jämför nu bara mellan OLIKA dokument, vilket är där verkliga konflikter finns.',
+      'Ny "Drift · Intern vs lag"-markering — när en intern instruktion säger något annat än lagtexten får den en gul flagga i Granskning. Det är den här typen av konflikt El-kretsen verkligen behöver fånga innan den påverkar svar.',
+      'Städat bort 162 textbitar med skräpkod från webb-källorna — gamla SVG-fragment, "Skriv ut"-knappar, sidfotsnavigering och paginering. Citaten i ELvis-svaren blir renare och mer läsbara.',
+      'ELvis respekterar nu "giltigt till"-datum — om ni markerar att en lag eller intern instruktion upphörde gälla ett visst datum, kommer ELvis sluta använda den från och med då. Förhindrar att utgången information påverkar svar.',
+      'Alla redigeringar av interna dokument sparas i historik — varje gång ni ändrar ett internt dokument sparas föregående version. Compliance-säkerhet: man kan alltid visa "vad stod det 1 mars 2026?".',
+      'Ny bakgrundsfunktion bevakar URL-källor — systemet kan nu jämföra hur el-kretsen.se (eller riksdagen.se, eur-lex.europa.eu m.fl.) ser ut just nu mot vad som finns indexerat i kunskapsbasen. Om sidan ändrats flaggas den för granskning.',
+      'Versionsrutan öppnas nu som en riktig popup i mitten av skärmen (inte trycks ihop i sidomenyn).',
+    ],
+  },
   {
     version: '1.3.0',
     date: '2026-04-21',
