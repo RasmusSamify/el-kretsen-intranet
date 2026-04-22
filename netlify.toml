@@ -33,6 +33,10 @@
   # Nattlig motsägelsedetektion mellan chunks — 26s hård gräns
   timeout = 26
 
+[functions."kb-detect-drift"]
+  # Veckovis re-fetch av URL-källor för att upptäcka drift — 26s hård gräns
+  timeout = 26
+
 [functions."review-action"]
   # Mark resolve/ignore/reopen på en review-rad
   timeout = 10
