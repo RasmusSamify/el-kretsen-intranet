@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -7,13 +8,14 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
-  size?: 'md' | 'lg' | 'xl';
+  size?: 'md' | 'lg' | 'xl' | '2xl';
 }
 
 const sizes = {
   md: 'max-w-md',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-5xl',
 };
 
 export function Modal({ open, onClose, title, children, size = 'lg' }: ModalProps) {
@@ -26,7 +28,7 @@ export function Modal({ open, onClose, title, children, size = 'lg' }: ModalProp
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       role="dialog"
@@ -49,6 +51,7 @@ export function Modal({ open, onClose, title, children, size = 'lg' }: ModalProp
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

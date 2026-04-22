@@ -14,7 +14,7 @@ function formatDate(iso: string) {
 
 export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title="Vad är nytt i ELvis Hub" size="xl">
+    <Modal open={open} onClose={onClose} title="Vad är nytt i ELvis Hub" size="2xl">
       <div className="flex flex-col max-h-[85vh]">
         {/* Hero header */}
         <div className="px-8 pt-6 pb-5 bg-gradient-to-br from-ink-900 via-ink-900 to-brand-700 text-white">
