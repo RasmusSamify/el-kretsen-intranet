@@ -16,9 +16,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.4.0';
+export const CURRENT_VERSION = '1.4.1';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.4.1',
+    date: '2026-04-22',
+    title: 'Mail-assistenten får feedback-knappar och syns i insikter',
+    summary:
+      'Ni kan nu ge tumme-upp eller tumme-ner på varje mail-svar som AI:n genererar, och insikter-sidan visar hur mycket mail-assistenten används och vad ni tycker om svaren.',
+    highlights: [
+      'Tumme-upp / tumme-ner under varje genererat mail-svar — ett klick räcker för att tala om ifall svaret var användbart.',
+      'Vid tumme-ner öppnas en valfri kommentar-ruta så ni kan skriva i klartext vad som saknades eller var fel. Hjälper oss förbättra AI:n över tid.',
+      'Insikter-sidan har nu en egen rad för mail-assistenten: hur många svar som genererats senaste 7 dagarna, hur många positiva och negativa röster som kommit in.',
+      'Andelen positiva svar visas som procent — ni ser direkt om kvaliteten håller bra nivå eller om något behöver granskas.',
+      'Varje mail-svar som genereras loggas nu (ingen persondata — bara språk, tidstämpel, längd och antal källor som användes) så vi kan följa utvecklingen.',
+    ],
+  },
   {
     version: '1.4.0',
     date: '2026-04-22',
