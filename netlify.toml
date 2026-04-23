@@ -37,6 +37,10 @@
   # Veckovis re-fetch av URL-källor för att upptäcka drift — 26s hård gräns
   timeout = 26
 
+[functions."answer-feedback"]
+  # Tar thumbs + kommentar för AI-svar
+  timeout = 10
+
 [functions."review-action"]
   # Mark resolve/ignore/reopen på en review-rad
   timeout = 10

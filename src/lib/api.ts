@@ -39,12 +39,18 @@ export interface MailAssistantResponse {
   sourceFiles: string[];
   gaps: string[];
   language: 'sv' | 'en';
+  logId: string | null;
 }
 
-export async function mailAssistant(req: MailAssistantRequest): Promise<MailAssistantResponse> {
+export async function mailAssistant(
+  req: MailAssistantRequest,
+  token?: string,
+): Promise<MailAssistantResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch('/api/mail-assistant', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(req),
   });
   if (!res.ok) {
@@ -58,6 +64,36 @@ export async function mailAssistant(req: MailAssistantRequest): Promise<MailAssi
     throw new Error(message);
   }
   return res.json();
+}
+
+export interface AnswerFeedbackRequest {
+  feature: 'mail_assistant' | 'ai_search';
+  reference_id?: string | null;
+  rating: 'up' | 'down';
+  comment?: string | null;
+}
+
+export async function submitAnswerFeedback(
+  req: AnswerFeedbackRequest,
+  token?: string,
+): Promise<void> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch('/api/answer-feedback', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
 }
 
 export interface FeeBreakdown {

@@ -5,8 +5,11 @@ import {
   Database,
   Flame,
   Library,
+  Mail,
   MessageSquareText,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   TrendingUp,
   TriangleAlert,
   Trophy,
@@ -47,8 +50,16 @@ interface SourceRow {
   chunk_count: number;
 }
 
+interface MailStats {
+  total_uses: number;
+  uses_last_7d: number;
+  feedback_up: number;
+  feedback_down: number;
+}
+
 export function InsightsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [mailStats, setMailStats] = useState<MailStats | null>(null);
   const [topFaqs, setTopFaqs] = useState<FaqRow[]>([]);
   const [unanswered, setUnanswered] = useState<UnansweredRow[]>([]);
   const [topSources, setTopSources] = useState<SourceRow[]>([]);
@@ -56,20 +67,32 @@ export function InsightsPage() {
 
   useEffect(() => {
     (async () => {
-      const [statsRes, faqRes, unansweredRes, sourcesRes] = await Promise.all([
-        supabase.rpc('dashboard_stats'),
-        supabase
-          .from('ai_questions')
-          .select('id, question_text, count, last_asked')
-          .order('count', { ascending: false })
-          .limit(10),
-        supabase
-          .from('ai_unanswered')
-          .select('id, question_text, top_match_filename, top_match_similarity, created_at, notified')
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase.rpc('list_kb_sources'),
-      ]);
+      const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [statsRes, faqRes, unansweredRes, sourcesRes, mailTotal, mail7d, feedbackRes] =
+        await Promise.all([
+          supabase.rpc('dashboard_stats'),
+          supabase
+            .from('ai_questions')
+            .select('id, question_text, count, last_asked')
+            .order('count', { ascending: false })
+            .limit(10),
+          supabase
+            .from('ai_unanswered')
+            .select('id, question_text, top_match_filename, top_match_similarity, created_at, notified')
+            .order('created_at', { ascending: false })
+            .limit(10),
+          supabase.rpc('list_kb_sources'),
+          supabase.from('mail_assistant_logs').select('id', { count: 'exact', head: true }),
+          supabase
+            .from('mail_assistant_logs')
+            .select('id', { count: 'exact', head: true })
+            .gte('created_at', since7d),
+          supabase
+            .from('answer_feedback')
+            .select('rating')
+            .eq('feature', 'mail_assistant'),
+        ]);
 
       if (statsRes.data) setStats(statsRes.data as Stats);
       if (faqRes.data) setTopFaqs(faqRes.data as FaqRow[]);
@@ -81,6 +104,15 @@ export function InsightsPage() {
           .slice(0, 10);
         setTopSources(sorted);
       }
+
+      const feedback = (feedbackRes.data ?? []) as Array<{ rating: string }>;
+      setMailStats({
+        total_uses: mailTotal.count ?? 0,
+        uses_last_7d: mail7d.count ?? 0,
+        feedback_up: feedback.filter((f) => f.rating === 'up').length,
+        feedback_down: feedback.filter((f) => f.rating === 'down').length,
+      });
+
       setLoading(false);
     })();
   }, []);
@@ -171,6 +203,37 @@ export function InsightsPage() {
               sub={`${stats?.unanswered_last_7d ?? 0} av dem obesvarade`}
               icon={<TrendingUp size={14} strokeWidth={1.75} />}
               tone="brand"
+            />
+          </div>
+        </div>
+
+        {/* Mail-assistent-statistik */}
+        <div className="grid grid-cols-12 gap-5">
+          <div className="col-span-12 lg:col-span-4">
+            <StatCard
+              label="Mail-assistent · användning"
+              value={mailStats?.uses_last_7d ?? 0}
+              sub={`${mailStats?.total_uses ?? 0} totalt · senaste 7 dagar`}
+              icon={<Mail size={14} strokeWidth={1.75} />}
+              tone="brand"
+            />
+          </div>
+          <div className="col-span-6 lg:col-span-4">
+            <StatCard
+              label="Positiv feedback"
+              value={mailStats?.feedback_up ?? 0}
+              sub={feedbackRatioText(mailStats)}
+              icon={<ThumbsUp size={14} strokeWidth={1.75} />}
+              tone="success"
+            />
+          </div>
+          <div className="col-span-6 lg:col-span-4">
+            <StatCard
+              label="Negativ feedback"
+              value={mailStats?.feedback_down ?? 0}
+              sub={mailStats && mailStats.feedback_down > 0 ? 'Granska för kvalitetsförbättring' : 'Inga än'}
+              icon={<ThumbsDown size={14} strokeWidth={1.75} />}
+              tone={(mailStats?.feedback_down ?? 0) > 0 ? 'warning' : 'neutral'}
             />
           </div>
         </div>
@@ -331,6 +394,14 @@ export function InsightsPage() {
       </div>
     </div>
   );
+}
+
+function feedbackRatioText(stats: MailStats | null): string {
+  if (!stats) return '—';
+  const total = stats.feedback_up + stats.feedback_down;
+  if (total === 0) return 'Ingen feedback än';
+  const pct = Math.round((stats.feedback_up / total) * 100);
+  return `${pct}% positiva av ${total} röster`;
 }
 
 function HeroCard({

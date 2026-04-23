@@ -14,6 +14,7 @@ interface MailAssistantResponse {
   sourceFiles: string[];
   gaps: string[];
   language: 'sv' | 'en';
+  logId: string | null;
 }
 
 const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
@@ -166,8 +167,13 @@ export default async (req: Request) => {
     return json({ error: `Claude API error (${claudeRes.status}): ${errText}` }, 502);
   }
 
-  const data = (await claudeRes.json()) as { content?: Array<{ type: string; text?: string }> };
+  const data = (await claudeRes.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
   const rawText = data.content?.find((c) => c.type === 'text')?.text ?? '';
+  const tokensIn = data.usage?.input_tokens ?? 0;
+  const tokensOut = data.usage?.output_tokens ?? 0;
 
   // Parse JSON — strip potential markdown fences
   const jsonText = rawText.replace(/```json|```/g, '').trim();
@@ -181,12 +187,48 @@ export default async (req: Request) => {
 
   const sourceFiles = [...new Set(chunks.map((c) => c.filename))];
 
+  // Försök härleda user_id från JWT om sådant skickas (valfri auth på endpointen)
+  let userId: string | null = null;
+  const authHeader = req.headers.get('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+      if (anonKey) {
+        const verifier = createClient(supabaseUrl, anonKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data: userData } = await verifier.auth.getUser(authHeader.slice(7));
+        userId = userData.user?.id ?? null;
+      }
+    } catch {
+      /* anon session — ignore */
+    }
+  }
+
+  // Logga användningen och få tillbaka id:t så klienten kan koppla feedback
+  const replyText = parsed.reply ?? rawText;
+  const { data: logRow } = await supabase
+    .from('mail_assistant_logs')
+    .insert({
+      user_id: userId,
+      input_length: customerEmail.length,
+      output_length: replyText.length,
+      language: lang,
+      gaps_count: parsed.gaps?.length ?? 0,
+      sources_count: sourceFiles.length,
+      tokens_in: tokensIn,
+      tokens_out: tokensOut,
+    })
+    .select('id')
+    .single();
+
   const payload: MailAssistantResponse = {
-    reply: parsed.reply ?? rawText,
+    reply: replyText,
     summary: parsed.summary ?? '',
     gaps: parsed.gaps ?? [],
     sourceFiles,
     language: lang,
+    logId: logRow?.id ?? null,
   };
 
   return json(payload, 200);

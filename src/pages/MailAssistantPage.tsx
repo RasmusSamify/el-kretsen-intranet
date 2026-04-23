@@ -1,16 +1,23 @@
 import { useState } from 'react';
-import { ArrowRight, Check, Copy, Flag, Languages, Mail, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Check, Copy, Flag, Languages, Mail, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert } from 'lucide-react';
 import { Button, Card, IconTile, Spinner } from '@/components/ui';
-import { mailAssistant, type MailAssistantResponse } from '@/lib/api';
+import { mailAssistant, submitAnswerFeedback, type MailAssistantResponse } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 export function MailAssistantPage() {
+  const { session } = useAuth();
   const [customerEmail, setCustomerEmail] = useState('');
   const [language, setLanguage] = useState<'sv' | 'en'>('sv');
   const [result, setResult] = useState<MailAssistantResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState<'up' | 'down' | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   const disabled = !customerEmail.trim() || loading;
 
@@ -20,16 +27,46 @@ export function MailAssistantPage() {
     setError(null);
     setResult(null);
     setCopied(false);
+    setFeedbackRating(null);
+    setFeedbackComment('');
+    setFeedbackSent(false);
+    setFeedbackError(null);
     try {
-      const response = await mailAssistant({
-        customerEmail: customerEmail.trim(),
-        responseLanguage: language,
-      });
+      const response = await mailAssistant(
+        {
+          customerEmail: customerEmail.trim(),
+          responseLanguage: language,
+        },
+        session?.access_token,
+      );
       setResult(response);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendFeedback = async (rating: 'up' | 'down', commentOverride?: string) => {
+    if (!result || feedbackSent || feedbackSubmitting) return;
+    setFeedbackSubmitting(true);
+    setFeedbackError(null);
+    try {
+      await submitAnswerFeedback(
+        {
+          feature: 'mail_assistant',
+          reference_id: result.logId,
+          rating,
+          comment: commentOverride ?? (rating === 'down' ? feedbackComment.trim() || null : null),
+        },
+        session?.access_token,
+      );
+      setFeedbackRating(rating);
+      setFeedbackSent(true);
+    } catch (e) {
+      setFeedbackError((e as Error).message);
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -48,6 +85,10 @@ export function MailAssistantPage() {
     setResult(null);
     setError(null);
     setCopied(false);
+    setFeedbackRating(null);
+    setFeedbackComment('');
+    setFeedbackSent(false);
+    setFeedbackError(null);
   };
 
   return (
@@ -240,6 +281,16 @@ export function MailAssistantPage() {
                         </div>
                       )}
                     </div>
+
+                    <FeedbackSection
+                      rating={feedbackRating}
+                      sent={feedbackSent}
+                      submitting={feedbackSubmitting}
+                      error={feedbackError}
+                      comment={feedbackComment}
+                      onComment={setFeedbackComment}
+                      onRate={sendFeedback}
+                    />
                   </div>
                 </Card>
               </div>
@@ -293,5 +344,106 @@ function ErrorHero({ message }: { message: string }) {
       <h3 className="text-display text-2xl text-ink-900 mt-5 mb-2">Något gick fel</h3>
       <p className="text-[13px] text-red-700 max-w-md font-medium leading-relaxed">{message}</p>
     </Card>
+  );
+}
+
+function FeedbackSection({
+  rating,
+  sent,
+  submitting,
+  error,
+  comment,
+  onComment,
+  onRate,
+}: {
+  rating: 'up' | 'down' | null;
+  sent: boolean;
+  submitting: boolean;
+  error: string | null;
+  comment: string;
+  onComment: (s: string) => void;
+  onRate: (r: 'up' | 'down', commentOverride?: string) => void;
+}) {
+  const showCommentBox = rating === 'down' && !sent;
+
+  if (sent) {
+    return (
+      <div className="mt-5 pt-4 border-t border-ink-100 flex items-center gap-2.5 text-[12.5px] text-ink-600">
+        <Check size={14} strokeWidth={2.5} className="text-emerald-600" />
+        <span>
+          Tack för feedbacken! {rating === 'up' ? 'Kul att svaret var bra.' : 'Vi lär oss av det som inte funkade.'}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 pt-4 border-t border-ink-100 space-y-3">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-ink-500">
+          Var svaret användbart?
+        </span>
+        <button
+          onClick={() => onRate('up')}
+          disabled={submitting}
+          className={cn(
+            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12px] font-bold transition-all',
+            rating === 'up'
+              ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+              : 'bg-white border-ink-200 text-ink-600 hover:border-emerald-300 hover:text-emerald-700',
+            submitting && 'opacity-60 cursor-not-allowed',
+          )}
+          aria-label="Bra svar"
+        >
+          <ThumbsUp size={13} strokeWidth={2.25} />
+          Bra svar
+        </button>
+        <button
+          onClick={() => onRate('down')}
+          disabled={submitting}
+          className={cn(
+            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12px] font-bold transition-all',
+            rating === 'down'
+              ? 'bg-red-100 border-red-300 text-red-800'
+              : 'bg-white border-ink-200 text-ink-600 hover:border-red-300 hover:text-red-700',
+            submitting && 'opacity-60 cursor-not-allowed',
+          )}
+          aria-label="Dåligt svar"
+        >
+          <ThumbsDown size={13} strokeWidth={2.25} />
+          Dåligt svar
+        </button>
+      </div>
+
+      {showCommentBox && (
+        <div className="space-y-2">
+          <textarea
+            value={comment}
+            onChange={(e) => onComment(e.target.value)}
+            placeholder="Vad saknades eller var felaktigt? (valfritt — hjälper oss förbättra)"
+            rows={3}
+            className="w-full resize-none bg-white border border-ink-200 rounded-xl px-4 py-3 text-[13px] text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none transition-all"
+            disabled={submitting}
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => onRate('down')}
+              loading={submitting}
+            >
+              Skicka feedback
+            </Button>
+            <span className="text-[11px] text-ink-400">
+              Eller lämna tomt och klicka Dåligt svar igen
+            </span>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-[12px] text-red-700 font-medium">Kunde inte skicka feedback: {error}</p>
+      )}
+    </div>
   );
 }
