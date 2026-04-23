@@ -17,10 +17,22 @@ import time
 import urllib.request
 from pathlib import Path
 
-ENDPOINT = 'https://elkretsen-hub.netlify.app/api/kb-audit-contradictions'
-CRON_SECRET = '3f8a1c9e2b7d4a6f5e8c1b2a9d3f7e4c6b5a8d2f1e9c3b7a4d6e8f2c5b1a9d3e'
+ENDPOINT = 'https://elkretsen.netlify.app/api/kb-audit-contradictions'
 BATCH_SIZE = 15
 MAX_MINUTES = 60
+
+# Läs CRON_SECRET från .env.local (samma fil som andra scripts).
+ENV_PATH = Path(r"C:\Users\rasmu\el-kretsen-intranet\.env.local")
+if ENV_PATH.exists():
+    for line in ENV_PATH.read_text(encoding='utf-8').splitlines():
+        m = re.match(r'^([A-Z_][A-Z0-9_]*)=(.*)$', line)
+        if m and not os.environ.get(m.group(1)):
+            os.environ[m.group(1)] = m.group(2).strip('"\'')
+
+CRON_SECRET = os.environ.get('CRON_SECRET')
+if not CRON_SECRET:
+    print('ERROR: CRON_SECRET saknas i env eller .env.local')
+    sys.exit(1)
 
 
 def call_once(offset):
