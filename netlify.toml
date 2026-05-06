@@ -21,6 +21,10 @@
   # Genererar ett färdigt svar på kundmail via RAG + Claude
   timeout = 26
 
+[functions."quiz-generator"]
+  # Genererar Kretskampen-frågor via Claude (kunskapsbas + prompt cache)
+  timeout = 26
+
 [functions."fee-calculator"]
   # Räknar ut El-kretsen-avgift för en produktbeskrivning
   timeout = 26
