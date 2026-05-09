@@ -116,23 +116,117 @@ async function notify(params: {
   await writeNote(`env OK — resendKey len=${resendKey.length}, notifyTo=${notifyTo}`);
 
   const subject = `[ELvis Hub] ${CATEGORY_LABEL[params.category]}: "${params.message.slice(0, 60)}${params.message.length > 60 ? '…' : ''}"`;
-  const html = `
-    <div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 560px; color: #1e293b;">
-      <h2 style="color: #0369a1; margin-bottom: 8px;">Ny feedback från ELvis Hub</h2>
-      <p style="color: #475569; margin: 0 0 20px;">
-        ${escapeHtml(params.userEmail ?? 'okänd användare')} skickade in
-        <strong>${escapeHtml(CATEGORY_LABEL[params.category])}</strong>.
-      </p>
+  const formattedDate = new Date().toLocaleString('sv-SE', {
+    timeZone: 'Europe/Stockholm',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const senderEmail = escapeHtml(params.userEmail ?? 'Okänd användare');
+  const categoryLabel = escapeHtml(CATEGORY_LABEL[params.category]);
+  const messageHtml = escapeHtml(params.message).replace(/\n/g, '<br>');
 
-      <div style="background: #f1f5f9; border-left: 4px solid #0284c7; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
-        <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Meddelande</strong>
-        <p style="margin: 6px 0 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap;">${escapeHtml(params.message)}</p>
-      </div>
+  const html = `<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ny feedback från ELvis Hub</title>
+</head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f8fafc;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 6px 32px -8px rgba(15,23,42,0.12);">
 
-      <p style="font-size: 12px; color: #94a3b8; margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-        Feedback-id: <code>${params.feedbackId}</code> · Hantera i Supabase-tabell <code>user_feedback</code>.
-      </p>
-    </div>`.trim();
+          <!-- Hero gradient header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0284c7 0%,#7c3aed 100%);padding:36px 40px 32px;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:10px;">
+                El-kretsen &middot; ELvis Hub
+              </div>
+              <div style="font-size:26px;font-weight:700;color:#ffffff;line-height:1.2;letter-spacing:-0.01em;">
+                Ny feedback inkommen
+              </div>
+              <div style="font-size:14px;color:rgba(255,255,255,0.86);margin-top:8px;line-height:1.45;">
+                ${senderEmail} har skickat in ett ${categoryLabel.toLowerCase()}.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Meta row -->
+          <tr>
+            <td style="padding:28px 40px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="vertical-align:top;padding-right:16px;">
+                    <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">Från</div>
+                    <div style="font-size:15px;font-weight:600;color:#1e293b;line-height:1.3;">${senderEmail}</div>
+                    <div style="font-size:12px;color:#64748b;margin-top:4px;">${formattedDate}</div>
+                  </td>
+                  <td align="right" style="vertical-align:top;white-space:nowrap;">
+                    <span style="display:inline-block;padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,#e0f2fe 0%,#ede9fe 100%);color:#0369a1;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:1px solid rgba(2,132,199,0.15);">
+                      ${categoryLabel}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Message card -->
+          <tr>
+            <td style="padding:24px 40px 8px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">Meddelande</div>
+              <div style="background:#f8fafc;border-left:4px solid #0284c7;border-radius:14px;padding:22px 26px;font-size:15px;line-height:1.65;color:#1e293b;">
+                ${messageHtml}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Action card -->
+          <tr>
+            <td style="padding:24px 40px;">
+              <div style="background:linear-gradient(135deg,#f0f9ff 0%,#faf5ff 100%);border:1px solid #e0f2fe;border-radius:16px;padding:20px 24px;">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#0369a1;margin-bottom:6px;">Nästa steg</div>
+                <div style="font-size:13px;line-height:1.6;color:#475569;">
+                  Svara direkt p&aring; det h&auml;r mejlet &mdash; det g&aring;r till ${senderEmail}. Eller hantera &auml;rendet i Supabase-tabellen <code style="background:rgba(2,132,199,0.1);padding:2px 7px;border-radius:5px;font-family:'SF Mono','Monaco','Cascadia Code',monospace;font-size:12px;color:#0369a1;">user_feedback</code> n&auml;r du har tid.
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px 32px;border-top:1px solid #f1f5f9;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <div style="font-size:11px;color:#94a3b8;line-height:1.5;">
+                      Feedback-id: <span style="font-family:'SF Mono','Monaco','Cascadia Code',monospace;color:#64748b;">${params.feedbackId}</span>
+                    </div>
+                  </td>
+                  <td align="right" style="vertical-align:middle;">
+                    <a href="https://elkretsen.netlify.app" style="font-size:11px;color:#94a3b8;text-decoration:none;border-bottom:1px solid #e2e8f0;">elkretsen.netlify.app</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Outer footer -->
+        <div style="font-size:10px;color:#cbd5e1;margin-top:20px;line-height:1.5;">
+          Skickat fr&aring;n ELvis Hub via Samify.
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
 
   try {
     const res = await fetch('https://api.resend.com/emails', {

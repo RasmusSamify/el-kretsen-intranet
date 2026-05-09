@@ -85,7 +85,7 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Skicka feedback" size="lg">
+    <Modal open={open} onClose={handleClose} title="Skicka feedback" size="xl">
       {submitted ? (
         <div className="py-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-emerald-50 mx-auto flex items-center justify-center">
@@ -104,12 +104,12 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </div>
       ) : (
-        <div className="space-y-5 py-1">
+        <div className="space-y-7 px-2 py-3">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-ink-500 mb-2">
+            <label className="block text-[11px] font-bold uppercase tracking-[0.14em] text-ink-500 mb-3">
               Vad gäller det?
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {CATEGORIES.map((opt) => {
                 const Icon = opt.icon;
                 const active = category === opt.value;
@@ -119,22 +119,33 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
                     type="button"
                     onClick={() => setCategory(opt.value)}
                     className={cn(
-                      'flex flex-col items-start text-left p-3 rounded-xl border transition-all',
+                      'group relative flex items-start gap-4 text-left p-5 rounded-2xl border transition-all',
                       active
-                        ? 'border-brand-500 bg-brand-50 shadow-[0_0_0_3px_rgba(2,132,199,0.08)]'
-                        : 'border-ink-100 bg-white hover:border-ink-200',
+                        ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-violet-50/40 shadow-[0_0_0_4px_rgba(2,132,199,0.08),0_4px_12px_-2px_rgba(2,132,199,0.18)]'
+                        : 'border-ink-100 bg-white hover:border-ink-200 hover:shadow-card',
                     )}
                   >
                     <div
                       className={cn(
-                        'w-7 h-7 rounded-lg flex items-center justify-center mb-2',
-                        active ? 'bg-brand-500 text-white' : 'bg-ink-50 text-ink-500',
+                        'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all',
+                        active
+                          ? 'bg-gradient-to-br from-brand-500 to-violet-500 text-white shadow-md'
+                          : 'bg-ink-50 text-ink-500 group-hover:bg-ink-100',
                       )}
                     >
-                      <Icon size={14} strokeWidth={2} />
+                      <Icon size={20} strokeWidth={2} />
                     </div>
-                    <span className="text-[13px] font-bold text-ink-900 leading-none">{opt.label}</span>
-                    <span className="text-[11px] text-ink-500 mt-1 leading-snug">{opt.description}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className={cn(
+                        'block text-[14px] font-bold leading-tight',
+                        active ? 'text-brand-900' : 'text-ink-900',
+                      )}>
+                        {opt.label}
+                      </span>
+                      <span className="block text-[12px] text-ink-500 mt-1 leading-snug">
+                        {opt.description}
+                      </span>
+                    </div>
                   </button>
                 );
               })}
@@ -144,45 +155,52 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
           <div>
             <label
               htmlFor="feedback-message"
-              className="block text-[11px] font-bold uppercase tracking-[0.12em] text-ink-500 mb-2"
+              className="block text-[11px] font-bold uppercase tracking-[0.14em] text-ink-500 mb-3"
             >
               Berätta lite mer
             </label>
-            <textarea
-              id="feedback-message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              maxLength={MAX_LENGTH}
-              rows={6}
-              placeholder="Vad fungerar bra? Vad skulle du vilja se? Beskriv så detaljerat du orkar."
-              className="w-full px-4 py-3 rounded-xl border border-ink-100 bg-white text-[14px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 resize-none"
-              disabled={submitting}
-            />
-            <div className="flex justify-between mt-1.5 text-[11px] text-ink-400 tabular-nums">
+            <div className="relative">
+              <textarea
+                id="feedback-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                maxLength={MAX_LENGTH}
+                rows={7}
+                placeholder="Vad fungerar bra? Vad skulle du vilja se? Beskriv så detaljerat du orkar."
+                className="w-full px-5 py-4 rounded-2xl border border-ink-100 bg-white text-[14px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:ring-4 focus:ring-brand-500/15 focus:border-brand-500 resize-none transition-all leading-relaxed"
+                disabled={submitting}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-[11px] text-ink-400 tabular-nums px-1">
               <span>{message.trim().length < MIN_LENGTH ? `Minst ${MIN_LENGTH} tecken` : ''}</span>
               <span>
-                {message.length} / {MAX_LENGTH}
+                {message.length} / {MAX_LENGTH.toLocaleString('sv-SE')}
               </span>
             </div>
           </div>
 
           {error && (
-            <div className="text-[12px] text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <div className="text-[12px] text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" onClick={handleClose} disabled={submitting}>
-              Avbryt
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSubmit}
-              disabled={submitting || message.trim().length < MIN_LENGTH}
-            >
-              {submitting ? 'Skickar…' : 'Skicka feedback'}
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-ink-100">
+            <span className="text-[11px] text-ink-400 leading-snug max-w-[60%]">
+              Ditt meddelande mejlas direkt till Samify och vi återkopplar om vi behöver mer info.
+            </span>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={handleClose} disabled={submitting}>
+                Avbryt
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSubmit}
+                disabled={submitting || message.trim().length < MIN_LENGTH}
+              >
+                {submitting ? 'Skickar…' : 'Skicka feedback'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
