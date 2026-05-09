@@ -156,7 +156,10 @@ export default async (req: Request) => {
     body: JSON.stringify({
       model: CLAUDE_MODEL,
       max_tokens: 2000,
-      temperature: 0,
+      // Lite kreativitet i formuleringen utan att riskera fakta-drift —
+      // grounding-reglerna i system-prompten håller siffror/datum/paragrafer
+      // ordagrant, men ton och meningsbyggnad får variera mellan svar.
+      temperature: 0.4,
       system: lang === 'sv' ? SYSTEM_PROMPT_SV : SYSTEM_PROMPT_EN,
       messages: [{ role: 'user', content: userMessage }],
     }),
