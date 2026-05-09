@@ -16,9 +16,25 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.4.1';
+export const CURRENT_VERSION = '1.5.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.5.0',
+    date: '2026-05-09',
+    title: 'Stora sök-uppgraderingar och inbyggt feedback-formulär',
+    summary:
+      'ELvis blir mer precis i sina svar tack vare flera förbättringar i hur kunskapsbasen söks igenom, och ni kan nu skicka feedback direkt i appen istället för via Google Forms.',
+    highlights: [
+      'ELvis söker nu i två nivåer — små textstycken för exakt sökning, men levererar större omgivande stycken till AI:n när svaret skrivs. Resultatet: ELvis hittar rätt mening MEN har också omgivningen för att tolka den korrekt. Bra t.ex. när en lagparagraf hänvisar till en föregående definition.',
+      'En extra prickskytte-AI har lagts till mellan första sökningen och svaret. Den väger varje kandidat-avsnitt mot frågan och plockar ut de mest relevanta — halverar typiskt antalet felmatchningar.',
+      'Korta frågor som "B74" eller "kostar kod 3.5 något?" expanderas nu automatiskt med produktnamnet innan sök ("B74 Li-jon LFP – Litium-järnfosfat..."). Innebär att ni får lika bra resultat med en kort fråga som med en utskriven.',
+      'Smart överlapp mellan textstycken följer nu meningsgränser istället för en hård avskärning på exakt 200 tecken. Citation-utdragen blir därmed mer läsbara — inga halva meningar.',
+      'Varje textstycke bär nu en automatisk lag- och paragrafmärkning när det är möjligt (t.ex. "SFS 2022:1276" och "15 kap. 17 §") — totalt 1 042 av 1 654 stycken har fått sådan metadata. Grunden för framtida sökfilter direkt i UI:t.',
+      'Ny inbyggd Feedback-knapp i toppmenyn — välj kategori (Förbättring/Bugg/Fråga/Annat), skriv ditt meddelande, klicka Skicka. Mejl landar direkt hos Samify och vi kan svara från samma tråd. Ersätter Google Forms-formuläret.',
+      'Chatt-historiken med ELvis försvinner inte längre när ni växlar flik till Mail-assistenten eller någon annan vy — den lever kvar tills ni stänger fliken eller loggar ut. Ingen risk att nästa person på samma konto ser era tidigare frågor.',
+    ],
+  },
   {
     version: '1.4.1',
     date: '2026-04-22',
