@@ -96,9 +96,23 @@ async function notify(params: {
   message: string;
   userEmail: string | null;
 }) {
+  const supabaseUrl = process.env.SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const debugAdmin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const writeNote = (note: string) =>
+    debugAdmin.from('user_feedback').update({ internal_note: note }).eq('id', params.feedbackId);
+
+  await writeNote('notify() entered');
+
   const resendKey = process.env.RESEND_API_KEY;
   const notifyTo = process.env.NOTIFICATION_EMAIL;
-  if (!resendKey || !notifyTo) return;
+  if (!resendKey || !notifyTo) {
+    await writeNote(`MISSING ENV — resendKey=${!!resendKey}, notifyTo=${!!notifyTo}`);
+    return;
+  }
+  await writeNote(`env OK — resendKey len=${resendKey.length}, notifyTo=${notifyTo}`);
 
   const subject = `[ELvis Hub] ${CATEGORY_LABEL[params.category]}: "${params.message.slice(0, 60)}${params.message.length > 60 ? '…' : ''}"`;
   const html = `
@@ -133,28 +147,17 @@ async function notify(params: {
       }),
     });
     if (res.ok) {
-      const supabaseUrl = process.env.SUPABASE_URL!;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-      const admin = createClient(supabaseUrl, serviceKey, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
-      await admin.from('user_feedback').update({ notified: true }).eq('id', params.feedbackId);
+      await debugAdmin.from('user_feedback').update({ notified: true, internal_note: null }).eq('id', params.feedbackId);
     } else {
-      // Logga full body så vi ser exakt vad Resend klagar på, både i
-      // Netlify-loggarna och i DB (under user_feedback.internal_note) så
-      // vi kan SQL-fråga utan att öppna Netlify dashboard.
       const errBody = await res.text().catch(() => '<no body>');
       const diag = `Resend ${res.status}: ${errBody.slice(0, 400)}`;
       console.warn(`feedback notify: ${diag}`);
-      const supabaseUrl = process.env.SUPABASE_URL!;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-      const admin = createClient(supabaseUrl, serviceKey, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
-      await admin.from('user_feedback').update({ internal_note: diag }).eq('id', params.feedbackId);
+      await writeNote(diag);
     }
   } catch (e) {
-    console.warn('feedback notify failed:', (e as Error).message);
+    const msg = `notify exception: ${(e as Error).message}`;
+    console.warn(msg);
+    await writeNote(msg);
   }
 }
 
