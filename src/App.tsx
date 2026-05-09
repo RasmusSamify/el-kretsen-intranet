@@ -10,6 +10,7 @@ import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { GranskningPage } from '@/pages/GranskningPage';
 import { Shell } from '@/components/layout/Shell';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
+import { ChatProvider } from '@/contexts/ChatContext';
 
 export default function App() {
   return (
@@ -18,7 +19,9 @@ export default function App() {
       <Route
         element={
           <ProtectedRoute>
-            <Shell />
+            <ChatProvider>
+              <Shell />
+            </ChatProvider>
           </ProtectedRoute>
         }
       >
