@@ -124,10 +124,8 @@ async function notify(params: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
       body: JSON.stringify({
-        // Använd Resends test-domän, samma som logAndNotifyUnanswered i
-        // ai-search.ts. Funkar utan ytterligare DNS-verifiering så länge
-        // mottagaren (info@samify.se) finns som verifierad adress i kontot.
-        from: 'ELvis Hub <onboarding@resend.dev>',
+        // Skickas från Samifys verifierade subdomän updates.samify.se.
+        from: 'ELvis Hub <hub@updates.samify.se>',
         to: notifyTo.split(',').map((s) => s.trim()).filter(Boolean),
         reply_to: params.userEmail ?? undefined,
         subject,

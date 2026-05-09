@@ -358,7 +358,7 @@ async function logAndNotifyUnanswered(params: {
         Authorization: `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: 'ELvis Hub <onboarding@resend.dev>',
+        from: 'ELvis Hub <hub@updates.samify.se>',
         to: notifyTo.split(',').map((s) => s.trim()).filter(Boolean),
         subject,
         html: body,
@@ -367,6 +367,9 @@ async function logAndNotifyUnanswered(params: {
 
     if (emailRes.ok && inserted) {
       await client.from('ai_unanswered').update({ notified: true }).eq('id', inserted.id);
+    } else if (!emailRes.ok) {
+      const errBody = await emailRes.text().catch(() => '<no body>');
+      console.warn(`logAndNotifyUnanswered: Resend ${emailRes.status} — ${errBody.slice(0, 400)}`);
     }
   } catch (e) {
     // Non-fatal — logging should never break the user-facing response.
