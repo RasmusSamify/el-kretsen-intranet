@@ -85,7 +85,7 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Skicka feedback" size="md">
+    <Modal open={open} onClose={handleClose} title="Skicka feedback" size="lg">
       {submitted ? (
         <div className="py-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-emerald-50 mx-auto flex items-center justify-center">
@@ -181,7 +181,7 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
               onClick={handleSubmit}
               disabled={submitting || message.trim().length < MIN_LENGTH}
             >
-              {submitting ? 'Skickar…' : 'Skicka'}
+              {submitting ? 'Skickar…' : 'Skicka feedback'}
             </Button>
           </div>
         </div>
