@@ -16,9 +16,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.5.0';
+export const CURRENT_VERSION = '1.5.1';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.5.1',
+    date: '2026-05-09',
+    title: 'Välj själv hur personlig mail-assistenten ska vara',
+    summary:
+      'Mail-assistenten har fått en ton-väljare så ni kan bestämma per mail hur saklig eller personlig AI:n ska vara i sina svar. Valet kommer ihåg mellan inloggningar.',
+    highlights: [
+      'Ny "Ton"-väljare bredvid språkväljaren med tre nivåer: Saklig (konsekvent och formell — samma mail ger nästan identiskt svar), Balanserad (standard — varierad ton men strikt på fakta), Personlig (varmare och mer fritt formulerat — som om en kollega skrev mailet).',
+      'Det valda tonläget sparas automatiskt så ni slipper välja varje gång — har ni en gång klickat Personlig stannar det där tills ni byter.',
+      'Beskrivning av aktivt val syns alltid under knapparna så det är tydligt vad det gör innan ni klickar Generera.',
+      'Fakta påverkas inte av tonvalet — siffror, datum, paragrafer och produktkoder kommer fortfarande ordagrant från kunskapsbasen tack vare grounding-reglerna i AI:ns systemprompt.',
+      'Tidigare svarade mail-assistenten alltid på samma deterministiska sätt vilket kunde kännas stelt över flera mail till samma kund. Nu får ni välja vad som passar situationen.',
+    ],
+  },
   {
     version: '1.5.0',
     date: '2026-05-09',
