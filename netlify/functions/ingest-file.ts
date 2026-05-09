@@ -1,6 +1,7 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { embeddingInput } from './_shared/contextPrefix';
+import { extractMetadata } from './_shared/extractMetadata';
 
 interface IngestFileRequest {
   filename: string;
@@ -64,6 +65,9 @@ export default async (req: Request) => {
     text: string;
     token_count: number;
     embedding: number[];
+    law_ref: string | null;
+    paragraph_ref: string | null;
+    section: string | null;
   }> = [];
 
   for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
@@ -90,12 +94,16 @@ export default async (req: Request) => {
     };
     totalTokens += data.usage?.total_tokens ?? 0;
     batch.forEach((c, idx) => {
+      const meta = extractMetadata(c.text);
       rows.push({
         filename: c.filename,
         chunk_index: c.chunk_index,
         text: c.text,
         token_count: Math.round(c.text.length / 4),
         embedding: data.data[idx].embedding,
+        law_ref: meta.law_ref,
+        paragraph_ref: meta.paragraph_ref,
+        section: meta.section,
       });
     });
   }

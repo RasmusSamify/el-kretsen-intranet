@@ -1,5 +1,7 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { requireUser } from './_shared/auth';
+import { expandQueryWithCodes } from './_shared/queryExpansion';
 
 interface AISearchRequest {
   query: string;
@@ -24,10 +26,16 @@ interface MatchedChunk {
 }
 
 const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
+const VOYAGE_RERANK_URL = 'https://api.voyageai.com/v1/rerank';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const EMBEDDING_MODEL = 'voyage-3';
+const RERANK_MODEL = 'rerank-2.5';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
-const MATCH_COUNT = 10;
+// Hybrid match → wide retrieval, rerank cherry-picks the most relevant ones
+// med en cross-encoder. Total kostnad per query ökar marginellt (~$0.0002),
+// men kvaliteten på det Claude ser blir märkbart bättre.
+const RETRIEVAL_COUNT = 25;
+const FINAL_COUNT = 10;
 
 const SYSTEM_PROMPT = `Du är ELvis — El-kretsens interna AI-assistent för producentansvar, avfallshantering och regelefterlevnad. El-kretsen är Sveriges nationella insamlingssystem för WEEE (elektronikavfall) och batterier. Du används internt av El-kretsens medarbetare — ofta för att förbereda svar på kundfrågor, inklusive långa mail på svenska eller engelska.
 
@@ -142,6 +150,9 @@ export default async (req: Request) => {
     );
   }
 
+  const auth = await requireUser(req);
+  if (!auth.ok) return auth.response;
+
   let body: AISearchRequest;
   try {
     body = await req.json();
@@ -152,10 +163,13 @@ export default async (req: Request) => {
   const query = (body.query ?? '').trim();
   if (!query) return json({ error: 'Query required' }, 400);
 
-  // Step 1: Embed query via Voyage AI
+  // Step 1: Embed query via Voyage AI. Expand produktkoder ("B74", "3.5") med
+  // produktnamn innan embedding så retrieval hittar rätt KB-avsnitt även när
+  // användaren bara skriver koden. Original-frågan går oförändrad till Claude.
+  const embeddingQuery = expandQueryWithCodes(query);
   let embedding: number[];
   try {
-    embedding = await embedText(query, voyageKey);
+    embedding = await embedText(embeddingQuery, voyageKey);
   } catch (e) {
     return json({ error: `Embedding failed: ${(e as Error).message}` }, 502);
   }
@@ -165,20 +179,27 @@ export default async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Hybrid search: embeddings (semantic) + BM25 (exact term/code matching)
-  // merged via Reciprocal Rank Fusion. Fångar produktkoder som embeddings
-  // ibland missar.
-  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid', {
+  // Hybrid search v2: embeddings (semantic) + BM25 (exact term/code matching)
+  // merged via Reciprocal Rank Fusion. Söker mot små chunks (precision),
+  // returnerar parent large chunks (kontext) för Claude. Fångar produktkoder
+  // som embeddings ibland missar.
+  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid_v2', {
     query_text: query,
     query_embedding: embedding,
-    match_count: MATCH_COUNT,
+    match_count: RETRIEVAL_COUNT,
   });
 
   if (matchError) {
     return json({ error: `DB match failed: ${matchError.message}` }, 502);
   }
 
-  const chunks = (matches ?? []) as MatchedChunk[];
+  const candidateChunks = (matches ?? []) as MatchedChunk[];
+
+  // Rerank: Voyage rerank-2.5 (cross-encoder) väger varje kandidat mot frågan
+  // och plockar ut de mest relevanta. Halverar typiskt false positives.
+  // Använd den expanderade frågan så koder + produktnamn hjälper rerank att
+  // koppla "B74" till chunks som nämner "Litium-järnfosfat".
+  const chunks = await rerankChunks(embeddingQuery, candidateChunks, voyageKey);
 
   // Step 3: No matches → log + notify + return not-found answer
   if (chunks.length === 0) {
@@ -370,6 +391,47 @@ function escapeHtml(s: string): string {
         return c;
     }
   });
+}
+
+async function rerankChunks(
+  query: string,
+  candidates: MatchedChunk[],
+  apiKey: string,
+): Promise<MatchedChunk[]> {
+  if (candidates.length <= FINAL_COUNT) return candidates;
+
+  try {
+    const response = await fetch(VOYAGE_RERANK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: RERANK_MODEL,
+        query,
+        documents: candidates.map((c) => c.text),
+        top_k: FINAL_COUNT,
+      }),
+    });
+
+    if (!response.ok) {
+      // Rerank ska aldrig blockera ett svar — fall tillbaka till hybrid-ordningen.
+      console.warn(`Voyage rerank ${response.status}: ${await response.text()}`);
+      return candidates.slice(0, FINAL_COUNT);
+    }
+
+    const data = (await response.json()) as {
+      data: Array<{ index: number; relevance_score: number }>;
+    };
+
+    // Behåll original cosine-similarity i `similarity` så UI-procenten är
+    // konsistent — rerank används bara för ordning och urval.
+    return data.data.map((d) => candidates[d.index]).filter(Boolean);
+  } catch (e) {
+    console.warn(`Rerank failed, fallback to hybrid order: ${(e as Error).message}`);
+    return candidates.slice(0, FINAL_COUNT);
+  }
 }
 
 async function embedText(text: string, apiKey: string): Promise<number[]> {

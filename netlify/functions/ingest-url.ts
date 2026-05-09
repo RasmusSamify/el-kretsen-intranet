@@ -2,6 +2,7 @@ import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { parse } from 'node-html-parser';
 import { embeddingInput } from './_shared/contextPrefix';
+import { extractMetadata } from './_shared/extractMetadata';
 
 interface IngestRequest {
   url: string;
@@ -113,7 +114,16 @@ export default async (req: Request) => {
   const chunks = chunkText(text, filename);
 
   // Step 4: embed in batches
-  const embedded: Array<{ filename: string; chunk_index: number; text: string; token_count: number; embedding: number[] }> = [];
+  const embedded: Array<{
+    filename: string;
+    chunk_index: number;
+    text: string;
+    token_count: number;
+    embedding: number[];
+    law_ref: string | null;
+    paragraph_ref: string | null;
+    section: string | null;
+  }> = [];
   let totalTokens = 0;
   for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
     const batch = chunks.slice(i, i + BATCH_SIZE);
@@ -135,12 +145,16 @@ export default async (req: Request) => {
     const data = (await res.json()) as { data: Array<{ embedding: number[] }>; usage?: { total_tokens?: number } };
     totalTokens += data.usage?.total_tokens ?? 0;
     batch.forEach((c, idx) => {
+      const meta = extractMetadata(c.text);
       embedded.push({
         filename: c.filename,
         chunk_index: c.chunk_index,
         text: c.text,
         token_count: Math.round(c.text.length / 4),
         embedding: data.data[idx].embedding,
+        law_ref: meta.law_ref,
+        paragraph_ref: meta.paragraph_ref,
+        section: meta.section,
       });
     });
   }
