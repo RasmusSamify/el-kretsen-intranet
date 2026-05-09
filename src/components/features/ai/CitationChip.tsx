@@ -111,10 +111,21 @@ export function CitationChip({ citation, index, claimText }: CitationChipProps) 
               </button>
             )}
 
-            <span className="flex items-center justify-between px-4 py-2 bg-ink-50 text-[10px] font-bold uppercase tracking-wider text-ink-400">
-              <span>Relevans: {Math.round(citation.similarity * 100)} %</span>
+            <span className="flex items-center justify-between gap-2 px-4 py-2 bg-ink-50 text-[10px] font-bold uppercase tracking-wider text-ink-400">
+              <span className="flex items-center gap-2">
+                <span>Relevans: {Math.round(citation.similarity * 100)} %</span>
+                {citation.text.length >= 1800 && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 normal-case tracking-normal text-[9px] font-bold border border-brand-100"
+                    title="v1.5: hierarkisk sök returnerar hela parent-stycket åt ELvis för bättre kontext"
+                  >
+                    <Sparkles size={9} strokeWidth={2.25} />
+                    Stor kontext · {citation.text.length.toLocaleString('sv-SE')} tecken
+                  </span>
+                )}
+              </span>
               {highlight && (
-                <span className="inline-flex items-center gap-1 normal-case tracking-normal">
+                <span className="inline-flex items-center gap-1 normal-case tracking-normal shrink-0">
                   <Sparkles size={10} strokeWidth={2} className="text-amber-600" />
                   <span className="text-amber-700">Gul = mest relevant</span>
                 </span>

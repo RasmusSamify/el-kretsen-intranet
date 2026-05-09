@@ -34,9 +34,14 @@ export function AIChat() {
         <div className="px-5 py-4 border-b border-ink-100 flex items-center gap-3">
           <IconTile tone="brand" size="md" icon={<Sparkles size={16} strokeWidth={1.75} />} />
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-ink-900 text-[15px] leading-none">ELvis</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-ink-900 text-[15px] leading-none">ELvis</h2>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-brand-500 to-violet-500 text-white text-[9px] font-bold uppercase tracking-wider leading-none">
+                v1.5
+              </span>
+            </div>
             <p className="text-[11px] font-semibold text-ink-400 mt-1">
-              Grundad i El-kretsens kunskapsbank · Temperature 0 · Källhänvisningar
+              Tvåstegs hierarkisk sök · Rerank · Kodexpansion · Källhänvisningar
             </p>
           </div>
           {messages.length > 0 && (
