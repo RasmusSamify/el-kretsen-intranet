@@ -79,8 +79,9 @@ export default async (req: Request) => {
     return json({ error: `DB-insert misslyckades: ${insertError.message}` }, 502);
   }
 
-  // Skicka Resend-notis till info@samify.se. Aldrig blocka submit på mejl-fel.
-  void notify({
+  // Skicka Resend-notis till info@samify.se. Awaiti:as så Lambda inte fryser
+  // promise:t innan det kört klart (Netlify-/AWS-gotcha).
+  await notify({
     feedbackId: inserted.id,
     category: body.category,
     message,

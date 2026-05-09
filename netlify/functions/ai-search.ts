@@ -203,7 +203,7 @@ export default async (req: Request) => {
 
   // Step 3: No matches → log + notify + return not-found answer
   if (chunks.length === 0) {
-    void logAndNotifyUnanswered({
+    await logAndNotifyUnanswered({
       question: query,
       supabaseUrl,
       serviceKey: supabaseServiceKey,
@@ -277,7 +277,7 @@ export default async (req: Request) => {
   // chunks were insufficient. Still log as unanswered.
   const looksUnanswered = /Jag hittar inte svaret i kunskapsbanken/i.test(answer);
   if (looksUnanswered) {
-    void logAndNotifyUnanswered({
+    await logAndNotifyUnanswered({
       question: query,
       supabaseUrl,
       serviceKey: supabaseServiceKey,
