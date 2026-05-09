@@ -140,9 +140,18 @@ async function notify(params: {
       });
       await admin.from('user_feedback').update({ notified: true }).eq('id', params.feedbackId);
     } else {
-      // Logga full body så vi ser exakt vad Resend klagar på i Netlify-loggarna
+      // Logga full body så vi ser exakt vad Resend klagar på, både i
+      // Netlify-loggarna och i DB (under user_feedback.internal_note) så
+      // vi kan SQL-fråga utan att öppna Netlify dashboard.
       const errBody = await res.text().catch(() => '<no body>');
-      console.warn(`feedback notify: Resend ${res.status} — ${errBody.slice(0, 400)}`);
+      const diag = `Resend ${res.status}: ${errBody.slice(0, 400)}`;
+      console.warn(`feedback notify: ${diag}`);
+      const supabaseUrl = process.env.SUPABASE_URL!;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const admin = createClient(supabaseUrl, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      await admin.from('user_feedback').update({ internal_note: diag }).eq('id', params.feedbackId);
     }
   } catch (e) {
     console.warn('feedback notify failed:', (e as Error).message);
