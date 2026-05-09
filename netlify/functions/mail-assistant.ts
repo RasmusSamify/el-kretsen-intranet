@@ -6,6 +6,19 @@ interface MailAssistantRequest {
   responseLanguage: 'sv' | 'en';
   sendersName?: string;
   tone?: 'formal' | 'friendly';
+  creativity?: 'saklig' | 'balanserad' | 'personlig';
+}
+
+function temperatureForCreativity(c: MailAssistantRequest['creativity']): number {
+  switch (c) {
+    case 'saklig':
+      return 0.1;
+    case 'personlig':
+      return 0.7;
+    case 'balanserad':
+    default:
+      return 0.4;
+  }
 }
 
 interface MailAssistantResponse {
@@ -156,10 +169,10 @@ export default async (req: Request) => {
     body: JSON.stringify({
       model: CLAUDE_MODEL,
       max_tokens: 2000,
-      // Lite kreativitet i formuleringen utan att riskera fakta-drift —
-      // grounding-reglerna i system-prompten håller siffror/datum/paragrafer
-      // ordagrant, men ton och meningsbyggnad får variera mellan svar.
-      temperature: 0.4,
+      // Användaren får välja kreativitetsnivå — alla tre värden håller sig
+      // under 0.7 så grounding-reglerna i system-prompten fortfarande gäller
+      // (siffror/datum/paragrafer ordagrant från KB).
+      temperature: temperatureForCreativity(body.creativity),
       system: lang === 'sv' ? SYSTEM_PROMPT_SV : SYSTEM_PROMPT_EN,
       messages: [{ role: 'user', content: userMessage }],
     }),

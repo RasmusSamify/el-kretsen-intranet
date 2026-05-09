@@ -1,14 +1,33 @@
-import { useState } from 'react';
-import { ArrowRight, Check, Copy, Flag, Languages, Mail, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Check, Copy, Flag, Languages, Mail, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert, Wand2 } from 'lucide-react';
 import { Button, Card, IconTile, Spinner } from '@/components/ui';
-import { mailAssistant, submitAnswerFeedback, type MailAssistantResponse } from '@/lib/api';
+import { mailAssistant, submitAnswerFeedback, type MailAssistantResponse, type MailCreativity } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+
+const CREATIVITY_STORAGE_KEY = 'mail-assistant-creativity';
+
+const CREATIVITY_OPTIONS: Array<{ value: MailCreativity; label: string; description: string }> = [
+  { value: 'saklig', label: 'Saklig', description: 'Konsekvent och formell — samma mail ger nästan samma svar' },
+  { value: 'balanserad', label: 'Balanserad', description: 'Standard — varierad ton men strikt på fakta' },
+  { value: 'personlig', label: 'Personlig', description: 'Mer fritt formulerat och varmare — som om en kollega skrev det' },
+];
 
 export function MailAssistantPage() {
   const { session } = useAuth();
   const [customerEmail, setCustomerEmail] = useState('');
   const [language, setLanguage] = useState<'sv' | 'en'>('sv');
+  const [creativity, setCreativity] = useState<MailCreativity>(() => {
+    if (typeof localStorage === 'undefined') return 'balanserad';
+    const stored = localStorage.getItem(CREATIVITY_STORAGE_KEY);
+    return stored === 'saklig' || stored === 'personlig' ? stored : 'balanserad';
+  });
+
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CREATIVITY_STORAGE_KEY, creativity);
+    }
+  }, [creativity]);
   const [result, setResult] = useState<MailAssistantResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +55,7 @@ export function MailAssistantPage() {
         {
           customerEmail: customerEmail.trim(),
           responseLanguage: language,
+          creativity,
         },
         session?.access_token,
       );
@@ -106,7 +126,7 @@ export function MailAssistantPage() {
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
             <Sparkles size={12} strokeWidth={2.25} />
-            <span>Temperature 0 · citations</span>
+            <span>Justerbar ton · citations</span>
           </div>
         </header>
 
@@ -136,42 +156,76 @@ export function MailAssistantPage() {
                 disabled={loading}
               />
 
-              <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-ink-100/60 border border-ink-100 shadow-inner-soft">
-                  <div className="flex items-center gap-1.5 px-2 text-ink-500">
-                    <Languages size={14} strokeWidth={2.25} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Svar</span>
+              <div className="mt-5 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-ink-100/60 border border-ink-100 shadow-inner-soft">
+                    <div className="flex items-center gap-1.5 px-2 text-ink-500">
+                      <Languages size={14} strokeWidth={2.25} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Svar</span>
+                    </div>
+                    <button
+                      onClick={() => setLanguage('sv')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all',
+                        language === 'sv' ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-500 hover:text-ink-800',
+                      )}
+                    >
+                      Svenska
+                    </button>
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all',
+                        language === 'en' ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-500 hover:text-ink-800',
+                      )}
+                    >
+                      English
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setLanguage('sv')}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all',
-                      language === 'sv' ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-500 hover:text-ink-800',
-                    )}
+
+                  <div
+                    className="flex items-center gap-1 p-1 rounded-xl bg-ink-100/60 border border-ink-100 shadow-inner-soft"
+                    role="radiogroup"
+                    aria-label="Kreativitetsnivå"
                   >
-                    Svenska
-                  </button>
-                  <button
-                    onClick={() => setLanguage('en')}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all',
-                      language === 'en' ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-500 hover:text-ink-800',
-                    )}
+                    <div className="flex items-center gap-1.5 px-2 text-ink-500">
+                      <Wand2 size={14} strokeWidth={2.25} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Ton</span>
+                    </div>
+                    {CREATIVITY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setCreativity(opt.value)}
+                        title={opt.description}
+                        role="radio"
+                        aria-checked={creativity === opt.value}
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all',
+                          creativity === opt.value
+                            ? 'bg-white text-brand-700 shadow-sm'
+                            : 'text-ink-500 hover:text-ink-800',
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <Button
+                    onClick={generate}
+                    disabled={disabled}
+                    loading={loading}
+                    rightIcon={<ArrowRight size={16} strokeWidth={2.25} />}
+                    className="ml-auto"
+                    size="lg"
                   >
-                    English
-                  </button>
+                    Generera svar
+                  </Button>
                 </div>
 
-                <Button
-                  onClick={generate}
-                  disabled={disabled}
-                  loading={loading}
-                  rightIcon={<ArrowRight size={16} strokeWidth={2.25} />}
-                  className="sm:ml-auto"
-                  size="lg"
-                >
-                  Generera svar
-                </Button>
+                <p className="text-[11px] text-ink-400 leading-snug pl-1">
+                  {CREATIVITY_OPTIONS.find((o) => o.value === creativity)?.description}
+                </p>
               </div>
             </Card>
           </div>

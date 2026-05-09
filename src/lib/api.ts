@@ -39,9 +39,12 @@ export async function aiSearch(req: AISearchRequest): Promise<AISearchResponse> 
   return res.json();
 }
 
+export type MailCreativity = 'saklig' | 'balanserad' | 'personlig';
+
 export interface MailAssistantRequest {
   customerEmail: string;
   responseLanguage: 'sv' | 'en';
+  creativity?: MailCreativity;
 }
 
 export interface MailAssistantResponse {
