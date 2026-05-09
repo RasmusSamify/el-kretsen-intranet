@@ -1,6 +1,7 @@
 import { Check, Info, Sparkles } from 'lucide-react';
 import { Modal } from '@/components/ui';
 import { CHANGELOG, CURRENT_VERSION } from '@/lib/version';
+import { EL_KRETSEN_LOGO_URL, SAMIFY_HOMEPAGE } from '@/lib/branding';
 
 interface ChangelogModalProps {
   open: boolean;
@@ -90,14 +91,39 @@ export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-4 bg-ink-50 border-t border-ink-100 text-center">
-          <p className="text-[11px] font-semibold text-ink-500">
-            Bygger du något nytt med oss? Hör av dig till{' '}
-            <a href="mailto:info@samify.se" className="font-bold text-ink-900 underline">
+        {/* Footer — co-branded */}
+        <div className="px-8 py-5 bg-gradient-to-r from-ink-50 via-white to-ink-50 border-t border-ink-100">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <img
+                src={EL_KRETSEN_LOGO_URL}
+                alt="El-kretsen"
+                className="h-8 w-auto opacity-90"
+              />
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-300">
+                Byggt av
+              </span>
+              <a
+                href={SAMIFY_HOMEPAGE}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-baseline gap-1.5 transition-opacity hover:opacity-80"
+              >
+                <span className="text-display text-[22px] leading-none bg-gradient-to-r from-ink-900 to-brand-700 bg-clip-text text-transparent tracking-tight">
+                  Samify
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">
+                  ai · automation
+                </span>
+              </a>
+            </div>
+            <a
+              href="mailto:info@samify.se"
+              className="text-[11px] font-semibold text-ink-500 hover:text-ink-900 transition-colors"
+            >
               info@samify.se
             </a>
-          </p>
+          </div>
         </div>
       </div>
     </Modal>
