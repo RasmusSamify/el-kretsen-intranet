@@ -1,7 +1,7 @@
 import { Check, Info, Sparkles } from 'lucide-react';
 import { Modal } from '@/components/ui';
 import { CHANGELOG, CURRENT_VERSION } from '@/lib/version';
-import { EL_KRETSEN_LOGO_URL, SAMIFY_HOMEPAGE } from '@/lib/branding';
+import { EL_KRETSEN_LOGO_URL, SAMIFY_LOGO_BLACK_URL, SAMIFY_HOMEPAGE } from '@/lib/branding';
 
 interface ChangelogModalProps {
   open: boolean;
@@ -102,7 +102,7 @@ export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
 
         {/* Footer — Samify-branded */}
         <div className="px-8 py-6 bg-gradient-to-b from-white to-ink-50/60 border-t border-ink-100">
-          <div className="flex flex-col items-center text-center gap-1.5">
+          <div className="flex flex-col items-center text-center gap-2">
             <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-ink-300">
               Byggt av
             </span>
@@ -110,18 +110,18 @@ export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
               href={SAMIFY_HOMEPAGE}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-baseline gap-2 transition-opacity hover:opacity-75"
+              className="inline-flex items-center transition-opacity hover:opacity-75"
+              aria-label="Samify"
             >
-              <span className="text-display text-[28px] leading-none bg-gradient-to-r from-ink-900 to-brand-700 bg-clip-text text-transparent tracking-tight">
-                Samify
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
-                ai · automation
-              </span>
+              <img
+                src={SAMIFY_LOGO_BLACK_URL}
+                alt="Samify"
+                className="h-7 w-auto"
+              />
             </a>
             <a
               href="mailto:info@samify.se"
-              className="mt-1 text-[11px] font-semibold text-ink-400 hover:text-ink-700 transition-colors"
+              className="text-[11px] font-semibold text-ink-400 hover:text-ink-700 transition-colors"
             >
               info@samify.se
             </a>
