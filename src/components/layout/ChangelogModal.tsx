@@ -17,25 +17,34 @@ export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
   return (
     <Modal open={open} onClose={onClose} title="Vad är nytt i ELvis Hub" size="2xl">
       <div className="flex flex-col max-h-[85vh]">
-        {/* Hero header */}
+        {/* Hero header — El-kretsen branded */}
         <div className="px-8 pt-6 pb-5 bg-gradient-to-br from-ink-900 via-ink-900 to-brand-700 text-white">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm">
-              <Sparkles size={22} strokeWidth={1.75} className="text-white" />
+          <div className="flex items-center justify-between gap-6 mb-5">
+            <div className="bg-white/95 rounded-2xl px-4 py-2.5 shadow-md backdrop-blur-sm">
+              <img
+                src={EL_KRETSEN_LOGO_URL}
+                alt="El-kretsen"
+                className="h-8 w-auto"
+              />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">
-                Nuvarande version
-              </p>
-              <div className="flex items-baseline gap-3 mt-1">
-                <p className="text-display text-3xl leading-none tabular-nums">
-                  v{CURRENT_VERSION}
-                </p>
-                <p className="text-[13px] font-semibold text-white/70">
-                  {formatDate(CHANGELOG[0].date)}
-                </p>
-              </div>
+            <div className="flex items-center gap-2 text-white/70">
+              <Sparkles size={14} strokeWidth={2} />
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em]">
+                ELvis Hub
+              </span>
             </div>
+          </div>
+
+          <div className="flex items-baseline gap-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60 self-center">
+              Nuvarande version
+            </p>
+            <p className="text-display text-3xl leading-none tabular-nums">
+              v{CURRENT_VERSION}
+            </p>
+            <p className="text-[13px] font-semibold text-white/70">
+              {formatDate(CHANGELOG[0].date)}
+            </p>
           </div>
 
           <div className="mt-4 flex items-start gap-2 p-3 rounded-xl bg-white/8 border border-white/10">
@@ -91,35 +100,28 @@ export function ChangelogModal({ open, onClose }: ChangelogModalProps) {
           ))}
         </div>
 
-        {/* Footer — co-branded */}
-        <div className="px-8 py-5 bg-gradient-to-r from-ink-50 via-white to-ink-50 border-t border-ink-100">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <img
-                src={EL_KRETSEN_LOGO_URL}
-                alt="El-kretsen"
-                className="h-8 w-auto opacity-90"
-              />
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-300">
-                Byggt av
+        {/* Footer — Samify-branded */}
+        <div className="px-8 py-6 bg-gradient-to-b from-white to-ink-50/60 border-t border-ink-100">
+          <div className="flex flex-col items-center text-center gap-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-ink-300">
+              Byggt av
+            </span>
+            <a
+              href={SAMIFY_HOMEPAGE}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-baseline gap-2 transition-opacity hover:opacity-75"
+            >
+              <span className="text-display text-[28px] leading-none bg-gradient-to-r from-ink-900 to-brand-700 bg-clip-text text-transparent tracking-tight">
+                Samify
               </span>
-              <a
-                href={SAMIFY_HOMEPAGE}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-baseline gap-1.5 transition-opacity hover:opacity-80"
-              >
-                <span className="text-display text-[22px] leading-none bg-gradient-to-r from-ink-900 to-brand-700 bg-clip-text text-transparent tracking-tight">
-                  Samify
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">
-                  ai · automation
-                </span>
-              </a>
-            </div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
+                ai · automation
+              </span>
+            </a>
             <a
               href="mailto:info@samify.se"
-              className="text-[11px] font-semibold text-ink-500 hover:text-ink-900 transition-colors"
+              className="mt-1 text-[11px] font-semibold text-ink-400 hover:text-ink-700 transition-colors"
             >
               info@samify.se
             </a>
