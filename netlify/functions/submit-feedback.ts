@@ -124,7 +124,10 @@ async function notify(params: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
       body: JSON.stringify({
-        from: 'ELvis Hub <hub@updates.samify.se>',
+        // Använd Resends test-domän, samma som logAndNotifyUnanswered i
+        // ai-search.ts. Funkar utan ytterligare DNS-verifiering så länge
+        // mottagaren (info@samify.se) finns som verifierad adress i kontot.
+        from: 'ELvis Hub <onboarding@resend.dev>',
         to: notifyTo.split(',').map((s) => s.trim()).filter(Boolean),
         reply_to: params.userEmail ?? undefined,
         subject,
@@ -138,6 +141,10 @@ async function notify(params: {
         auth: { persistSession: false, autoRefreshToken: false },
       });
       await admin.from('user_feedback').update({ notified: true }).eq('id', params.feedbackId);
+    } else {
+      // Logga full body så vi ser exakt vad Resend klagar på i Netlify-loggarna
+      const errBody = await res.text().catch(() => '<no body>');
+      console.warn(`feedback notify: Resend ${res.status} — ${errBody.slice(0, 400)}`);
     }
   } catch (e) {
     console.warn('feedback notify failed:', (e as Error).message);
