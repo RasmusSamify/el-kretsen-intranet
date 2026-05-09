@@ -1,4 +1,12 @@
 import type { Citation } from './types';
+import { supabase } from './supabase';
+
+async function authHeader(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Du är inte inloggad — logga in igen.');
+  return `Bearer ${token}`;
+}
 
 export interface AISearchRequest {
   query: string;
@@ -16,7 +24,10 @@ export interface AISearchResponse {
 export async function aiSearch(req: AISearchRequest): Promise<AISearchResponse> {
   const res = await fetch('/api/ai-search', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: await authHeader(),
+    },
     body: JSON.stringify(req),
   });
 
@@ -93,6 +104,29 @@ export async function submitAnswerFeedback(
       /* ignore */
     }
     throw new Error(message);
+  }
+}
+
+export type FeedbackCategory = 'forbattring' | 'bugg' | 'fraga' | 'annat';
+
+export async function submitFeedback(
+  category: FeedbackCategory,
+  message: string,
+): Promise<void> {
+  const res = await fetch('/api/submit-feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: await authHeader() },
+    body: JSON.stringify({ category, message }),
+  });
+  if (!res.ok) {
+    let m = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) m = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(m);
   }
 }
 
