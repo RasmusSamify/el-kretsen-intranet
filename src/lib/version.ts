@@ -16,9 +16,20 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.5.1';
+export const CURRENT_VERSION = '1.5.2';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.5.2',
+    date: '2026-05-11',
+    title: 'Buggfix: filuppladdning till kunskapsbasen',
+    summary:
+      'Uppladdning av textfiler kunde stoppas med felet "unsupported Unicode escape sequence" när filen innehöll dolda NUL-tecken — typiskt efter en kopiering ur PDF via Notepad. Filerna saneras nu automatiskt innan de indexeras.',
+    highlights: [
+      'Dolda NUL-tecken (\\u0000) och trasiga UTF-16-surrogat strippas tyst innan texten skickas till databasen, så uppladdning fungerar även för filer som kommer från PDF→Anteckningar-flödet.',
+      'Samma sanering gäller även URL-importer för konsistens, om en sida skulle innehålla osynliga kontrolltecken.',
+    ],
+  },
   {
     version: '1.5.1',
     date: '2026-05-09',

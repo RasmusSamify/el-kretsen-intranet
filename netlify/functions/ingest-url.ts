@@ -100,6 +100,9 @@ export default async (req: Request) => {
 
   const rawText = contentNode.text.replace(/\r\n/g, '\n');
   const text = rawText
+    .replace(/\u0000/g, '')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
     .split('\n')
     .map((line) => line.replace(/\s+/g, ' ').trim())
     .filter((line) => line.length > 0 && !isKnownBoilerplate(line))

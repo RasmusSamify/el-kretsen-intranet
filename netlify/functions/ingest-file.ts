@@ -45,7 +45,7 @@ export default async (req: Request) => {
   }
 
   const filename = (body.filename ?? '').trim();
-  const content = body.content ?? '';
+  const content = sanitizeForPostgres(body.content ?? '');
   if (!filename) return json({ error: 'Filnamn krävs' }, 400);
   if (!content || content.length < 100) {
     return json({ error: 'För lite text — minst 100 tecken krävs' }, 400);
@@ -131,6 +131,16 @@ export default async (req: Request) => {
   };
   return json(payload, 200);
 };
+
+// PostgreSQL rejects \u0000 in JSON payloads (and the `text` type can't store NUL bytes
+// either). PDFs copied via Notepad and exports from Office often leak these in. Lone
+// UTF-16 surrogates trigger the same error path, so strip those too.
+function sanitizeForPostgres(input: string): string {
+  return input
+    .replace(/\u0000/g, '')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+}
 
 function chunkText(text: string, filename: string) {
   const chunks: Array<{ filename: string; chunk_index: number; text: string }> = [];
