@@ -16,9 +16,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.5.2';
+export const CURRENT_VERSION = '1.5.3';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.5.3',
+    date: '2026-05-11',
+    title: 'ELvis tappar aldrig en obesvarad fråga längre',
+    summary:
+      'Vi har härdat loggningen av frågor som ELvis inte kan besvara, så ingen kunskapslucka försvinner i bakgrunden. Partiella svar och tekniska fel fångas nu också — inte bara helt missade frågor.',
+    highlights: [
+      'Bredare detektion av "kan inte svara"-formuleringar. Tidigare letade systemet efter en exakt mening — om Claude formulerade sig minsta lite annorlunda räknades frågan som besvarad. Nu fångas alla varianter och loggas korrekt.',
+      'Partiella svar loggas också — när ELvis besvarar del 1 av en flerdelad fråga men listar "## Saknas i kunskapsbasen" för del 2 sparas själva luckorna i databasen så de syns i Insikter.',
+      'Tekniska fel (Voyage embedding-fel, Claude API-fel, databas-fel) tappar inte längre frågan — den loggas med felmeddelandet så ni kan se om något återkommer.',
+      'Mailnotiser för obesvarade frågor skickas fortfarande bara för helt missade frågor — partiella och tekniska fel hamnar i Insikter utan extra mail (för att inte fylla inkorgen).',
+      'Bakgrund: vi upptäckte att en del frågor föll mellan stolarna när AI:n formulerade fallback-frasen i lite olika ordning. Den här uppdateringen är en ren stärkning av loggningen — själva svaren från ELvis påverkas inte.',
+    ],
+  },
   {
     version: '1.5.2',
     date: '2026-05-11',

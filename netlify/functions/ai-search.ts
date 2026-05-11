@@ -126,6 +126,34 @@ Endast om kunskapsbasen inte innehåller NÅGOT relevant för frågan, svara kor
 const NO_MATCH_RESPONSE =
   'Jag hittar inte svaret i kunskapsbanken. Kontakta ansvarig sakkunnig för en exakt bedömning.';
 
+// Bredare detektion än en enda exakt strängmatch — Claude formulerar sig olika
+// trots system-prompten, och vi får inte missa en gap-fråga bara för att frasen
+// råkade hamna med synonym. Alla mönster fångar "ELvis kunde inte svara alls".
+const FALLBACK_PATTERNS: RegExp[] = [
+  /jag hittar inte svaret/i,
+  /finns inte i kunskapsbas(en|anken)/i,
+  /står inte i kunskapsbas(en|anken)/i,
+  /kunskapsbas(en|anken) (täcker|innehåller|saknar)/i,
+  /jag (har|saknar) (tyvärr )?(ingen|inte) (tillräcklig )?(information|kunskap)/i,
+  /kontakta (ansvarig )?sakkunnig/i,
+];
+
+type AnswerOutcome = 'answered' | 'partial' | 'unanswered';
+
+function classifyAnswer(answer: string): { outcome: AnswerOutcome; gaps: string | null } {
+  const gapsMatch = answer.match(/##\s*Saknas\s+i\s+kunskapsbasen\s*\n([\s\S]+?)(?=\n##|$)/i);
+  const gaps = gapsMatch ? gapsMatch[1].trim() : null;
+
+  // "Kort svar med fall-back-fras" = ingenting kunde besvaras. Längdgräns hindrar
+  // att ett långt strukturerat svar som råkar nämna "kontakta sakkunnig" på slutet
+  // felklassas som unanswered.
+  const isCompleteMiss =
+    answer.length < 400 && FALLBACK_PATTERNS.some((p) => p.test(answer));
+  if (isCompleteMiss) return { outcome: 'unanswered', gaps: null };
+  if (gaps) return { outcome: 'partial', gaps };
+  return { outcome: 'answered', gaps: null };
+}
+
 export default async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders() });
@@ -163,148 +191,168 @@ export default async (req: Request) => {
   const query = (body.query ?? '').trim();
   if (!query) return json({ error: 'Query required' }, 400);
 
-  // Step 1: Embed query via Voyage AI. Expand produktkoder ("B74", "3.5") med
-  // produktnamn innan embedding så retrieval hittar rätt KB-avsnitt även när
-  // användaren bara skriver koden. Original-frågan går oförändrad till Claude.
-  const embeddingQuery = expandQueryWithCodes(query);
-  let embedding: number[];
+  // Failsafe: ALLA fel i pipelinen loggas med outcome='error' så frågan finns
+  // kvar i Insikter även när Voyage/Claude/DB failar. Utan detta tappades
+  // tidigare frågan helt vid 502:or — och just de fallen är ofta intressantast
+  // (lång fråga, edge-case input som triggar API-fel).
   try {
-    embedding = await embedText(embeddingQuery, voyageKey);
-  } catch (e) {
-    return json({ error: `Embedding failed: ${(e as Error).message}` }, 502);
-  }
+    // Step 1: Embed query via Voyage AI. Expand produktkoder ("B74", "3.5") med
+    // produktnamn innan embedding så retrieval hittar rätt KB-avsnitt även när
+    // användaren bara skriver koden. Original-frågan går oförändrad till Claude.
+    const embeddingQuery = expandQueryWithCodes(query);
+    const embedding = await embedText(embeddingQuery, voyageKey);
 
-  // Step 2: Match chunks via pgvector
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  // Hybrid search v2: embeddings (semantic) + BM25 (exact term/code matching)
-  // merged via Reciprocal Rank Fusion. Söker mot små chunks (precision),
-  // returnerar parent large chunks (kontext) för Claude. Fångar produktkoder
-  // som embeddings ibland missar.
-  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid_v2', {
-    query_text: query,
-    query_embedding: embedding,
-    match_count: RETRIEVAL_COUNT,
-  });
-
-  if (matchError) {
-    return json({ error: `DB match failed: ${matchError.message}` }, 502);
-  }
-
-  const candidateChunks = (matches ?? []) as MatchedChunk[];
-
-  // Rerank: Voyage rerank-2.5 (cross-encoder) väger varje kandidat mot frågan
-  // och plockar ut de mest relevanta. Halverar typiskt false positives.
-  // Använd den expanderade frågan så koder + produktnamn hjälper rerank att
-  // koppla "B74" till chunks som nämner "Litium-järnfosfat".
-  const chunks = await rerankChunks(embeddingQuery, candidateChunks, voyageKey);
-
-  // Step 3: No matches → log + notify + return not-found answer
-  if (chunks.length === 0) {
-    await logAndNotifyUnanswered({
-      question: query,
-      supabaseUrl,
-      serviceKey: supabaseServiceKey,
-      topFilename: null,
-      topSimilarity: null,
+    // Step 2: Match chunks via pgvector
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    // Hybrid search v2: embeddings (semantic) + BM25 (exact term/code matching)
+    // merged via Reciprocal Rank Fusion. Söker mot små chunks (precision),
+    // returnerar parent large chunks (kontext) för Claude. Fångar produktkoder
+    // som embeddings ibland missar.
+    const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid_v2', {
+      query_text: query,
+      query_embedding: embedding,
+      match_count: RETRIEVAL_COUNT,
+    });
+
+    if (matchError) throw new Error(`DB match failed: ${matchError.message}`);
+
+    const candidateChunks = (matches ?? []) as MatchedChunk[];
+
+    // Rerank: Voyage rerank-2.5 (cross-encoder) väger varje kandidat mot frågan
+    // och plockar ut de mest relevanta. Halverar typiskt false positives.
+    const chunks = await rerankChunks(embeddingQuery, candidateChunks, voyageKey);
+
+    // Step 3: No matches → log + notify + return not-found answer
+    if (chunks.length === 0) {
+      await logQuestionOutcome({
+        question: query,
+        outcome: 'unanswered',
+        supabaseUrl,
+        serviceKey: supabaseServiceKey,
+      });
+      return json(
+        {
+          answer: NO_MATCH_RESPONSE,
+          citations: [],
+          sourceFiles: [],
+          grounded: false,
+        },
+        200,
+      );
+    }
+
+    // Step 4: Call Claude with grounded context
+    const citations: Citation[] = chunks.map((c) => ({
+      id: c.id,
+      filename: c.filename,
+      chunkIndex: c.chunk_index,
+      text: c.text,
+      similarity: c.similarity,
+    }));
+
+    const contextBlock = chunks
+      .map((c) => `[källa: ${c.filename}, stycke ${c.chunk_index + 1}]\n${c.text}`)
+      .join('\n\n---\n\n');
+
+    const userContent = body.attachedFileContent
+      ? `${query}\n\n<bifogad_fil>\n${body.attachedFileContent}\n</bifogad_fil>\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>`
+      : `${query}\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>`;
+
+    const apiMessages = [
+      ...body.conversationHistory.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user' as const, content: userContent },
+    ];
+
+    const claudeRes = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 1400,
+        temperature: 0,
+        system: SYSTEM_PROMPT,
+        messages: apiMessages,
+      }),
+    });
+
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      throw new Error(`Claude API error (${claudeRes.status}): ${errText}`);
+    }
+
+    const claudeData = (await claudeRes.json()) as {
+      content?: Array<{ type: string; text?: string }>;
+    };
+
+    const answer = claudeData.content?.find((c) => c.type === 'text')?.text ?? '';
+
+    // Extract which source files Claude actually referenced
+    const referencedFiles = extractReferencedFiles(answer, chunks);
+
+    // Klassa svaret: helt missad fråga, partiellt svar med ## Saknas-sektion,
+    // eller komplett besvarad. Logga om något fattades.
+    const { outcome, gaps } = classifyAnswer(answer);
+    if (outcome !== 'answered') {
+      await logQuestionOutcome({
+        question: query,
+        outcome,
+        supabaseUrl,
+        serviceKey: supabaseServiceKey,
+        topFilename: chunks[0]?.filename ?? null,
+        topSimilarity: chunks[0]?.similarity ?? null,
+        gapsText: gaps,
+      });
+    }
+
     return json(
       {
-        answer: NO_MATCH_RESPONSE,
-        citations: [],
-        sourceFiles: [],
-        grounded: false,
+        answer,
+        citations,
+        sourceFiles: referencedFiles,
+        grounded: outcome === 'answered',
       },
       200,
     );
-  }
-
-  // Step 4: Call Claude with grounded context
-  const citations: Citation[] = chunks.map((c) => ({
-    id: c.id,
-    filename: c.filename,
-    chunkIndex: c.chunk_index,
-    text: c.text,
-    similarity: c.similarity,
-  }));
-
-  const contextBlock = chunks
-    .map((c) => `[källa: ${c.filename}, stycke ${c.chunk_index + 1}]\n${c.text}`)
-    .join('\n\n---\n\n');
-
-  const userContent = body.attachedFileContent
-    ? `${query}\n\n<bifogad_fil>\n${body.attachedFileContent}\n</bifogad_fil>\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>`
-    : `${query}\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>`;
-
-  const apiMessages = [
-    ...body.conversationHistory.map((m) => ({ role: m.role, content: m.content })),
-    { role: 'user' as const, content: userContent },
-  ];
-
-  const claudeRes = await fetch(ANTHROPIC_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 1400,
-      temperature: 0,
-      system: SYSTEM_PROMPT,
-      messages: apiMessages,
-    }),
-  });
-
-  if (!claudeRes.ok) {
-    const errText = await claudeRes.text();
-    return json({ error: `Claude API error (${claudeRes.status}): ${errText}` }, 502);
-  }
-
-  const claudeData = (await claudeRes.json()) as {
-    content?: Array<{ type: string; text?: string }>;
-  };
-
-  const answer = claudeData.content?.find((c) => c.type === 'text')?.text ?? '';
-
-  // Extract which source files Claude actually referenced
-  const referencedFiles = extractReferencedFiles(answer, chunks);
-
-  // If Claude used the fall-back phrase, it means even the retrieved
-  // chunks were insufficient. Still log as unanswered.
-  const looksUnanswered = /Jag hittar inte svaret i kunskapsbanken/i.test(answer);
-  if (looksUnanswered) {
-    await logAndNotifyUnanswered({
+  } catch (e) {
+    const message = (e as Error).message ?? 'Unknown error';
+    await logQuestionOutcome({
       question: query,
+      outcome: 'error',
       supabaseUrl,
       serviceKey: supabaseServiceKey,
-      topFilename: chunks[0]?.filename ?? null,
-      topSimilarity: chunks[0]?.similarity ?? null,
+      errorMessage: message,
     });
+    return json({ error: message }, 502);
   }
-
-  return json(
-    {
-      answer,
-      citations,
-      sourceFiles: referencedFiles,
-      grounded: !looksUnanswered,
-    },
-    200,
-  );
 };
 
-async function logAndNotifyUnanswered(params: {
+async function logQuestionOutcome(params: {
   question: string;
+  outcome: 'partial' | 'unanswered' | 'error';
   supabaseUrl: string;
   serviceKey: string;
-  topFilename: string | null;
-  topSimilarity: number | null;
+  topFilename?: string | null;
+  topSimilarity?: number | null;
+  gapsText?: string | null;
+  errorMessage?: string | null;
 }) {
-  const { question, supabaseUrl, serviceKey, topFilename, topSimilarity } = params;
+  const {
+    question,
+    outcome,
+    supabaseUrl,
+    serviceKey,
+    topFilename = null,
+    topSimilarity = null,
+    gapsText = null,
+    errorMessage = null,
+  } = params;
   try {
     const client = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -313,15 +361,22 @@ async function logAndNotifyUnanswered(params: {
       .from('ai_unanswered')
       .insert({
         question_text: question,
+        outcome,
         top_match_filename: topFilename,
         top_match_similarity: topSimilarity,
+        gaps_text: gapsText,
+        error_message: errorMessage,
       })
       .select('id')
       .single();
 
+    // Mail-notiser: endast för totalt missade frågor. Partiella + tekniska fel
+    // skulle bli för mycket brus — de syns istället i Insikter-vyn.
+    if (outcome !== 'unanswered') return;
+
     const resendKey = process.env.RESEND_API_KEY;
     const notifyTo = process.env.NOTIFICATION_EMAIL;
-    if (!resendKey || !notifyTo) return; // email is optional
+    if (!resendKey || !notifyTo) return;
 
     const subject = `[ELvis Hub] Obesvarad fråga: "${question.slice(0, 60)}${question.length > 60 ? '…' : ''}"`;
     const similarityLine = topSimilarity != null
@@ -369,11 +424,11 @@ async function logAndNotifyUnanswered(params: {
       await client.from('ai_unanswered').update({ notified: true }).eq('id', inserted.id);
     } else if (!emailRes.ok) {
       const errBody = await emailRes.text().catch(() => '<no body>');
-      console.warn(`logAndNotifyUnanswered: Resend ${emailRes.status} — ${errBody.slice(0, 400)}`);
+      console.warn(`logQuestionOutcome: Resend ${emailRes.status} — ${errBody.slice(0, 400)}`);
     }
   } catch (e) {
-    // Non-fatal — logging should never break the user-facing response.
-    console.warn('logAndNotifyUnanswered failed:', (e as Error).message);
+    // Loggning får aldrig krascha användarens svar.
+    console.warn('logQuestionOutcome failed:', (e as Error).message);
   }
 }
 
