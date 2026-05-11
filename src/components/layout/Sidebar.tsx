@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, Sparkles, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CURRENT_VERSION } from '@/lib/version';
+import { useFreshUpdate } from '@/hooks/useFreshUpdate';
 import { ChangelogModal } from './ChangelogModal';
 
 export interface SidebarItem {
@@ -21,6 +22,12 @@ interface SidebarProps {
 
 export function Sidebar({ items, collapsed, onToggle, topOffset = 0 }: SidebarProps) {
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const { isFresh, markSeen } = useFreshUpdate();
+
+  function openChangelog() {
+    setChangelogOpen(true);
+    markSeen();
+  }
 
   return (
     <aside
@@ -102,21 +109,35 @@ export function Sidebar({ items, collapsed, onToggle, topOffset = 0 }: SidebarPr
       {/* Footer — version + collapse toggle */}
       <div className="p-3 border-t border-ink-100 space-y-1.5">
         <button
-          onClick={() => setChangelogOpen(true)}
+          onClick={openChangelog}
           title={collapsed ? `v${CURRENT_VERSION} · visa uppdateringar` : undefined}
           className={cn(
-            'w-full group inline-flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
+            'relative w-full group inline-flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
             'text-ink-500 hover:text-ink-900 hover:bg-ink-50 transition-colors',
             collapsed && 'justify-center px-0',
           )}
-          aria-label={`ELvis Hub version ${CURRENT_VERSION} — visa changelog`}
+          aria-label={`ELvis Hub version ${CURRENT_VERSION}${isFresh ? ' — ny uppdatering tillgänglig' : ''} — visa changelog`}
         >
-          <Sparkles size={14} strokeWidth={1.75} className="shrink-0 text-ink-400 group-hover:text-ink-700 transition-colors" />
+          <span className="relative shrink-0">
+            <Sparkles size={14} strokeWidth={1.75} className="text-ink-400 group-hover:text-ink-700 transition-colors" />
+            {isFresh && collapsed && (
+              <span
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse"
+                aria-hidden="true"
+              />
+            )}
+          </span>
           {!collapsed && (
             <>
               <span className="flex-1 text-left text-[11px] font-bold uppercase tracking-wider">
                 ELvis Hub
               </span>
+              {isFresh && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-black uppercase tracking-wider animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Nytt
+                </span>
+              )}
               <span className="text-[11px] font-bold tabular-nums text-ink-400 group-hover:text-ink-700">
                 v{CURRENT_VERSION}
               </span>

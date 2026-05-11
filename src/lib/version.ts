@@ -11,17 +11,32 @@
 export interface ChangelogEntry {
   version: string;
   date: string; // YYYY-MM-DD
+  releasedAt?: string; // ISO timestamp — krävs för 24h-färskhetsfönstret i Sidebar-badge
   title: string;
   summary: string;
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.5.3';
+export const CURRENT_VERSION = '1.5.4';
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.5.4',
+    date: '2026-05-11',
+    releasedAt: '2026-05-11T16:30:00+02:00',
+    title: 'Grön "Nytt"-markering vid versionen när något uppdaterats',
+    summary:
+      'En liten grön pill dyker upp bredvid versionsnumret i sidomenyn i 24 timmar efter varje release, så ni snabbt ser om vi har skickat ut nya förbättringar. Klicka på versionen så försvinner pillen.',
+    highlights: [
+      'Grön "Nytt"-pill bredvid versionsnumret syns i 24 timmar efter varje release — försvinner automatiskt eller direkt när ni öppnar uppdaterings-historiken.',
+      'Pillen blinkar lätt så den fångar ögat utan att vara skrikig.',
+      'Sparas per webbläsare — om Linnea öppnat uppdaterings-historiken hemma men inte på jobbet ser hon pillen igen på jobbdatorn (så hon definitivt inte missar något).',
+    ],
+  },
+  {
     version: '1.5.3',
     date: '2026-05-11',
+    releasedAt: '2026-05-11T15:45:00+02:00',
     title: 'ELvis tappar aldrig en obesvarad fråga längre',
     summary:
       'Vi har härdat loggningen av frågor som ELvis inte kan besvara, så ingen kunskapslucka försvinner i bakgrunden. Partiella svar och tekniska fel fångas nu också — inte bara helt missade frågor.',
@@ -36,6 +51,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '1.5.2',
     date: '2026-05-11',
+    releasedAt: '2026-05-11T14:15:00+02:00',
     title: 'Buggfix: filuppladdning till kunskapsbasen',
     summary:
       'Uppladdning av textfiler kunde stoppas med felet "unsupported Unicode escape sequence" när filen innehöll dolda NUL-tecken — typiskt efter en kopiering ur PDF via Notepad. Filerna saneras nu automatiskt innan de indexeras.',
