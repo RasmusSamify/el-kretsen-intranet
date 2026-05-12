@@ -7,7 +7,7 @@
  * Strategi: tokenisera till "sentence units" (där en unit är en mening eller
  * en kort rad/bullet), sedan greedy-pack i chunks. Vid flush bakåtspola N
  * units så de blir overlap för nästa chunk. Sentence-aware = korrekt
- * meningsgräns (#3 från improvements.md).
+ * meningsgräns.
  */
 
 export interface SmallChunk {
@@ -56,31 +56,23 @@ export function splitHierarchical(source: string, opts?: Partial<ChunkerOptions>
   });
 }
 
-/**
- * Tokenisera text till "units": korta strängar som vi kan paketera utan att
- * splittra mitt i en mening. En unit är en mening, en bullet, en
- * paragraf-break, eller (om en mening är för lång) en hård word-split.
- */
 function tokenizeUnits(text: string): string[] {
   const out: string[] = [];
-  // Behåll paragraf-strukturen via tomma units som markerar gräns
   const paragraphs = text.split(/\n\s*\n/);
   paragraphs.forEach((p, idx) => {
     const trimmed = p.trim();
     if (!trimmed) return;
-    // Splitta på meningsgränser
     const sentences = trimmed.split(/(?<=[.!?…])\s+(?=[A-ZÅÄÖ"„«0-9])/g);
     for (const sentence of sentences) {
       const s = sentence.trim();
       if (!s) continue;
-      // Hård split om en "mening" är absurt lång (typ tabellrad utan punkt)
       if (s.length > 600) {
         out.push(...hardSplitWords(s, 500));
       } else {
         out.push(s);
       }
     }
-    if (idx < paragraphs.length - 1) out.push('\n\n'); // paragraf-marker
+    if (idx < paragraphs.length - 1) out.push('\n\n');
   });
   return out;
 }
@@ -100,11 +92,6 @@ function hardSplitWords(text: string, target: number): string[] {
   return out.filter(Boolean);
 }
 
-/**
- * Packa units i chunks med target-storlek. Vid flush, bakåtspola units så
- * att summa overlap-tecken är ungefär `overlap`. Det ger sentence-aware
- * overlap utan att duplicera mer än nödvändigt.
- */
 function packUnits(units: string[], target: number, overlap: number): string[] {
   if (units.length === 0) return [];
 
@@ -122,7 +109,6 @@ function packUnits(units: string[], target: number, overlap: number): string[] {
   const flush = () => {
     if (bufLen === 0) return;
     chunks.push(join(buf));
-    // Bakåtspola enheter som tillsammans fyller ~overlap tecken
     let keepLen = 0;
     let keepFrom = buf.length;
     while (keepFrom > 0 && keepLen + buf[keepFrom - 1].length + 1 <= overlap) {
@@ -143,15 +129,13 @@ function packUnits(units: string[], target: number, overlap: number): string[] {
   }
   if (bufLen > 0) chunks.push(join(buf));
 
-  // Filtrera bort eventuella tomma eller bara-paragraph-marker chunks
   return chunks.map((c) => c.replace(/\s+/g, ' ').trim()).filter((c) => c.length > 30);
 }
 
 /**
  * Reconstruct original source-text från ordnade v1-chunks som suttit
- * sammanbundna med en fast overlap-strategi (CHUNK_OVERLAP=200 i v1).
- * Robust mot småskillnader genom att söka största suffix-prefix-överlapp
- * inom ett rimligt fönster.
+ * sammanbundna med en fast overlap-strategi. Robust mot småskillnader
+ * genom att söka största suffix-prefix-överlapp inom ett rimligt fönster.
  */
 export function reconstructSource(orderedChunks: string[]): string {
   if (orderedChunks.length === 0) return '';

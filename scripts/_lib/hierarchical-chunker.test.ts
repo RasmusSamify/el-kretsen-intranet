@@ -6,7 +6,7 @@
  *   npx tsx scripts/_lib/hierarchical-chunker.test.ts
  */
 
-import { reconstructSource, splitHierarchical } from './hierarchical-chunker';
+import { reconstructSource, splitHierarchical } from '../../netlify/functions/_shared/hierarchicalChunker';
 
 let failures = 0;
 function expect(label: string, cond: boolean, detail?: string) {

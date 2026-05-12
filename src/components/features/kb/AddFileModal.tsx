@@ -12,10 +12,42 @@ interface AddFileModalProps {
 
 const MAX_FILE_BYTES = 1_500_000; // 1.5 MB
 
+type FileKind = 'text' | 'docx' | 'pdf' | 'zip-other' | 'binary' | 'unknown';
+
+async function detectFileKind(file: File): Promise<FileKind> {
+  // Magic-byte-detektion på första 8 bytes. Filändelsen är opålitlig — Word kan
+  // spara en .docx med .txt-suffix och då får vi PK-zip-bytes om vi läser som text.
+  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const name = file.name.toLowerCase();
+
+  // PK\x03\x04 = ZIP (även docx/xlsx/pptx)
+  if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04) {
+    if (name.endsWith('.docx')) return 'docx';
+    return 'zip-other';
+  }
+  // %PDF
+  if (head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46) {
+    return 'pdf';
+  }
+  // Heuristik: läs ~1 KB och kolla att texten är rimlig (kontrolltecken < 5 %)
+  const sample = new Uint8Array(await file.slice(0, 1024).arrayBuffer());
+  let control = 0;
+  for (let i = 0; i < sample.length; i++) {
+    const b = sample[i];
+    // Tillåtna: tab, LF, CR + utskrivbar ASCII + alla bytes >= 0x80 (UTF-8 multibyte)
+    if (b === 0x09 || b === 0x0a || b === 0x0d) continue;
+    if (b >= 0x20) continue;
+    control++;
+  }
+  if (sample.length > 0 && control / sample.length > 0.05) return 'binary';
+  return name.endsWith('.docx') || name.endsWith('.pdf') ? 'unknown' : 'text';
+}
+
 export function AddFileModal({ open, onClose, onAdded }: AddFileModalProps) {
   const [filename, setFilename] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<IngestFileResponse | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -37,13 +69,58 @@ export function AddFileModal({ open, onClose, onAdded }: AddFileModalProps) {
       setError(`Filen är för stor (${(file.size / 1024).toFixed(0)} KB). Max ${MAX_FILE_BYTES / 1024} KB.`);
       return;
     }
-    const name = file.name.replace(/\.[^/.]+$/, '');
-    if (!filename) setFilename(name);
+
+    setParsing(true);
     try {
-      const text = await file.text();
+      const kind = await detectFileKind(file);
+      if (kind === 'pdf') {
+        setError(
+          'PDF-filer stöds inte direkt. Öppna PDF:en, kopiera texten och spara som .txt eller .docx innan uppladdning.',
+        );
+        return;
+      }
+      if (kind === 'zip-other') {
+        setError(
+          'Filen är ett okänt arkiv (ZIP). Endast .docx, .txt och .md kan laddas upp.',
+        );
+        return;
+      }
+      if (kind === 'binary') {
+        setError(
+          'Filen verkar vara binär (innehåller många icke-läsbara tecken). Spara om filen som vanlig text (.txt) eller Word (.docx) och försök igen.',
+        );
+        return;
+      }
+      if (kind === 'unknown') {
+        setError(
+          'Filtypen kunde inte identifieras. Använd .txt, .md eller .docx.',
+        );
+        return;
+      }
+
+      let text: string;
+      if (kind === 'docx') {
+        // Mammoth (~150 KB) hämtas dynamiskt — bara när användaren faktiskt drar in en .docx.
+        // extractRawText är säkrare än convertToHtml för RAG — inga taggar.
+        const { default: mammoth } = await import('mammoth');
+        const buffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+        text = result.value;
+        if (!text.trim()) {
+          setError('Word-filen verkar tom — kunde inte extrahera någon text.');
+          return;
+        }
+      } else {
+        text = await file.text();
+      }
+
+      const name = file.name.replace(/\.[^/.]+$/, '');
+      if (!filename) setFilename(name);
       setContent(text);
     } catch (e) {
       setError(`Kunde inte läsa filen: ${(e as Error).message}`);
+    } finally {
+      setParsing(false);
     }
   };
 
@@ -98,18 +175,23 @@ export function AddFileModal({ open, onClose, onAdded }: AddFileModalProps) {
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,.md,text/plain,text/markdown"
+              accept=".txt,.md,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               className="hidden"
               onChange={onFileChange}
             />
             <Upload size={26} strokeWidth={1.5} className="mx-auto text-ink-500 mb-3" />
             <p className="text-[14px] font-bold text-ink-900">
-              Släpp en TXT-fil här eller klicka för att välja
+              Släpp en fil här eller klicka för att välja
             </p>
             <p className="text-[12px] text-ink-500 mt-1">
-              Max 1 500 KB · endast ren text (.txt, .md)
+              Max 1 500 KB · .txt, .md eller .docx (Word)
             </p>
-            {content && (
+            {parsing && (
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ink-50 border border-ink-200 text-[12px] font-semibold text-ink-700">
+                Läser filen…
+              </div>
+            )}
+            {!parsing && content && (
               <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[12px] font-semibold text-emerald-800">
                 <FileText size={13} strokeWidth={2} />
                 {content.length.toLocaleString('sv-SE')} tecken inlästa
@@ -162,7 +244,7 @@ export function AddFileModal({ open, onClose, onAdded }: AddFileModalProps) {
             {success ? 'Stäng' : 'Avbryt'}
           </Button>
           {!success && (
-            <Button type="submit" loading={loading} disabled={!filename.trim() || !content.trim()}>
+            <Button type="submit" loading={loading} disabled={!filename.trim() || !content.trim() || parsing}>
               Indexera filen
             </Button>
           )}

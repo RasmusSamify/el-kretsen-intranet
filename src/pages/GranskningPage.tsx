@@ -91,7 +91,7 @@ export function GranskningPage() {
         new Set(reviewData.flatMap((r) => [r.chunk_a_id, r.chunk_b_id])),
       );
       const { data: chunkData } = await supabase
-        .from('kb_chunks')
+        .from('kb_chunks_v2')
         .select('id, filename, chunk_index, text')
         .in('id', chunkIds);
 

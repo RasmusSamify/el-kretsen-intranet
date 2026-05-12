@@ -1,4 +1,12 @@
-import { useRef, useState, useEffect, useMemo, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, ChevronUp, FileText, Sparkles, X } from 'lucide-react';
 import type { Citation } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -10,23 +18,70 @@ interface CitationChipProps {
   claimText?: string;
 }
 
+interface PopoverPosition {
+  top: number;
+  left: number;
+  placement: 'above' | 'below';
+}
+
+const POPOVER_WIDTH = 420;
+const VIEWPORT_MARGIN = 8;
+
 export function CitationChip({ citation, index, claimText }: CitationChipProps) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<PopoverPosition | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
+  // Mätsteget körs via useLayoutEffect så popovern kan positioneras innan
+  // browsern målar — undviker flicker. Vi flyttar rutan i portal till body,
+  // vilket gör att overflow-clip på chat-containern inte längre kan skära av den.
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+    const compute = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const placement: 'above' | 'below' =
+        spaceAbove >= 280 || spaceAbove >= spaceBelow ? 'above' : 'below';
+
+      const desiredLeft = rect.left + rect.width / 2 - POPOVER_WIDTH * 0.35;
+      const left = Math.max(
+        VIEWPORT_MARGIN,
+        Math.min(window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN, desiredLeft),
+      );
+      const top = placement === 'above' ? rect.top - VIEWPORT_MARGIN : rect.bottom + VIEWPORT_MARGIN;
+      setPos({ top, left, placement });
+    };
+    compute();
+    window.addEventListener('scroll', compute, true);
+    window.addEventListener('resize', compute);
+    return () => {
+      window.removeEventListener('scroll', compute, true);
+      window.removeEventListener('resize', compute);
+    };
+  }, [open]);
+
+  // Click-outside-handler måste inkludera popoverns nya hem i document.body.
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // Reset expanded när man stänger och öppnar igen
   useEffect(() => {
-    if (!open) setExpanded(false);
+    if (!open) {
+      setExpanded(false);
+      setPos(null);
+    }
   }, [open]);
 
   const highlight = useMemo<Sentence | null>(() => {
@@ -37,12 +92,13 @@ export function CitationChip({ citation, index, claimText }: CitationChipProps) 
   const displayName = citation.filename.replace(/\.[^/.]+$/, '');
 
   return (
-    <span ref={ref} className="relative inline-block align-baseline">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full',
+          'inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full align-baseline',
           'text-[11px] font-bold',
           'bg-brand-50 text-brand-700 border border-brand-100',
           'hover:bg-brand-100 hover:border-brand-200 transition-colors',
@@ -54,100 +110,111 @@ export function CitationChip({ citation, index, claimText }: CitationChipProps) 
         <span>{index}</span>
       </button>
 
-      {open && (
-        <span
-          role="tooltip"
-          className="absolute z-40 bottom-full left-0 mb-2 w-[420px] max-w-[90vw] text-left animate-fade-in"
-          style={{ transform: 'translateX(-15%)' }}
-        >
-          <span className="block bg-white rounded-2xl shadow-xl border border-ink-100 overflow-hidden">
-            <span className="flex items-center justify-between px-4 py-2.5 border-b border-ink-100 bg-ink-50">
-              <span className="flex items-center gap-2 min-w-0">
-                <FileText size={14} className="text-brand-500 shrink-0" strokeWidth={2.25} />
-                <span className="text-xs font-bold text-ink-800 truncate">{displayName}</span>
-                <span className="text-[10px] font-semibold text-ink-400 uppercase tracking-wider shrink-0">
-                  · stycke {citation.chunkIndex + 1}
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                }}
-                className="text-ink-400 hover:text-ink-700 transition-colors"
-                aria-label="Stäng"
-              >
-                <X size={14} strokeWidth={2.5} />
-              </button>
-            </span>
+      {open && pos &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            role="tooltip"
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              transform: pos.placement === 'above' ? 'translateY(-100%)' : undefined,
+              width: POPOVER_WIDTH,
+              maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
+              zIndex: 60,
+            }}
+            className="animate-fade-in"
+          >
+            <div className="bg-white rounded-2xl shadow-xl border border-ink-100 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-ink-100 bg-ink-50">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText size={14} className="text-brand-500 shrink-0" strokeWidth={2.25} />
+                  <span className="text-xs font-bold text-ink-800 truncate">{displayName}</span>
+                  <span className="text-[10px] font-semibold text-ink-400 uppercase tracking-wider shrink-0">
+                    · stycke {citation.chunkIndex + 1}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                  }}
+                  className="text-ink-400 hover:text-ink-700 transition-colors"
+                  aria-label="Stäng"
+                >
+                  <X size={14} strokeWidth={2.5} />
+                </button>
+              </div>
 
-            {highlight && !expanded ? (
-              <SnippetView citation={citation} highlight={highlight} />
-            ) : (
-              <FullChunkView citation={citation} highlight={highlight} />
-            )}
+              {highlight && !expanded ? (
+                <SnippetView citation={citation} highlight={highlight} />
+              ) : (
+                <FullChunkView citation={citation} highlight={highlight} />
+              )}
 
-            {highlight && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setExpanded((v) => !v);
-                }}
-                className="w-full flex items-center justify-center gap-1.5 py-2 text-[10px] font-bold uppercase tracking-wider text-ink-500 hover:text-ink-900 hover:bg-ink-50 transition-colors border-t border-ink-100"
-              >
-                {expanded ? (
-                  <>
-                    <ChevronUp size={12} strokeWidth={2} />
-                    Visa bara relevant del
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown size={12} strokeWidth={2} />
-                    Visa hela stycket ({citation.text.length.toLocaleString('sv-SE')} tecken)
-                  </>
-                )}
-              </button>
-            )}
+              {highlight && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpanded((v) => !v);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 text-[10px] font-bold uppercase tracking-wider text-ink-500 hover:text-ink-900 hover:bg-ink-50 transition-colors border-t border-ink-100"
+                >
+                  {expanded ? (
+                    <>
+                      <ChevronUp size={12} strokeWidth={2} />
+                      Visa bara relevant del
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={12} strokeWidth={2} />
+                      Visa hela stycket ({citation.text.length.toLocaleString('sv-SE')} tecken)
+                    </>
+                  )}
+                </button>
+              )}
 
-            <span className="flex items-center justify-between gap-2 px-4 py-2 bg-ink-50 text-[10px] font-bold uppercase tracking-wider text-ink-400">
-              <span className="flex items-center gap-2">
-                <span>Relevans: {Math.round(citation.similarity * 100)} %</span>
-                {citation.text.length >= 1800 && (
-                  <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 normal-case tracking-normal text-[9px] font-bold border border-brand-100"
-                    title="v1.5: hierarkisk sök returnerar hela parent-stycket åt ELvis för bättre kontext"
-                  >
-                    <Sparkles size={9} strokeWidth={2.25} />
-                    Stor kontext · {citation.text.length.toLocaleString('sv-SE')} tecken
+              <div className="flex items-center justify-between gap-2 px-4 py-2 bg-ink-50 text-[10px] font-bold uppercase tracking-wider text-ink-400">
+                <div className="flex items-center gap-2">
+                  <span>Relevans: {Math.round(citation.similarity * 100)} %</span>
+                  {citation.text.length >= 1800 && (
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-700 normal-case tracking-normal text-[9px] font-bold border border-brand-100"
+                      title="v1.5: hierarkisk sök returnerar hela parent-stycket åt ELvis för bättre kontext"
+                    >
+                      <Sparkles size={9} strokeWidth={2.25} />
+                      Stor kontext · {citation.text.length.toLocaleString('sv-SE')} tecken
+                    </span>
+                  )}
+                </div>
+                {highlight && (
+                  <span className="inline-flex items-center gap-1 normal-case tracking-normal shrink-0">
+                    <Sparkles size={10} strokeWidth={2} className="text-amber-600" />
+                    <span className="text-amber-700">Gul = mest relevant</span>
                   </span>
                 )}
-              </span>
-              {highlight && (
-                <span className="inline-flex items-center gap-1 normal-case tracking-normal shrink-0">
-                  <Sparkles size={10} strokeWidth={2} className="text-amber-600" />
-                  <span className="text-amber-700">Gul = mest relevant</span>
-                </span>
-              )}
-            </span>
-          </span>
-        </span>
-      )}
-    </span>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
 function SnippetView({ citation, highlight }: { citation: Citation; highlight: Sentence }) {
   const snip = snippetAround(citation.text, highlight, 140);
   return (
-    <span className="block p-4 text-[12.5px] text-ink-700 leading-relaxed">
+    <div className="p-4 text-[12.5px] text-ink-700 leading-relaxed">
       {snip.trimmedStart && <span className="text-ink-400">…</span>}
       {snip.before}
       <Mark>{snip.highlight}</Mark>
       {snip.after}
       {snip.trimmedEnd && <span className="text-ink-400">…</span>}
-    </span>
+    </div>
   );
 }
 
@@ -170,9 +237,9 @@ function FullChunkView({
   }, [citation.text, highlight]);
 
   return (
-    <span className="block p-4 text-[12.5px] text-ink-700 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+    <div className="p-4 text-[12.5px] text-ink-700 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
       {content}
-    </span>
+    </div>
   );
 }
 

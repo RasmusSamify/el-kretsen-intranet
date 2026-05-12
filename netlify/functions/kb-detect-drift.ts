@@ -98,11 +98,13 @@ export default async (req: Request) => {
       continue;
     }
 
-    // Hämta nuvarande lagrad text för samma källa
+    // Hämta nuvarande lagrad text för samma källa (large-nivå = den fulla
+    // texten ordnad i logiska stycken, samma som ELvis ser).
     const { data: oldChunks } = await supabase
-      .from('kb_chunks')
+      .from('kb_chunks_v2')
       .select('text')
       .eq('filename', filename)
+      .eq('chunk_level', 'large')
       .order('chunk_index', { ascending: true });
 
     const oldText = (oldChunks ?? []).map((c) => c.text).join('\n\n');

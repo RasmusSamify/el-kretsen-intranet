@@ -17,9 +17,27 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.5.4';
+export const CURRENT_VERSION = '1.6.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.6.0',
+    date: '2026-05-12',
+    releasedAt: '2026-05-12T20:00:00+02:00',
+    title: 'Word-uppladdning, åtdragen kunskapsbas och fixad källcitations-ruta',
+    summary:
+      'Ett samlat lyft med flera förbättringar runt kunskapsbasen: Ni kan nu släppa in Word-filer direkt, alla uppladdade källor blir omedelbart sökbara av ELvis, Granskning och nattaudit jobbar mot exakt samma kunskap som ELvis svarar utifrån, och källcitations-rutan i chatten klipps inte längre av.',
+    highlights: [
+      'Word-filer (.docx) parsas nu direkt i webbläsaren när ni drar in dem — ren text extraheras automatiskt utan formatering, så chunkningen blir korrekt och ELvis kan söka i innehållet på en gång.',
+      'Felaktiga filer fångas innan de hamnar i kunskapsbasen — släpper någon in en PDF, ett okänt arkiv eller en binärfil får man tydligt felmeddelande istället för att en chunk fylls med oläsbar kod.',
+      'Buggfix: nyligen uppladdade filer blir nu omedelbart sökbara av ELvis. Tidigare kunde en fil chunkas och sparas korrekt — men ELvis sökte i en annan tabell och såg därför aldrig innehållet. Drabbade alla källor som lagts till efter den senaste sökmotor-uppgraderingen.',
+      'Buggfix: när ni redigerar ett internt dokument via pennan i Kunskapsbas-fliken används den nya texten direkt i ELvis svar. Tidigare uppdaterades bara en bakgrundskopia som inte längre lästes vid sökning.',
+      'Nattlig motsägelse-audit och drift-bevakning körs nu mot samma chunks som ELvis söker i. Granskningssidan visar därmed alltid det aktuella läget. De första nya audit-fynden mot den nuvarande basen dyker upp efter nästa nattkörning.',
+      'Källcitations-rutan i ELvis-chatten klipps inte längre av när hänvisningen ligger nära botten — den flyter ovanpå chat-fönstret, positioneras smart ovanför eller under chippet, och följer med vid scroll tills du stänger den.',
+      'Bakgrundsstädning: en gammal parallell datalagring har tagits bort helt — minskar Supabase-användning och eliminerar risken att framtida ändringar glömmer uppdatera ena halvan.',
+      'Mammoth-biblioteket (som läser .docx) laddas bara när någon faktiskt drar in en Word-fil — så ELvis Hub startar lika snabbt som tidigare för alla andra.',
+    ],
+  },
   {
     version: '1.5.4',
     date: '2026-05-11',

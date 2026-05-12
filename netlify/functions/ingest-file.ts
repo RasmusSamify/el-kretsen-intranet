@@ -1,7 +1,6 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
-import { embeddingInput } from './_shared/contextPrefix';
-import { extractMetadata } from './_shared/extractMetadata';
+import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
 
 interface IngestFileRequest {
   filename: string;
@@ -15,11 +14,6 @@ interface IngestFileResponse {
   tokens: number;
 }
 
-const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
-const EMBEDDING_MODEL = 'voyage-3';
-const CHUNK_SIZE = 1200;
-const CHUNK_OVERLAP = 200;
-const BATCH_SIZE = 25;
 const MAX_CONTENT_BYTES = 1_500_000;
 
 export default async (req: Request) => {
@@ -45,7 +39,7 @@ export default async (req: Request) => {
   }
 
   const filename = (body.filename ?? '').trim();
-  const content = sanitizeForPostgres(body.content ?? '');
+  const content = body.content ?? '';
   if (!filename) return json({ error: 'Filnamn krävs' }, 400);
   if (!content || content.length < 100) {
     return json({ error: 'För lite text — minst 100 tecken krävs' }, 400);
@@ -56,123 +50,36 @@ export default async (req: Request) => {
 
   const normalisedName = filename.endsWith('.txt') ? filename : `${filename}.txt`;
 
-  const chunks = chunkText(content, normalisedName);
-
-  let totalTokens = 0;
-  const rows: Array<{
-    filename: string;
-    chunk_index: number;
-    text: string;
-    token_count: number;
-    embedding: number[];
-    law_ref: string | null;
-    paragraph_ref: string | null;
-    section: string | null;
-  }> = [];
-
-  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-    const batch = chunks.slice(i, i + BATCH_SIZE);
-    const res = await fetch(VOYAGE_EMBEDDING_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${voyageKey}`,
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        // Embedda med kontext-prefix för bättre dokumentsäparation
-        input: batch.map((c) => embeddingInput(c.filename, c.chunk_index, c.text)),
-        input_type: 'document',
-      }),
-    });
-    if (!res.ok) {
-      return json({ error: `Voyage API error: ${res.status} ${await res.text()}` }, 502);
-    }
-    const data = (await res.json()) as {
-      data: Array<{ embedding: number[] }>;
-      usage?: { total_tokens?: number };
-    };
-    totalTokens += data.usage?.total_tokens ?? 0;
-    batch.forEach((c, idx) => {
-      const meta = extractMetadata(c.text);
-      rows.push({
-        filename: c.filename,
-        chunk_index: c.chunk_index,
-        text: c.text,
-        token_count: Math.round(c.text.length / 4),
-        embedding: data.data[idx].embedding,
-        law_ref: meta.law_ref,
-        paragraph_ref: meta.paragraph_ref,
-        section: meta.section,
-      });
-    });
-  }
-
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  await supabase.from('kb_chunks').delete().eq('filename', normalisedName);
-  const { error: insertError } = await supabase.from('kb_chunks').insert(rows);
-  if (insertError) {
-    return json({ error: `DB-insert misslyckades: ${insertError.message}` }, 502);
-  }
+  try {
+    const result = await replaceSourceInV2(supabase, voyageKey, normalisedName, content, {
+      sourceCategory: 'internal',
+    });
 
-  await supabase.from('kb_sources').upsert(
-    { filename: normalisedName, title: normalisedName, source_category: 'internal' },
-    { onConflict: 'filename', ignoreDuplicates: false },
-  );
+    await supabase.from('kb_sources').upsert(
+      { filename: normalisedName, title: normalisedName, source_category: 'internal' },
+      { onConflict: 'filename', ignoreDuplicates: false },
+    );
 
-  const payload: IngestFileResponse = {
-    ok: true,
-    source: normalisedName,
-    chunks: rows.length,
-    tokens: totalTokens,
-  };
-  return json(payload, 200);
-};
-
-// PostgreSQL rejects \u0000 in JSON payloads (and the `text` type can't store NUL bytes
-// either). PDFs copied via Notepad and exports from Office often leak these in. Lone
-// UTF-16 surrogates trigger the same error path, so strip those too.
-function sanitizeForPostgres(input: string): string {
-  return input
-    .replace(/\u0000/g, '')
-    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
-    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
-}
-
-function chunkText(text: string, filename: string) {
-  const chunks: Array<{ filename: string; chunk_index: number; text: string }> = [];
-  const paragraphs = text.replace(/\r\n/g, '\n').split(/\n\s*\n/);
-  let buffer = '';
-  let index = 0;
-
-  const push = (t: string) => chunks.push({ filename, chunk_index: index++, text: t.trim() });
-
-  for (const paragraph of paragraphs) {
-    const p = paragraph.trim();
-    if (!p) continue;
-    if (buffer.length + p.length + 2 <= CHUNK_SIZE) {
-      buffer = buffer ? `${buffer}\n\n${p}` : p;
-    } else {
-      if (buffer) {
-        push(buffer);
-        const tail = buffer.slice(Math.max(0, buffer.length - CHUNK_OVERLAP));
-        buffer = `${tail}\n\n${p}`;
-      } else {
-        for (let i = 0; i < p.length; i += CHUNK_SIZE - CHUNK_OVERLAP) {
-          const end = Math.min(i + CHUNK_SIZE, p.length);
-          push(p.slice(i, end));
-          if (end === p.length) break;
-        }
-        buffer = '';
-      }
+    // "chunks" i UI = large chunks (logiska stycken som Claude får som kontext).
+    // Small chunks är searcher-noder och döljs här för enkelhet.
+    const payload: IngestFileResponse = {
+      ok: true,
+      source: normalisedName,
+      chunks: result.largeChunks,
+      tokens: result.totalTokens,
+    };
+    return json(payload, 200);
+  } catch (e) {
+    if (e instanceof IngestError) {
+      return json({ error: e.message }, e.status);
     }
+    return json({ error: `Ingest failed: ${(e as Error).message}` }, 502);
   }
-  if (buffer) push(buffer);
-  return chunks;
-}
+};
 
 function corsHeaders() {
   return {

@@ -1,6 +1,7 @@
 import type { Config } from '@netlify/functions';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { embeddingInput } from './_shared/contextPrefix';
+import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
+import { reconstructSource } from './_shared/hierarchicalChunker';
 
 type Admin = SupabaseClient;
 
@@ -19,11 +20,6 @@ interface DeleteRequest {
 }
 type AdminRequest = GetRequest | UpdateRequest | DeleteRequest;
 
-const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
-const EMBEDDING_MODEL = 'voyage-3';
-const CHUNK_SIZE = 1200;
-const CHUNK_OVERLAP = 200;
-const BATCH_SIZE = 25;
 const MAX_CONTENT_BYTES = 1_500_000;
 
 export default async (req: Request) => {
@@ -50,7 +46,6 @@ export default async (req: Request) => {
     return json({ error: 'ADMIN_EMAILS not configured on server' }, 500);
   }
 
-  // Verifiera session + admin-roll
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return json({ error: 'Missing Authorization header' }, 401);
@@ -88,7 +83,7 @@ export default async (req: Request) => {
     case 'get':
       return handleGet(admin, body.filename);
     case 'update':
-      return handleUpdate(admin, voyageKey, body.filename, body.content, userData.user.id);
+      return handleUpdate(admin, voyageKey, body.filename, body.content);
     case 'delete':
       return handleDelete(admin, body.filename);
     default:
@@ -96,15 +91,14 @@ export default async (req: Request) => {
   }
 };
 
-async function handleGet(
-  admin: Admin,
-  filename: string,
-): Promise<Response> {
-  // Rekonstruera text från chunks (sortera på chunk_index)
+async function handleGet(admin: Admin, filename: string): Promise<Response> {
+  // Läs large-chunks från v2 — det är den fulla originaltexten ordnad i logiska stycken.
+  // Detta är vad ELvis faktiskt söker i, så edit-vyn visar exakt vad RAG ser.
   const { data: chunks, error } = await admin
-    .from('kb_chunks')
+    .from('kb_chunks_v2')
     .select('chunk_index, text')
     .eq('filename', filename)
+    .eq('chunk_level', 'large')
     .order('chunk_index', { ascending: true });
 
   if (error) return json({ error: `DB error: ${error.message}` }, 502);
@@ -112,18 +106,7 @@ async function handleGet(
     return json({ error: 'Källan finns inte' }, 404);
   }
 
-  // Sammanfoga chunks — tappar överlapp mellan chunks men originaltext är inte
-  // tillgänglig i databasen för uppladdade TXT-filer (sparades aldrig i bucket).
-  // Nästa sparning skriver rekonstruerad + redigerad version tillbaka som ny helhet.
-  const seen = new Set<string>();
-  const deduped: string[] = [];
-  for (const c of chunks) {
-    const key = c.text.trim();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(c.text);
-  }
-  const content = deduped.join('\n\n');
+  const content = reconstructSource(chunks.map((c) => (c as { text: string }).text));
 
   return json(
     {
@@ -144,7 +127,6 @@ async function handleUpdate(
   voyageKey: string,
   filename: string,
   content: string,
-  editedBy: string,
 ): Promise<Response> {
   if (!content || content.length < 100) {
     return json({ error: 'För lite text — minst 100 tecken krävs' }, 400);
@@ -153,124 +135,53 @@ async function handleUpdate(
     return json({ error: `För stort innehåll (max ${MAX_CONTENT_BYTES / 1024} KB)` }, 413);
   }
 
-  // Snapshot nuvarande chunks till kb_chunk_history INNAN uppdateringen
-  const { data: currentChunks } = await admin
-    .from('kb_chunks')
-    .select('id, text, token_count, quality_score')
-    .eq('filename', filename);
+  // Bevara source_category från existerande rader om möjligt (för audit-filter etc).
+  const { data: existing } = await admin
+    .from('kb_chunks_v2')
+    .select('source_category, quality_score')
+    .eq('filename', filename)
+    .limit(1);
 
-  if (currentChunks && currentChunks.length > 0) {
-    const historyRows = await Promise.all(
-      currentChunks.map(async (c) => {
-        const { data: version } = await admin.rpc('kb_chunk_next_version', { p_chunk_id: c.id });
-        return {
-          chunk_id: c.id,
-          version_number: (version as number | null) ?? 1,
-          text: c.text,
-          token_count: c.token_count,
-          quality_score: c.quality_score,
-          edited_by: editedBy,
-        };
-      }),
+  const sourceCategory =
+    (existing?.[0] as { source_category?: string | null } | undefined)?.source_category ?? 'internal';
+  const qualityScore =
+    (existing?.[0] as { quality_score?: number | null } | undefined)?.quality_score ?? null;
+
+  try {
+    const result = await replaceSourceInV2(admin, voyageKey, filename, content, {
+      sourceCategory,
+      qualityScore,
+    });
+
+    await admin.from('kb_sources').upsert(
+      { filename, title: filename, source_category: sourceCategory },
+      { onConflict: 'filename', ignoreDuplicates: false },
     );
-    await admin.from('kb_chunk_history').insert(historyRows);
-  }
 
-  const chunks = chunkText(content, filename);
-
-  const rows: Array<{
-    filename: string;
-    chunk_index: number;
-    text: string;
-    token_count: number;
-    embedding: number[];
-  }> = [];
-
-  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-    const batch = chunks.slice(i, i + BATCH_SIZE);
-    const res = await fetch(VOYAGE_EMBEDDING_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${voyageKey}`,
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: batch.map((c) => embeddingInput(c.filename, c.chunk_index, c.text)),
-        input_type: 'document',
-      }),
-    });
-    if (!res.ok) {
-      return json({ error: `Voyage API error: ${res.status} ${await res.text()}` }, 502);
+    return json({ ok: true, filename, chunks: result.largeChunks }, 200);
+  } catch (e) {
+    if (e instanceof IngestError) {
+      return json({ error: e.message }, e.status);
     }
-    const data = (await res.json()) as { data: Array<{ embedding: number[] }> };
-    batch.forEach((c, idx) => {
-      rows.push({
-        filename: c.filename,
-        chunk_index: c.chunk_index,
-        text: c.text,
-        token_count: Math.round(c.text.length / 4),
-        embedding: data.data[idx].embedding,
-      });
-    });
+    return json({ error: `Re-indexering misslyckades: ${(e as Error).message}` }, 502);
   }
-
-  // Replace: ta bort gamla chunks, sätt in nya
-  const { error: delError } = await admin.from('kb_chunks').delete().eq('filename', filename);
-  if (delError) return json({ error: `Delete old chunks failed: ${delError.message}` }, 502);
-
-  const { error: insError } = await admin.from('kb_chunks').insert(rows);
-  if (insError) return json({ error: `Insert new chunks failed: ${insError.message}` }, 502);
-
-  // Ensure kb_sources exists and bump updated_at
-  await admin.from('kb_sources').upsert(
-    { filename, title: filename, source_category: 'internal' },
-    { onConflict: 'filename', ignoreDuplicates: false },
-  );
-
-  return json({ ok: true, filename, chunks: rows.length }, 200);
 }
 
-async function handleDelete(
-  admin: Admin,
-  filename: string,
-): Promise<Response> {
+async function handleDelete(admin: Admin, filename: string): Promise<Response> {
   const { error, count } = await admin
-    .from('kb_chunks')
+    .from('kb_chunks_v2')
     .delete({ count: 'exact' })
     .eq('filename', filename);
   if (error) return json({ error: `Delete failed: ${error.message}` }, 502);
-  return json({ ok: true, filename, chunks_removed: count ?? 0 }, 200);
-}
 
-function chunkText(text: string, filename: string) {
-  const chunks: Array<{ filename: string; chunk_index: number; text: string }> = [];
-  const paragraphs = text.replace(/\r\n/g, '\n').split(/\n\s*\n/);
-  let buffer = '';
-  let index = 0;
-  const push = (t: string) => chunks.push({ filename, chunk_index: index++, text: t.trim() });
-  for (const paragraph of paragraphs) {
-    const p = paragraph.trim();
-    if (!p) continue;
-    if (buffer.length + p.length + 2 <= CHUNK_SIZE) {
-      buffer = buffer ? `${buffer}\n\n${p}` : p;
-    } else {
-      if (buffer) {
-        push(buffer);
-        const tail = buffer.slice(Math.max(0, buffer.length - CHUNK_OVERLAP));
-        buffer = `${tail}\n\n${p}`;
-      } else {
-        for (let i = 0; i < p.length; i += CHUNK_SIZE - CHUNK_OVERLAP) {
-          const end = Math.min(i + CHUNK_SIZE, p.length);
-          push(p.slice(i, end));
-          if (end === p.length) break;
-        }
-        buffer = '';
-      }
-    }
-  }
-  if (buffer) push(buffer);
-  return chunks;
+  return json(
+    {
+      ok: true,
+      filename,
+      chunks_removed: count ?? 0,
+    },
+    200,
+  );
 }
 
 function corsHeaders() {

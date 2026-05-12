@@ -2,7 +2,7 @@
  * Prefixar en chunk-text med dokumentkontext innan embedding.
  *
  * Embedding görs på "{kontext} · {text}", men bara {text} sparas i
- * kb_chunks.text — så UI/citations visar det rena innehållet.
+ * kb_chunks_v2.text — så UI/citations visar det rena innehållet.
  *
  * Syfte: embedding "vet" vilket dokument chunken tillhör, vilket ger
  * bättre separation mellan liknande texter från olika källor (t.ex.

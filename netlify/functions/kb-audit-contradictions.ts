@@ -104,21 +104,23 @@ export default async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Hämta total count — bara chunks som kvalificerar för audit
+  // Audit jobbar mot kb_chunks_v2 large-nivå — det är där ELvis hämtar
+  // kontexten från, så motsägelser hittas på samma textnivå som RAG-svaren.
   const { count: totalChunks } = await supabase
-    .from('kb_chunks')
+    .from('kb_chunks_v2')
     .select('id', { count: 'exact', head: true })
+    .eq('chunk_level', 'large')
     .in('source_category', AUDIT_CATEGORIES)
     .gte('quality_score', MIN_QUALITY);
 
   if (totalChunks == null) {
-    return json({ error: 'Failed to count kb_chunks' }, 502);
+    return json({ error: 'Failed to count kb_chunks_v2' }, 502);
   }
 
-  // Hämta en batch chunks ordnade på id — endast primärkällor med bra kvalitet
   const { data: chunks, error: chunksError } = await supabase
-    .from('kb_chunks')
+    .from('kb_chunks_v2')
     .select('id, filename, chunk_index, text, embedding, source_category')
+    .eq('chunk_level', 'large')
     .in('source_category', AUDIT_CATEGORIES)
     .gte('quality_score', MIN_QUALITY)
     .order('id', { ascending: true })
@@ -176,7 +178,7 @@ export default async (req: Request) => {
     const candidateIds = rawCandidates.map((c) => c.id);
     const { data: meta } = candidateIds.length > 0
       ? await supabase
-          .from('kb_chunks')
+          .from('kb_chunks_v2')
           .select('id, source_category, quality_score')
           .in('id', candidateIds)
       : { data: [] };

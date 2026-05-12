@@ -1,8 +1,7 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { parse } from 'node-html-parser';
-import { embeddingInput } from './_shared/contextPrefix';
-import { extractMetadata } from './_shared/extractMetadata';
+import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
 
 interface IngestRequest {
   url: string;
@@ -16,12 +15,7 @@ interface IngestResponse {
   tokens: number;
 }
 
-const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
-const EMBEDDING_MODEL = 'voyage-3';
-const CHUNK_SIZE = 1200;
-const CHUNK_OVERLAP = 200;
-const BATCH_SIZE = 25;
-const MAX_CONTENT_BYTES = 1_500_000; // 1.5 MB safety cap
+const MAX_CONTENT_BYTES = 1_500_000;
 
 export default async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -85,7 +79,6 @@ export default async (req: Request) => {
 
   title = root.querySelector('title')?.innerText?.trim() || null;
 
-  // Prefer main/article/#content; fall back to body
   const contentNode =
     root.querySelector('main') ||
     root.querySelector('article') ||
@@ -100,9 +93,6 @@ export default async (req: Request) => {
 
   const rawText = contentNode.text.replace(/\r\n/g, '\n');
   const text = rawText
-    .replace(/\u0000/g, '')
-    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
-    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
     .split('\n')
     .map((line) => line.replace(/\s+/g, ' ').trim())
     .filter((line) => line.length > 0 && !isKnownBoilerplate(line))
@@ -112,81 +102,36 @@ export default async (req: Request) => {
     return json({ error: 'Hittade för lite text på sidan (< 200 tecken). Kan vara JS-genererad innehåll som inte går att skrapa server-side.' }, 422);
   }
 
-  // Step 3: chunk
+  // Step 3: chunk + embed + insert via shared v2-pipeline
   const filename = canonicalFilename(url);
-  const chunks = chunkText(text, filename);
-
-  // Step 4: embed in batches
-  const embedded: Array<{
-    filename: string;
-    chunk_index: number;
-    text: string;
-    token_count: number;
-    embedding: number[];
-    law_ref: string | null;
-    paragraph_ref: string | null;
-    section: string | null;
-  }> = [];
-  let totalTokens = 0;
-  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-    const batch = chunks.slice(i, i + BATCH_SIZE);
-    const res = await fetch(VOYAGE_EMBEDDING_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${voyageKey}`,
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: batch.map((c) => embeddingInput(c.filename, c.chunk_index, c.text)),
-        input_type: 'document',
-      }),
-    });
-    if (!res.ok) {
-      return json({ error: `Voyage API error: ${res.status} ${await res.text()}` }, 502);
-    }
-    const data = (await res.json()) as { data: Array<{ embedding: number[] }>; usage?: { total_tokens?: number } };
-    totalTokens += data.usage?.total_tokens ?? 0;
-    batch.forEach((c, idx) => {
-      const meta = extractMetadata(c.text);
-      embedded.push({
-        filename: c.filename,
-        chunk_index: c.chunk_index,
-        text: c.text,
-        token_count: Math.round(c.text.length / 4),
-        embedding: data.data[idx].embedding,
-        law_ref: meta.law_ref,
-        paragraph_ref: meta.paragraph_ref,
-        section: meta.section,
-      });
-    });
-  }
-
-  // Step 5: upsert to Supabase (replace any previous ingestion of the same URL)
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  await supabase.from('kb_chunks').delete().eq('filename', filename);
-  const { error: insertError } = await supabase.from('kb_chunks').insert(embedded);
-  if (insertError) {
-    return json({ error: `DB-insert misslyckades: ${insertError.message}` }, 502);
+  try {
+    const result = await replaceSourceInV2(supabase, voyageKey, filename, text, {
+      sourceCategory: 'website',
+    });
+
+    await supabase.from('kb_sources').upsert(
+      { filename, title, source_category: 'website' },
+      { onConflict: 'filename', ignoreDuplicates: false },
+    );
+
+    const payload: IngestResponse = {
+      ok: true,
+      source: filename,
+      title,
+      chunks: result.largeChunks,
+      tokens: result.totalTokens,
+    };
+    return json(payload, 200);
+  } catch (e) {
+    if (e instanceof IngestError) {
+      return json({ error: e.message }, e.status);
+    }
+    return json({ error: `Ingest failed: ${(e as Error).message}` }, 502);
   }
-
-  // Ensure kb_sources has a row so admin kan sätta effective dates
-  await supabase.from('kb_sources').upsert(
-    { filename, title, source_category: 'website' },
-    { onConflict: 'filename', ignoreDuplicates: false },
-  );
-
-  const payload: IngestResponse = {
-    ok: true,
-    source: filename,
-    title,
-    chunks: embedded.length,
-    tokens: totalTokens,
-  };
-  return json(payload, 200);
 };
 
 const BOILERPLATE_PATTERNS: RegExp[] = [
@@ -204,40 +149,8 @@ function isKnownBoilerplate(line: string): boolean {
 }
 
 function canonicalFilename(url: URL): string {
-  // Store URL as filename — strip fragment, keep host + path for readability
   const clean = `${url.host}${url.pathname}${url.search}`;
-  // Keep it under Postgres text limits (way larger than 1K, safe)
   return clean.length > 400 ? `${url.host}${url.pathname.slice(0, 300)}...` : clean;
-}
-
-function chunkText(text: string, filename: string) {
-  const chunks: Array<{ filename: string; chunk_index: number; text: string }> = [];
-  const paragraphs = text.split(/\n\s*\n/);
-  let buffer = '';
-  let index = 0;
-
-  const push = (t: string) => chunks.push({ filename, chunk_index: index++, text: t });
-
-  for (const paragraph of paragraphs) {
-    if (buffer.length + paragraph.length + 2 <= CHUNK_SIZE) {
-      buffer = buffer ? `${buffer}\n\n${paragraph}` : paragraph;
-    } else {
-      if (buffer) {
-        push(buffer);
-        const tail = buffer.slice(Math.max(0, buffer.length - CHUNK_OVERLAP));
-        buffer = `${tail}\n\n${paragraph}`;
-      } else {
-        for (let i = 0; i < paragraph.length; i += CHUNK_SIZE - CHUNK_OVERLAP) {
-          const end = Math.min(i + CHUNK_SIZE, paragraph.length);
-          push(paragraph.slice(i, end));
-          if (end === paragraph.length) break;
-        }
-        buffer = '';
-      }
-    }
-  }
-  if (buffer) push(buffer);
-  return chunks;
 }
 
 function corsHeaders() {
