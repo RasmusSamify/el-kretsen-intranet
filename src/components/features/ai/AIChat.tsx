@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Eraser, Sparkles } from 'lucide-react';
 import { Card, Button, IconTile, TypingDots } from '@/components/ui';
+import { CURRENT_VERSION } from '@/lib/version';
 import { useAIChat } from '@/hooks/useAIChat';
 import { Message } from './Message';
 import { Composer } from './Composer';
 import { WelcomeState } from './WelcomeState';
 import { SidePanel } from './SidePanel';
+import { FollowUpChips } from './FollowUpChips';
 
 export function AIChat() {
   const { messages, streaming, send, clear } = useAIChat();
@@ -37,11 +39,11 @@ export function AIChat() {
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-ink-900 text-[15px] leading-none">ELvis</h2>
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-brand-500 to-violet-500 text-white text-[9px] font-bold uppercase tracking-wider leading-none">
-                v1.5
+                v{CURRENT_VERSION.split('.').slice(0, 2).join('.')}
               </span>
             </div>
             <p className="text-[11px] font-semibold text-ink-400 mt-1">
-              Tvåstegs hierarkisk sök · Rerank · Kodexpansion · Källhänvisningar
+              Tvåstegs hierarkisk sök · Förslag på följdfrågor · Källhänvisningar · Rättelser
             </p>
           </div>
           {messages.length > 0 && (
@@ -62,9 +64,11 @@ export function AIChat() {
             <WelcomeState onPick={handleQuickPrompt} />
           ) : (
             <>
-              {messages.map((m) => (
-                <Message key={m.id} message={m} />
-              ))}
+              {messages.map((m, i) => {
+                const prev = i > 0 ? messages[i - 1] : null;
+                const question = m.role === 'assistant' && prev?.role === 'user' ? prev.content : undefined;
+                return <Message key={m.id} message={m} question={question} />;
+              })}
               {streaming && (
                 <div className="flex gap-3 animate-fade-in">
                   <IconTile size="sm" tone="brand" icon={<Sparkles size={14} strokeWidth={2.25} />} />
@@ -73,6 +77,13 @@ export function AIChat() {
                   </div>
                 </div>
               )}
+              {!streaming && (() => {
+                const last = messages[messages.length - 1];
+                if (!last || last.role !== 'assistant') return null;
+                const chips = last.suggestedFollowUps ?? [];
+                if (chips.length === 0) return null;
+                return <FollowUpChips chips={chips} disabled={streaming} onPick={(t) => send(t)} />;
+              })()}
             </>
           )}
         </div>

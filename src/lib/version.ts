@@ -17,9 +17,27 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.6.0';
+export const CURRENT_VERSION = '1.7.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.7.0',
+    date: '2026-05-12',
+    releasedAt: '2026-05-12T22:00:00+02:00',
+    title: 'Bolla med ELvis · Rätta svar direkt · Mail-assistenten lär sig din ton',
+    summary:
+      'Tre stora tillägg som gör ELvis Hub mer interaktiv utan att tumma på sakligheten: följdfrågor i chatten flyter mer naturligt, du kan rätta felaktiga svar direkt under varje meddelande, och mail-assistenten lär sig hur Linnea formulerar sig över tid.',
+    highlights: [
+      'ELvis föreslår 2-3 förslag på följdfrågor under varje svar — klicka istället för att skriva. Förslagen är konkreta uppföljningar baserat på vad ELvis just sa, inte allmänna.',
+      'Uppföljningsfrågor i samma tråd får svar i mer naturlig dialog-ton (utan strikt ## Svar/## Detaljer-rubrikering). Alla grounding-regler gäller fortfarande — siffror, datum och paragrafer citeras ordagrant.',
+      'Ny "Rätta detta svar"-knapp under varje ELvis-svar. Tre tvingade val: fel källa hänvisades, källan är inaktuell, eller saknas i kunskapsbasen. Tvingade val betyder att inga free-text-tolkningar kan kontaminera kunskapsbasen — alla rättelser kopplas till ett dokument.',
+      'Inskickade rättelser landar i nya fliken "Användarrättelser" på Granskningssidan där admin kan markera dem som åtgärdade eller ignorerade, precis som motsägelse-fynden från nattaudit.',
+      'Mail-assistenten har fått stil-träning: efter varje genererat svar kan ni klicka "Spara ditt eget svar som stilexempel" och klistra in hur ni faktiskt hade svarat. AI:n lär sig DIN TON och struktur — fakta hämtas fortfarande från kunskapsbasen så siffror och paragrafer kan inte ändras.',
+      'Vid framtida mail söker AI:n upp 2 semantiskt liknande tränings-svar och använder dem som "så här brukar Linnea formulera sig"-exempel. Träningen blir alltså personlig per inkommande mailtyp.',
+      'Buggfix: mail-assistenten anropade fel sök-RPC efter v1.6.0-städningen och kunde inte hitta källor — nu går allt mot samma kunskapsbas som ELvis själv.',
+      'Versionsmärkningen i chat-headern speglar nu automatiskt aktuell version (tidigare hårdkodad till v1.5).',
+    ],
+  },
   {
     version: '1.6.0',
     date: '2026-05-12',

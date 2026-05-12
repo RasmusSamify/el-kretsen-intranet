@@ -13,6 +13,7 @@ export interface ChatMessage {
   citations?: Citation[];
   sourceFiles?: string[];
   grounded?: boolean;
+  suggestedFollowUps?: string[];
   timestamp: number;
 }
 

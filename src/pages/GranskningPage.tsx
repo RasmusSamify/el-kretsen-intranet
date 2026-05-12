@@ -16,6 +16,9 @@ import {
 import { Button, Card, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { cn, formatDate } from '@/lib/utils';
+import { CorrectionsList } from '@/components/features/kb/CorrectionsList';
+
+type GranskningView = 'contradictions' | 'corrections';
 
 type ReviewStatus = 'pending' | 'resolved' | 'ignored';
 
@@ -57,6 +60,7 @@ const SEVERITY_TONES: Record<number, { bg: string; text: string; label: string }
 };
 
 export function GranskningPage() {
+  const [view, setView] = useState<GranskningView>('contradictions');
   const [items, setItems] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<string | null>(null);
@@ -180,9 +184,26 @@ export function GranskningPage() {
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-ink-400">
             <Sparkles size={12} strokeWidth={1.75} />
-            <span>Nattlig audit</span>
+            <span>{view === 'contradictions' ? 'Nattlig audit' : 'Användarrättelser'}</span>
           </div>
         </header>
+
+        {/* Top tabs */}
+        <div className="flex">
+          <SegmentedControl
+            value={view}
+            onChange={(v) => setView(v as GranskningView)}
+            options={[
+              { value: 'contradictions', label: 'Motsägelser (audit)' },
+              { value: 'corrections', label: 'Användarrättelser' },
+            ]}
+          />
+        </div>
+
+        {view === 'corrections' && <CorrectionsList />}
+
+        {view === 'contradictions' && (
+          <>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -286,6 +307,8 @@ export function GranskningPage() {
             </ul>
           )}
         </Card>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,16 +1,20 @@
-import { Sparkles, User, ShieldAlert } from 'lucide-react';
+import { useState } from 'react';
+import { Sparkles, User, ShieldAlert, AlertCircle } from 'lucide-react';
 import type { ChatMessage } from '@/lib/types';
 import { IconTile } from '@/components/ui';
 import { MessageContent } from './MessageContent';
+import { CorrectionModal } from './CorrectionModal';
 import { cn } from '@/lib/utils';
 
 interface MessageProps {
   message: ChatMessage;
+  question?: string;
 }
 
-export function Message({ message }: MessageProps) {
+export function Message({ message, question }: MessageProps) {
   const isUser = message.role === 'user';
   const isUngrounded = !isUser && message.grounded === false;
+  const [correctionOpen, setCorrectionOpen] = useState(false);
 
   return (
     <div className={cn('flex gap-3 animate-slide-up', isUser ? 'justify-end' : 'justify-start')}>
@@ -50,10 +54,38 @@ export function Message({ message }: MessageProps) {
             ))}
           </div>
         )}
+
+        {!isUser && question && (
+          <div className="mt-2 -mb-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setCorrectionOpen(true)}
+              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-ink-400 hover:text-amber-700 transition-colors"
+              title="Hjälp ELvis att svara rätt nästa gång"
+            >
+              <AlertCircle size={11} strokeWidth={2} />
+              Rätta detta svar
+            </button>
+          </div>
+        )}
       </div>
 
       {isUser && (
         <IconTile size="sm" tone="neutral" icon={<User size={14} strokeWidth={2.25} />} />
+      )}
+
+      {!isUser && question && (
+        <CorrectionModal
+          open={correctionOpen}
+          question={question}
+          originalAnswer={message.content}
+          citedSources={message.sourceFiles ?? []}
+          onClose={() => setCorrectionOpen(false)}
+          onSubmitted={() => {
+            // Modal visar success-läge själv; stäng efter en stund
+            setTimeout(() => setCorrectionOpen(false), 2500);
+          }}
+        />
       )}
     </div>
   );

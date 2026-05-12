@@ -19,6 +19,7 @@ export interface AISearchResponse {
   citations: Citation[];
   sourceFiles: string[];
   grounded: boolean;
+  suggestedFollowUps?: string[];
 }
 
 export async function aiSearch(req: AISearchRequest): Promise<AISearchResponse> {
@@ -224,6 +225,97 @@ export async function ingestFile(filename: string, content: string): Promise<Ing
       /* ignore */
     }
     throw new Error(message);
+  }
+  return res.json();
+}
+
+// ---------- ELvis-rättelser (användarfeedback för att träna kunskapsbasen) ----------
+
+export type CorrectionType = 'wrong_source' | 'outdated_source' | 'missing_in_kb';
+
+export interface SubmitCorrectionRequest {
+  question: string;
+  original_answer: string;
+  correction_type: CorrectionType;
+  cited_source?: string | null;
+  suggested_source?: string | null;
+  user_note?: string | null;
+}
+
+export async function submitCorrection(req: SubmitCorrectionRequest): Promise<{ id: string }> {
+  const res = await fetch('/api/submit-correction', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: await authHeader(),
+    },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    let m = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) m = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(m);
+  }
+  return res.json();
+}
+
+export async function correctionAction(
+  correctionId: string,
+  action: 'resolve' | 'ignore' | 'reopen',
+): Promise<void> {
+  const res = await fetch('/api/correction-action', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: await authHeader(),
+    },
+    body: JSON.stringify({ correction_id: correctionId, action }),
+  });
+  if (!res.ok) {
+    let m = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) m = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(m);
+  }
+}
+
+// ---------- Mail-assistent stil-träning ----------
+
+export interface SubmitMailTrainingRequest {
+  customer_email: string;
+  ai_draft?: string | null;
+  correct_reply: string;
+  language: 'sv' | 'en';
+  user_note?: string | null;
+}
+
+export async function submitMailTraining(req: SubmitMailTrainingRequest): Promise<{ id: string }> {
+  const res = await fetch('/api/submit-mail-training', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: await authHeader(),
+    },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    let m = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) m = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(m);
   }
   return res.json();
 }

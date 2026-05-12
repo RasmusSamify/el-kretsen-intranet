@@ -133,7 +133,7 @@ export default async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid', {
+  const { data: matches, error: matchError } = await supabase.rpc('match_kb_chunks_hybrid_v2', {
     query_text: customerEmail.slice(0, 2000),
     query_embedding: embedding,
     match_count: MATCH_COUNT,
@@ -154,10 +154,40 @@ export default async (req: Request) => {
         .map((c) => `[källa: ${c.filename}, stycke ${c.chunk_index + 1}]\n${c.text}`)
         .join('\n\n---\n\n');
 
+  // Hämta upp till 2 stilexempel — semantiskt liknande kundmail som Linnea
+  // tidigare rättat. Fakta kommer fortfarande från <kunskapsbas>; exempel
+  // styr bara ton/struktur. Misslyckas det (eller finns inga exempel än)
+  // fortsätter vi utan att blockera mailet.
+  const { data: trainingMatches } = await supabase.rpc('match_mail_training', {
+    query_embedding: embedding,
+    match_language: lang,
+    match_count: 2,
+    match_threshold: 0.65,
+  });
+  const examples = (trainingMatches ?? []) as Array<{
+    id: string;
+    customer_email: string;
+    correct_reply: string;
+    similarity: number;
+  }>;
+
+  const examplesBlock = examples.length === 0
+    ? ''
+    : '\n\n<stilexempel>\n' +
+      examples
+        .map(
+          (ex, i) =>
+            `Exempel ${i + 1} (${(ex.similarity * 100).toFixed(0)} % liknande):\n` +
+            `<kundmail>\n${ex.customer_email.slice(0, 2000)}\n</kundmail>\n` +
+            `<linneas_svar>\n${ex.correct_reply.slice(0, 2000)}\n</linneas_svar>`,
+        )
+        .join('\n\n---\n\n') +
+      '\n</stilexempel>\n\nNotera: stilexempel påverkar TON, STRUKTUR och FORMULERINGAR — INTE fakta. Alla siffror, paragrafer och datum ska fortfarande komma från <kunskapsbas>.';
+
   const userMessage =
     lang === 'sv'
-      ? `Här är mailet från kunden:\n\n<kundmail>\n${customerEmail}\n</kundmail>\n\n<kunskapsbas>\n${context}\n</kunskapsbas>\n\nGenerera ett professionellt svar på svenska och returnera endast JSON enligt formatet.`
-      : `Here is the customer's email:\n\n<customer_mail>\n${customerEmail}\n</customer_mail>\n\n<kunskapsbas>\n${context}\n</kunskapsbas>\n\nGenerate a professional reply in English and return only JSON per the specified format.`;
+      ? `Här är mailet från kunden:\n\n<kundmail>\n${customerEmail}\n</kundmail>\n\n<kunskapsbas>\n${context}\n</kunskapsbas>${examplesBlock}\n\nGenerera ett professionellt svar på svenska och returnera endast JSON enligt formatet.`
+      : `Here is the customer's email:\n\n<customer_mail>\n${customerEmail}\n</customer_mail>\n\n<kunskapsbas>\n${context}\n</kunskapsbas>${examplesBlock}\n\nGenerate a professional reply in English and return only JSON per the specified format.`;
 
   const claudeRes = await fetch(ANTHROPIC_URL, {
     method: 'POST',

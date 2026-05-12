@@ -17,6 +17,8 @@ interface Citation {
   similarity: number;
 }
 
+const MAX_FOLLOW_UPS = 3;
+
 interface MatchedChunk {
   id: string;
   filename: string;
@@ -121,7 +123,33 @@ Endast om kunskapsbasen inte innehåller NÅGOT relevant för frågan, svara kor
 - [Bullets med citation per rad]
 
 ## Saknas i kunskapsbasen
-[Valfritt — bara när relevant]`;
+[Valfritt — bara när relevant]
+
+## UPPFÖLJNINGSFRÅGOR I SAMMA TRÅD
+
+Om <kontext>follow_up</kontext> är angiven nedan är detta en uppföljning på en tidigare fråga i tråden. Då:
+- Du behöver INTE använda ## Svar / ## Detaljer-strukturen — svara mer fritt och samtalsmässigt
+- ALLA grounding-, citation- och anti-hallucinations-regler gäller fortfarande
+- Hänvisa gärna till vad du sa tidigare i tråden ("som jag nämnde…", "till skillnad från B74 vi pratade om…")
+- Håll svaret kort och fokuserat på det nya som efterfrågas
+
+## FÖRSLAG PÅ FÖLJDFRÅGOR
+
+Avsluta ALLTID hela ditt svar med en separat blockstart "<följdfrågor>" och avslutande "</följdfrågor>" på egen rad. Mellan dem listar du 2-3 konkreta följdfrågor som naturligt kan komma härnäst från användaren, en per rad. Tagga ALDRIG följdfrågorna med citationer. Exempel:
+
+<följdfrågor>
+Vilken kemikod gäller för litium-järnfosfat-batterier?
+Vad händer om producenten missar deklarationen i tid?
+Vilka avgifter berörs av övergången?
+</följdfrågor>
+
+Förslagen ska:
+- Vara konkreta uppföljningar baserat på vad du just sa, inte generella
+- Sluta med frågetecken
+- Vara korta (max ~80 tecken)
+- Aldrig upprepa frågan användaren just ställde
+
+Lämna ALDRIG ut <följdfrågor>-blocket. Om du av någon anledning inte kan svara, lista ändå 2-3 omformuleringar som kan ge bättre RAG-träff.`;
 
 const NO_MATCH_RESPONSE =
   'Jag hittar inte svaret i kunskapsbanken. Kontakta ansvarig sakkunnig för en exakt bedömning.';
@@ -257,9 +285,11 @@ export default async (req: Request) => {
       .map((c) => `[källa: ${c.filename}, stycke ${c.chunk_index + 1}]\n${c.text}`)
       .join('\n\n---\n\n');
 
+    const isFollowUp = (body.conversationHistory ?? []).length > 0;
+    const contextTag = isFollowUp ? '\n\n<kontext>follow_up</kontext>' : '';
     const userContent = body.attachedFileContent
-      ? `${query}\n\n<bifogad_fil>\n${body.attachedFileContent}\n</bifogad_fil>\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>`
-      : `${query}\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>`;
+      ? `${query}\n\n<bifogad_fil>\n${body.attachedFileContent}\n</bifogad_fil>\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>${contextTag}`
+      : `${query}\n\n<kunskapsbas>\n${contextBlock}\n</kunskapsbas>${contextTag}`;
 
     const apiMessages = [
       ...body.conversationHistory.map((m) => ({ role: m.role, content: m.content })),
@@ -291,7 +321,8 @@ export default async (req: Request) => {
       content?: Array<{ type: string; text?: string }>;
     };
 
-    const answer = claudeData.content?.find((c) => c.type === 'text')?.text ?? '';
+    const rawAnswer = claudeData.content?.find((c) => c.type === 'text')?.text ?? '';
+    const { answer, suggestedFollowUps } = extractFollowUps(rawAnswer);
 
     // Extract which source files Claude actually referenced
     const referencedFiles = extractReferencedFiles(answer, chunks);
@@ -317,6 +348,7 @@ export default async (req: Request) => {
         citations,
         sourceFiles: referencedFiles,
         grounded: outcome === 'answered',
+        suggestedFollowUps,
       },
       200,
     );
@@ -512,6 +544,23 @@ async function embedText(text: string, apiKey: string): Promise<number[]> {
 
   const data = (await response.json()) as { data: Array<{ embedding: number[] }> };
   return data.data[0].embedding;
+}
+
+function extractFollowUps(raw: string): { answer: string; suggestedFollowUps: string[] } {
+  // Claude instrueras avsluta varje svar med <följdfrågor>...</följdfrågor>.
+  // Vi plockar ut dem, normaliserar och returnerar svaret utan blocket — chips
+  // renderas separat i UI:t istället för i textflödet.
+  const match = raw.match(/<följdfrågor>\s*([\s\S]*?)\s*<\/följdfrågor>/i);
+  if (!match) return { answer: raw.trim(), suggestedFollowUps: [] };
+
+  const items = match[1]
+    .split('\n')
+    .map((line) => line.replace(/^[-*•\d.\s]+/, '').trim())
+    .filter((line) => line.length >= 5 && line.length <= 120)
+    .slice(0, MAX_FOLLOW_UPS);
+
+  const answer = raw.replace(match[0], '').trim();
+  return { answer, suggestedFollowUps: items };
 }
 
 function extractReferencedFiles(answer: string, chunks: MatchedChunk[]): string[] {

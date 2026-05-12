@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, Copy, Flag, Languages, Mail, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert, Wand2 } from 'lucide-react';
+import { ArrowRight, Check, Copy, Flag, GraduationCap, Languages, Mail, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert, Wand2 } from 'lucide-react';
 import { Button, Card, IconTile, Spinner } from '@/components/ui';
 import { mailAssistant, submitAnswerFeedback, type MailAssistantResponse, type MailCreativity } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { MailTrainingModal } from '@/components/features/mail/MailTrainingModal';
 
 const CREATIVITY_STORAGE_KEY = 'mail-assistant-creativity';
 
@@ -37,6 +38,8 @@ export function MailAssistantPage() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [trainingOpen, setTrainingOpen] = useState(false);
+  const [trainingSaved, setTrainingSaved] = useState(false);
 
   const disabled = !customerEmail.trim() || loading;
 
@@ -50,6 +53,7 @@ export function MailAssistantPage() {
     setFeedbackComment('');
     setFeedbackSent(false);
     setFeedbackError(null);
+    setTrainingSaved(false);
     try {
       const response = await mailAssistant(
         {
@@ -345,9 +349,44 @@ export function MailAssistantPage() {
                       onComment={setFeedbackComment}
                       onRate={sendFeedback}
                     />
+
+                    <div className="pt-3 border-t border-ink-100">
+                      {trainingSaved ? (
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[12px] font-bold text-emerald-800">
+                          <Check size={13} strokeWidth={2.25} />
+                          Sparat som stilexempel
+                        </div>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<GraduationCap size={14} strokeWidth={1.75} />}
+                          onClick={() => setTrainingOpen(true)}
+                        >
+                          Spara ditt eget svar som stilexempel
+                        </Button>
+                      )}
+                      <p className="text-[11px] text-ink-400 mt-1.5 leading-relaxed">
+                        AI:n lär sig din ton för framtida liknande mail — fakta hämtas fortfarande från kunskapsbasen.
+                      </p>
+                    </div>
                   </div>
                 </Card>
               </div>
+            )}
+
+            {result && (
+              <MailTrainingModal
+                open={trainingOpen}
+                customerEmail={customerEmail.trim()}
+                aiDraft={result.reply}
+                language={result.language}
+                onClose={() => setTrainingOpen(false)}
+                onSubmitted={() => {
+                  setTrainingSaved(true);
+                  setTimeout(() => setTrainingOpen(false), 2500);
+                }}
+              />
             )}
           </div>
         </div>

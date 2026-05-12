@@ -88,6 +88,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           citations: res.citations,
           sourceFiles: res.sourceFiles,
           grounded: res.grounded,
+          suggestedFollowUps: res.suggestedFollowUps,
           timestamp: Date.now(),
         };
 
