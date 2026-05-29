@@ -17,9 +17,22 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.8.0';
+export const CURRENT_VERSION = '1.9.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.9.0',
+    date: '2026-05-30',
+    releasedAt: '2026-05-30T12:00:00+02:00',
+    title: 'Ny sida: På gång — se vad som kommer härnäst',
+    summary:
+      'En ny flik som visar vad vi planerar att bygga framöver i ELvis Hub, så ni alltid vet vad som är på väg och kan påverka prioriteringen.',
+    highlights: [
+      '"På gång"-flik i menyn med kommande funktioner och deras status (Näst på tur / Planerad / Under utredning).',
+      'Just nu på kartan: Skrivelse-assistent för utgående producentbrev och regelsammanfattningar, Regelradar för automatisk lagbevakning, och en introduktions-läranväg för nyanställda.',
+      'Listan uppdateras löpande utifrån era önskemål — använd Feedback-knappen för att påverka vad vi bygger härnäst.',
+    ],
+  },
   {
     version: '1.8.0',
     date: '2026-05-29',
