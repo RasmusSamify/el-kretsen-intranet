@@ -428,6 +428,36 @@ export function dismissGap(id: string): Promise<{ ok: true }> {
   return postJob('/api/close-gap', { action: 'dismiss', id });
 }
 
+// ---------- Loggbok (möten/samtal + feedback, admin-only) ----------
+
+export interface MeetingLog {
+  id: string;
+  created_at: string;
+  author_email: string | null;
+  type: 'meeting' | 'feedback';
+  title: string;
+  summary: string | null;
+  key_points: string[];
+  action_items: string[];
+  draft_followup: string | null;
+  raw_text: string;
+}
+
+export function listMeetingLogs(): Promise<{ items: MeetingLog[] }> {
+  return postJob('/api/meeting-logs', { action: 'list' });
+}
+
+export function createMeetingLog(
+  type: 'meeting' | 'feedback',
+  rawText: string,
+): Promise<{ item: MeetingLog }> {
+  return postJob('/api/meeting-logs', { action: 'create', type, raw_text: rawText });
+}
+
+export function deleteMeetingLog(id: string): Promise<{ ok: true }> {
+  return postJob('/api/meeting-logs', { action: 'delete', id });
+}
+
 // ---------- Admin-operationer (kräver admin-email i ADMIN_EMAILS) ----------
 
 export interface AdminGetResponse {

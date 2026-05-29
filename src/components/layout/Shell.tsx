@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Activity, AlertTriangle, BarChart3, Wand2, Library, Mail, Trophy } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, Wand2, Library, Mail, NotebookPen, Trophy } from 'lucide-react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { Header } from './Header';
+import { useAdmin } from '@/hooks/useAdmin';
 import { cn } from '@/lib/utils';
 
 const items: SidebarItem[] = [
@@ -12,6 +13,7 @@ const items: SidebarItem[] = [
   { to: '/kunskapsbas', label: 'Kunskapsbas', icon: Library },
   { to: '/granskning', label: 'Granskning', icon: AlertTriangle },
   { to: '/status', label: 'Systemstatus', icon: Activity, badge: 'NY' },
+  { to: '/loggbok', label: 'Loggbok', icon: NotebookPen, badge: 'NY', adminOnly: true },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
 ];
 
@@ -19,6 +21,8 @@ const STORAGE_KEY = 'elvis-sidebar-collapsed';
 const HEADER_HEIGHT = 68;
 
 export function Shell() {
+  const { isAdmin } = useAdmin();
+  const visibleItems = items.filter((item) => !item.adminOnly || isAdmin);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof localStorage === 'undefined') return false;
     return localStorage.getItem(STORAGE_KEY) === 'true';
@@ -39,7 +43,7 @@ export function Shell() {
 
       {/* Sidebar — starts below header */}
       <Sidebar
-        items={items}
+        items={visibleItems}
         collapsed={collapsed}
         onToggle={() => setCollapsed((c) => !c)}
         topOffset={HEADER_HEIGHT}

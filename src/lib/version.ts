@@ -40,6 +40,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Ny flik "Kunskapsluckor" i Granskning: gör om obesvarade frågor till färdiga utkast på kunskapskällor som du verifierar och lägger till med ett klick. AI:n hittar aldrig på fakta — det som saknas markeras som "att komplettera".',
       'Säkerhet: bara inloggade administratörer kan lägga till källor i kunskapsbasen (tidigare var de endpointarna öppna).',
       'Avgifts-kalkylatorn och Avgifts-duellen är borttagna eftersom de inte användes.',
+      'Ny admin-flik Loggbok: spara möten, samtal och feedback — AI:n sammanfattar, plockar ut nyckelpunkter och action points och föreslår uppföljning.',
     ],
   },
   {
