@@ -6,6 +6,7 @@ import {
   Flame,
   Library,
   Mail,
+  MessageSquare,
   MessageSquareText,
   Sparkles,
   ThumbsDown,
@@ -13,10 +14,13 @@ import {
   TrendingUp,
   TriangleAlert,
   Trophy,
+  Wand2,
 } from 'lucide-react';
 import { Card, IconTile, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { formatDate, cn } from '@/lib/utils';
+
+type InsightsTab = 'elvis' | 'elvira';
 
 interface Stats {
   total_questions: number;
@@ -36,6 +40,8 @@ interface FaqRow {
   last_asked: string;
 }
 
+type UnansweredOutcome = 'partial' | 'unanswered' | 'error';
+
 interface UnansweredRow {
   id: string;
   question_text: string;
@@ -43,6 +49,9 @@ interface UnansweredRow {
   top_match_similarity: number | null;
   created_at: string;
   notified: boolean;
+  outcome: UnansweredOutcome;
+  gaps_text: string | null;
+  error_message: string | null;
 }
 
 interface SourceRow {
@@ -55,44 +64,72 @@ interface MailStats {
   uses_last_7d: number;
   feedback_up: number;
   feedback_down: number;
+  answers_with_gaps: number;
+}
+
+interface MailFeedbackRow {
+  id: string;
+  rating: 'up' | 'down';
+  comment: string | null;
+  created_at: string;
 }
 
 export function InsightsPage() {
+  const [tab, setTab] = useState<InsightsTab>('elvis');
   const [stats, setStats] = useState<Stats | null>(null);
   const [mailStats, setMailStats] = useState<MailStats | null>(null);
   const [topFaqs, setTopFaqs] = useState<FaqRow[]>([]);
   const [unanswered, setUnanswered] = useState<UnansweredRow[]>([]);
   const [topSources, setTopSources] = useState<SourceRow[]>([]);
+  const [mailFeedback, setMailFeedback] = useState<MailFeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [statsRes, faqRes, unansweredRes, sourcesRes, mailTotal, mail7d, feedbackRes] =
-        await Promise.all([
-          supabase.rpc('dashboard_stats'),
-          supabase
-            .from('ai_questions')
-            .select('id, question_text, count, last_asked')
-            .order('count', { ascending: false })
-            .limit(10),
-          supabase
-            .from('ai_unanswered')
-            .select('id, question_text, top_match_filename, top_match_similarity, created_at, notified')
-            .order('created_at', { ascending: false })
-            .limit(10),
-          supabase.rpc('list_kb_sources'),
-          supabase.from('mail_assistant_logs').select('id', { count: 'exact', head: true }),
-          supabase
-            .from('mail_assistant_logs')
-            .select('id', { count: 'exact', head: true })
-            .gte('created_at', since7d),
-          supabase
-            .from('answer_feedback')
-            .select('rating')
-            .eq('feature', 'mail_assistant'),
-        ]);
+      const [
+        statsRes,
+        faqRes,
+        unansweredRes,
+        sourcesRes,
+        mailTotal,
+        mail7d,
+        feedbackRes,
+        mailFeedbackRes,
+        mailGapsRes,
+      ] = await Promise.all([
+        supabase.rpc('dashboard_stats'),
+        supabase
+          .from('ai_questions')
+          .select('id, question_text, count, last_asked')
+          .order('count', { ascending: false })
+          .limit(10),
+        supabase
+          .from('ai_unanswered')
+          .select(
+            'id, question_text, top_match_filename, top_match_similarity, created_at, notified, outcome, gaps_text, error_message',
+          )
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase.rpc('list_kb_sources'),
+        supabase.from('mail_assistant_logs').select('id', { count: 'exact', head: true }),
+        supabase
+          .from('mail_assistant_logs')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', since7d),
+        supabase.from('answer_feedback').select('rating').eq('feature', 'mail_assistant'),
+        supabase
+          .from('answer_feedback')
+          .select('id, rating, comment, created_at')
+          .eq('feature', 'mail_assistant')
+          .order('created_at', { ascending: false })
+          .limit(15),
+        supabase
+          .from('mail_assistant_logs')
+          .select('id', { count: 'exact', head: true })
+          .gt('gaps_count', 0),
+      ]);
 
       if (statsRes.data) setStats(statsRes.data as Stats);
       if (faqRes.data) setTopFaqs(faqRes.data as FaqRow[]);
@@ -104,6 +141,7 @@ export function InsightsPage() {
           .slice(0, 10);
         setTopSources(sorted);
       }
+      if (mailFeedbackRes.data) setMailFeedback(mailFeedbackRes.data as MailFeedbackRow[]);
 
       const feedback = (feedbackRes.data ?? []) as Array<{ rating: string }>;
       setMailStats({
@@ -111,6 +149,7 @@ export function InsightsPage() {
         uses_last_7d: mail7d.count ?? 0,
         feedback_up: feedback.filter((f) => f.rating === 'up').length,
         feedback_down: feedback.filter((f) => f.rating === 'down').length,
+        answers_with_gaps: mailGapsRes.count ?? 0,
       });
 
       setLoading(false);
@@ -134,7 +173,9 @@ export function InsightsPage() {
             <div>
               <h1 className="text-display text-3xl text-ink-900 leading-none">Insikter</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">
-                Översikt över AI-användning, kunskapsbas och obesvarade frågor
+                {tab === 'elvis'
+                  ? 'ELvis · chatt-AI:n, kunskapsbasen och obesvarade frågor'
+                  : 'Elvira · mail-assistentens användning och feedback'}
               </p>
             </div>
           </div>
@@ -144,257 +185,458 @@ export function InsightsPage() {
           </div>
         </header>
 
-        {/* HERO row — two big asymmetric cards */}
-        <div className="grid grid-cols-12 gap-5">
-          {/* Biggest hero — total usage */}
-          <div className="col-span-12 lg:col-span-7">
-            <HeroCard
-              label="Total användning"
-              value={stats?.total_questions ?? 0}
-              subValue={stats?.unique_questions ?? 0}
-              subLabel="olika frågor (unika)"
-              delta={stats?.questions_last_7d ?? 0}
-              deltaLabel="aktiva senaste 7 dagarna"
-              icon={<MessageSquareText size={14} strokeWidth={1.75} />}
-              tone="brand"
-            />
-          </div>
-
-          {/* Secondary hero — unanswered */}
-          <div className="col-span-12 lg:col-span-5">
-            <HeroCard
-              label="Kunskapsluckor"
-              value={stats?.unanswered_total ?? 0}
-              subValue={null}
-              subLabel={stats?.unanswered_total === 0 ? 'Alla frågor besvarade' : 'obesvarade totalt'}
-              delta={stats?.unanswered_last_7d ?? 0}
-              deltaLabel="senaste 7 dagar"
-              icon={<TriangleAlert size={14} strokeWidth={1.75} />}
-              tone={(stats?.unanswered_total ?? 0) > 0 ? 'warning' : 'success'}
-              compact
-            />
-          </div>
+        <div className="flex">
+          <InsightsTabs value={tab} onChange={setTab} />
         </div>
 
-        {/* Secondary KPI row — 3 support cards */}
-        <div className="grid grid-cols-12 gap-5">
-          <div className="col-span-6 lg:col-span-4">
-            <StatCard
-              label="Källor i kunskapsbas"
-              value={stats?.source_count ?? 0}
-              sub={`${stats?.chunk_count.toLocaleString('sv-SE') ?? 0} chunks totalt`}
-              icon={<Library size={14} strokeWidth={1.75} />}
-              tone="neutral"
-            />
-          </div>
-          <div className="col-span-6 lg:col-span-4">
-            <StatCard
-              label="Kretskampen-omgångar"
-              value={stats?.quiz_scores_total ?? 0}
-              sub="spelomgångar spelade"
-              icon={<Trophy size={14} strokeWidth={1.75} />}
-              tone="success"
-            />
-          </div>
-          <div className="col-span-12 lg:col-span-4">
-            <StatCard
-              label="Senaste 7 dagar"
-              value={stats?.questions_last_7d ?? 0}
-              sub={`${stats?.unanswered_last_7d ?? 0} av dem obesvarade`}
-              icon={<TrendingUp size={14} strokeWidth={1.75} />}
-              tone="brand"
-            />
-          </div>
-        </div>
-
-        {/* Mail-assistent-statistik */}
-        <div className="grid grid-cols-12 gap-5">
-          <div className="col-span-12 lg:col-span-4">
-            <StatCard
-              label="Mail-assistent · användning"
-              value={mailStats?.uses_last_7d ?? 0}
-              sub={`${mailStats?.total_uses ?? 0} totalt · senaste 7 dagar`}
-              icon={<Mail size={14} strokeWidth={1.75} />}
-              tone="brand"
-            />
-          </div>
-          <div className="col-span-6 lg:col-span-4">
-            <StatCard
-              label="Positiv feedback"
-              value={mailStats?.feedback_up ?? 0}
-              sub={feedbackRatioText(mailStats)}
-              icon={<ThumbsUp size={14} strokeWidth={1.75} />}
-              tone="success"
-            />
-          </div>
-          <div className="col-span-6 lg:col-span-4">
-            <StatCard
-              label="Negativ feedback"
-              value={mailStats?.feedback_down ?? 0}
-              sub={mailStats && mailStats.feedback_down > 0 ? 'Granska för kvalitetsförbättring' : 'Inga än'}
-              icon={<ThumbsDown size={14} strokeWidth={1.75} />}
-              tone={(mailStats?.feedback_down ?? 0) > 0 ? 'warning' : 'neutral'}
-            />
-          </div>
-        </div>
-
-        {/* BENTO row — asymmetric content cards */}
-        <div className="grid grid-cols-12 gap-5">
-          {/* Unanswered — wide */}
-          <div className="col-span-12 lg:col-span-8">
-            <Card variant="glass" className="p-6 h-full">
-              <SectionHeader
-                icon={<CircleHelp size={14} strokeWidth={1.75} />}
-                tone="warning"
-                title="Senaste obesvarade"
-                subtitle="Frågor som inte kunde besvaras — visa Linnea att fylla luckan"
-              />
-              {unanswered.length === 0 ? (
-                <EmptyState text="Inga obesvarade frågor än. AI:n klarar alla frågor med nuvarande kunskapsbas." />
-              ) : (
-                <ul className="space-y-2">
-                  {unanswered.map((row) => (
-                    <li key={row.id} className="p-3.5 rounded-xl bg-white border border-ink-100 hover:border-amber-200 hover:bg-amber-50/40 transition-colors">
-                      <p className="text-[13.5px] font-semibold text-ink-900 leading-snug">
-                        {row.question_text}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-ink-400 flex-wrap">
-                        <span>
-                          {formatDate(row.created_at, {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                        {row.top_match_similarity != null && (
-                          <>
-                            <span className="opacity-40">·</span>
-                            <span>närmast: {Math.round(row.top_match_similarity * 100)} %</span>
-                          </>
-                        )}
-                        {row.top_match_filename && (
-                          <>
-                            <span className="opacity-40">·</span>
-                            <span className="truncate max-w-[240px] normal-case tracking-normal text-ink-500 font-semibold">
-                              {row.top_match_filename}
-                            </span>
-                          </>
-                        )}
-                        {row.notified && (
-                          <>
-                            <span className="opacity-40">·</span>
-                            <span className="text-emerald-600 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              mail skickat
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          </div>
-
-          {/* Top FAQ — narrow tall */}
-          <div className="col-span-12 lg:col-span-4">
-            <Card variant="glass" className="p-6 h-full">
-              <SectionHeader
-                icon={<Flame size={14} strokeWidth={1.75} />}
-                tone="warning"
-                title="Populärast"
-                subtitle="Mest ställda frågor"
-              />
-              {topFaqs.length === 0 ? (
-                <EmptyState text="Inga frågor än — börja chatta." />
-              ) : (
-                <ul className="space-y-1.5">
-                  {topFaqs.map((faq, i) => (
-                    <li
-                      key={faq.id}
-                      className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-ink-100 hover:border-brand-400 hover:bg-brand-50/40 transition-colors"
-                    >
-                      <span
-                        className={cn(
-                          'w-7 h-7 rounded-lg inline-flex items-center justify-center font-display text-sm shrink-0 tabular-nums',
-                          i === 0
-                            ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-                            : i < 3
-                              ? 'bg-ink-100 text-ink-700'
-                              : 'bg-ink-50 text-ink-400',
-                        )}
-                      >
-                        {i + 1}
-                      </span>
-                      <span className="flex-1 min-w-0 text-[12px] font-semibold text-ink-700 truncate">
-                        {faq.question_text}
-                      </span>
-                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100 tabular-nums">
-                        {faq.count}×
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          </div>
-        </div>
-
-        {/* Sources row — full width with nicer bars */}
-        <Card variant="glass" className="p-6">
-          <SectionHeader
-            icon={<Database size={14} strokeWidth={1.75} />}
-            tone="neutral"
-            title="Största källor"
-            subtitle="Dokument med flest indexerade chunks — visar vilka som driver AI:ns svar"
+        {tab === 'elvis' ? (
+          <ElvisInsights
+            stats={stats}
+            topFaqs={topFaqs}
+            unanswered={unanswered}
+            topSources={topSources}
           />
-
-          {topSources.length === 0 ? (
-            <EmptyState text="Inga källor än." />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-              {topSources.map((src, i) => {
-                const maxChunks = topSources[0]?.chunk_count || 1;
-                const pct = (src.chunk_count / maxChunks) * 100;
-                const isUrl =
-                  src.filename.includes('/') ||
-                  src.filename.includes('.se') ||
-                  src.filename.includes('.eu');
-                const displayName = isUrl ? src.filename : src.filename.replace(/\.[^/.]+$/, '');
-                return (
-                  <div key={src.filename}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[10px] font-black text-ink-400 tabular-nums w-6 shrink-0">
-                        {i + 1}
-                      </span>
-                      <span
-                        className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate"
-                        title={src.filename}
-                      >
-                        {displayName}
-                      </span>
-                      <span className="shrink-0 text-[11px] font-bold text-ink-800 tabular-nums">
-                        {src.chunk_count}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-ink-100/70 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+        ) : (
+          <ElviraInsights mailStats={mailStats} mailFeedback={mailFeedback} />
+        )}
       </div>
     </div>
   );
 }
+
+function InsightsTabs({
+  value,
+  onChange,
+}: {
+  value: InsightsTab;
+  onChange: (v: InsightsTab) => void;
+}) {
+  const options: Array<{ value: InsightsTab; label: string; icon: ReactNode }> = [
+    { value: 'elvis', label: 'ELvis (chatt)', icon: <Wand2 size={14} strokeWidth={2} /> },
+    { value: 'elvira', label: 'Elvira (mail)', icon: <Mail size={14} strokeWidth={2} /> },
+  ];
+  return (
+    <div className="inline-flex items-center gap-0.5 p-1 rounded-xl bg-ink-100/60 border border-ink-100 shadow-inner-soft">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          className={cn(
+            'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-all whitespace-nowrap',
+            value === o.value ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800',
+          )}
+        >
+          {o.icon}
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ============================== ELVIS ============================== */
+
+function ElvisInsights({
+  stats,
+  topFaqs,
+  unanswered,
+  topSources,
+}: {
+  stats: Stats | null;
+  topFaqs: FaqRow[];
+  unanswered: UnansweredRow[];
+  topSources: SourceRow[];
+}) {
+  return (
+    <div className="space-y-5 animate-fade-in">
+      {/* HERO row */}
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 lg:col-span-7">
+          <HeroCard
+            label="Total användning"
+            value={stats?.total_questions ?? 0}
+            subValue={stats?.unique_questions ?? 0}
+            subLabel="olika frågor (unika)"
+            delta={stats?.questions_last_7d ?? 0}
+            deltaLabel="aktiva senaste 7 dagarna"
+            icon={<MessageSquareText size={14} strokeWidth={1.75} />}
+            tone="brand"
+          />
+        </div>
+        <div className="col-span-12 lg:col-span-5">
+          <HeroCard
+            label="Kunskapsluckor"
+            value={stats?.unanswered_total ?? 0}
+            subValue={null}
+            subLabel={stats?.unanswered_total === 0 ? 'Alla frågor besvarade' : 'obesvarade totalt'}
+            delta={stats?.unanswered_last_7d ?? 0}
+            deltaLabel="senaste 7 dagar"
+            icon={<TriangleAlert size={14} strokeWidth={1.75} />}
+            tone={(stats?.unanswered_total ?? 0) > 0 ? 'warning' : 'success'}
+            compact
+          />
+        </div>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-6 lg:col-span-4">
+          <StatCard
+            label="Källor i kunskapsbas"
+            value={stats?.source_count ?? 0}
+            sub={`${stats?.chunk_count.toLocaleString('sv-SE') ?? 0} chunks totalt`}
+            icon={<Library size={14} strokeWidth={1.75} />}
+            tone="neutral"
+          />
+        </div>
+        <div className="col-span-6 lg:col-span-4">
+          <StatCard
+            label="Kretskampen-omgångar"
+            value={stats?.quiz_scores_total ?? 0}
+            sub="spelomgångar spelade"
+            icon={<Trophy size={14} strokeWidth={1.75} />}
+            tone="success"
+          />
+        </div>
+        <div className="col-span-12 lg:col-span-4">
+          <StatCard
+            label="Senaste 7 dagar"
+            value={stats?.questions_last_7d ?? 0}
+            sub={`${stats?.unanswered_last_7d ?? 0} av dem obesvarade`}
+            icon={<TrendingUp size={14} strokeWidth={1.75} />}
+            tone="brand"
+          />
+        </div>
+      </div>
+
+      {/* BENTO row */}
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 lg:col-span-8">
+          <Card variant="glass" className="p-6 h-full">
+            <SectionHeader
+              icon={<CircleHelp size={14} strokeWidth={1.75} />}
+              tone="warning"
+              title="Senaste obesvarade"
+              subtitle="Frågor ELvis inte kunde svara fullt på — fyll luckan i Kunskapsbasen"
+            />
+            {unanswered.length === 0 ? (
+              <EmptyState text="Inga obesvarade frågor än. ELvis klarar alla frågor med nuvarande kunskapsbas." />
+            ) : (
+              <ul className="space-y-2">
+                {unanswered.map((row) => (
+                  <li
+                    key={row.id}
+                    className="p-3.5 rounded-xl bg-white border border-ink-100 hover:border-amber-200 hover:bg-amber-50/40 transition-colors"
+                  >
+                    <div className="flex items-start gap-2">
+                      <OutcomeBadge outcome={row.outcome} />
+                      <p className="flex-1 text-[13.5px] font-semibold text-ink-900 leading-snug">
+                        {row.question_text}
+                      </p>
+                    </div>
+                    {row.outcome === 'partial' && row.gaps_text && (
+                      <p className="mt-2 text-[12px] text-amber-900 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed">
+                        {row.gaps_text}
+                      </p>
+                    )}
+                    {row.outcome === 'error' && row.error_message && (
+                      <p className="mt-2 text-[12px] text-red-800 bg-red-50 border border-red-100 rounded-lg px-3 py-2 leading-relaxed">
+                        {row.error_message}
+                      </p>
+                    )}
+                    <div className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-ink-400 flex-wrap">
+                      <span>
+                        {formatDate(row.created_at, {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                      {row.top_match_similarity != null && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span>närmast: {Math.round(row.top_match_similarity * 100)} %</span>
+                        </>
+                      )}
+                      {row.top_match_filename && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="truncate max-w-[240px] normal-case tracking-normal text-ink-500 font-semibold">
+                            {row.top_match_filename}
+                          </span>
+                        </>
+                      )}
+                      {row.notified && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="text-emerald-600 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            mail skickat
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+
+        <div className="col-span-12 lg:col-span-4">
+          <Card variant="glass" className="p-6 h-full">
+            <SectionHeader
+              icon={<Flame size={14} strokeWidth={1.75} />}
+              tone="warning"
+              title="Populärast"
+              subtitle="Mest ställda frågor"
+            />
+            {topFaqs.length === 0 ? (
+              <EmptyState text="Inga frågor än — börja chatta." />
+            ) : (
+              <ul className="space-y-1.5">
+                {topFaqs.map((faq, i) => (
+                  <li
+                    key={faq.id}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-ink-100 hover:border-brand-400 hover:bg-brand-50/40 transition-colors"
+                  >
+                    <span
+                      className={cn(
+                        'w-7 h-7 rounded-lg inline-flex items-center justify-center font-display text-sm shrink-0 tabular-nums',
+                        i === 0
+                          ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                          : i < 3
+                            ? 'bg-ink-100 text-ink-700'
+                            : 'bg-ink-50 text-ink-400',
+                      )}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 min-w-0 text-[12px] font-semibold text-ink-700 truncate">
+                      {faq.question_text}
+                    </span>
+                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100 tabular-nums">
+                      {faq.count}×
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* Sources */}
+      <Card variant="glass" className="p-6">
+        <SectionHeader
+          icon={<Database size={14} strokeWidth={1.75} />}
+          tone="neutral"
+          title="Största källor"
+          subtitle="Dokument med flest indexerade chunks — visar vilka som driver ELvis svar"
+        />
+        {topSources.length === 0 ? (
+          <EmptyState text="Inga källor än." />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+            {topSources.map((src, i) => {
+              const maxChunks = topSources[0]?.chunk_count || 1;
+              const pct = (src.chunk_count / maxChunks) * 100;
+              const isUrl =
+                src.filename.includes('/') ||
+                src.filename.includes('.se') ||
+                src.filename.includes('.eu');
+              const displayName = isUrl ? src.filename : src.filename.replace(/\.[^/.]+$/, '');
+              return (
+                <div key={src.filename}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] font-black text-ink-400 tabular-nums w-6 shrink-0">
+                      {i + 1}
+                    </span>
+                    <span
+                      className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate"
+                      title={src.filename}
+                    >
+                      {displayName}
+                    </span>
+                    <span className="shrink-0 text-[11px] font-bold text-ink-800 tabular-nums">
+                      {src.chunk_count}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-ink-100/70 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 rounded-full transition-all duration-700 ease-out"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function OutcomeBadge({ outcome }: { outcome: UnansweredOutcome }) {
+  const map: Record<UnansweredOutcome, { label: string; cls: string }> = {
+    unanswered: { label: 'Obesvarad', cls: 'bg-red-100 text-red-800 border-red-200' },
+    partial: { label: 'Delvis', cls: 'bg-amber-100 text-amber-800 border-amber-200' },
+    error: { label: 'Tekniskt fel', cls: 'bg-ink-200 text-ink-700 border-ink-300' },
+  };
+  const m = map[outcome] ?? map.unanswered;
+  return (
+    <span
+      className={cn(
+        'shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border',
+        m.cls,
+      )}
+    >
+      {m.label}
+    </span>
+  );
+}
+
+/* ============================== ELVIRA ============================== */
+
+function ElviraInsights({
+  mailStats,
+  mailFeedback,
+}: {
+  mailStats: MailStats | null;
+  mailFeedback: MailFeedbackRow[];
+}) {
+  return (
+    <div className="space-y-5 animate-fade-in">
+      {/* HERO + KPI */}
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 lg:col-span-7">
+          <HeroCard
+            label="Mailsvar genererade"
+            value={mailStats?.total_uses ?? 0}
+            subValue={null}
+            subLabel="färdiga svarsförslag totalt"
+            delta={mailStats?.uses_last_7d ?? 0}
+            deltaLabel="senaste 7 dagarna"
+            icon={<Mail size={14} strokeWidth={1.75} />}
+            tone="brand"
+          />
+        </div>
+        <div className="col-span-12 lg:col-span-5">
+          <HeroCard
+            label="Svar med kunskapsluckor"
+            value={mailStats?.answers_with_gaps ?? 0}
+            subValue={null}
+            subLabel={
+              (mailStats?.answers_with_gaps ?? 0) === 0
+                ? 'Inga luckor flaggade'
+                : 'svar som behövde manuell komplettering'
+            }
+            delta={0}
+            deltaLabel="Elvira flaggade dessa innan sändning"
+            icon={<TriangleAlert size={14} strokeWidth={1.75} />}
+            tone={(mailStats?.answers_with_gaps ?? 0) > 0 ? 'warning' : 'success'}
+            compact
+            hideDelta
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-6 lg:col-span-4">
+          <StatCard
+            label="Senaste 7 dagar"
+            value={mailStats?.uses_last_7d ?? 0}
+            sub="genererade svar"
+            icon={<TrendingUp size={14} strokeWidth={1.75} />}
+            tone="brand"
+          />
+        </div>
+        <div className="col-span-6 lg:col-span-4">
+          <StatCard
+            label="Positiv feedback"
+            value={mailStats?.feedback_up ?? 0}
+            sub={feedbackRatioText(mailStats)}
+            icon={<ThumbsUp size={14} strokeWidth={1.75} />}
+            tone="success"
+          />
+        </div>
+        <div className="col-span-12 lg:col-span-4">
+          <StatCard
+            label="Negativ feedback"
+            value={mailStats?.feedback_down ?? 0}
+            sub={
+              mailStats && mailStats.feedback_down > 0
+                ? 'Granska för kvalitetsförbättring'
+                : 'Inga än'
+            }
+            icon={<ThumbsDown size={14} strokeWidth={1.75} />}
+            tone={(mailStats?.feedback_down ?? 0) > 0 ? 'warning' : 'neutral'}
+          />
+        </div>
+      </div>
+
+      {/* Feedback feed */}
+      <Card variant="glass" className="p-6">
+        <SectionHeader
+          icon={<MessageSquare size={14} strokeWidth={1.75} />}
+          tone="brand"
+          title="Senaste feedback på Elviras svar"
+          subtitle="Positiva och negativa omdömen medarbetarna gett — kommentarerna visar vad som kan förbättras"
+        />
+        {mailFeedback.length === 0 ? (
+          <EmptyState text="Ingen feedback på mailsvar än. Tummen upp/ner under varje svar hamnar här." />
+        ) : (
+          <ul className="space-y-2">
+            {mailFeedback.map((row) => (
+              <li
+                key={row.id}
+                className={cn(
+                  'p-3.5 rounded-xl bg-white border transition-colors',
+                  row.rating === 'up'
+                    ? 'border-emerald-100 hover:border-emerald-200'
+                    : 'border-red-100 hover:border-red-200',
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0',
+                      row.rating === 'up'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-red-100 text-red-800',
+                    )}
+                  >
+                    {row.rating === 'up' ? (
+                      <ThumbsUp size={11} strokeWidth={2.5} />
+                    ) : (
+                      <ThumbsDown size={11} strokeWidth={2.5} />
+                    )}
+                    {row.rating === 'up' ? 'Bra svar' : 'Dåligt svar'}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400">
+                    {formatDate(row.created_at, {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+                {row.comment && (
+                  <p className="mt-2 text-[13px] text-ink-700 leading-relaxed">"{row.comment}"</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ============================== SHARED ============================== */
 
 function feedbackRatioText(stats: MailStats | null): string {
   if (!stats) return '—';
@@ -414,6 +656,7 @@ function HeroCard({
   icon,
   tone,
   compact,
+  hideDelta,
 }: {
   label: string;
   value: number;
@@ -424,6 +667,7 @@ function HeroCard({
   icon: ReactNode;
   tone: 'brand' | 'warning' | 'success';
   compact?: boolean;
+  hideDelta?: boolean;
 }) {
   const bg = {
     brand: 'bg-gradient-to-br from-white via-brand-50/50 to-brand-100/40 border-brand-100',
@@ -471,11 +715,17 @@ function HeroCard({
 
         <div className="mt-6 pt-5 border-t border-ink-100/60 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[12px]">
-            <TrendingUp size={14} className={accent} strokeWidth={1.75} />
-            <span className="font-semibold text-ink-700 tabular-nums">
-              {delta.toLocaleString('sv-SE')}
-            </span>
-            <span className="text-ink-500">{deltaLabel}</span>
+            {hideDelta ? (
+              <span className="text-ink-500">{deltaLabel}</span>
+            ) : (
+              <>
+                <TrendingUp size={14} className={accent} strokeWidth={1.75} />
+                <span className="font-semibold text-ink-700 tabular-nums">
+                  {delta.toLocaleString('sv-SE')}
+                </span>
+                <span className="text-ink-500">{deltaLabel}</span>
+              </>
+            )}
           </div>
         </div>
       </div>

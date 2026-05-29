@@ -17,9 +17,31 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.7.0';
+export const CURRENT_VERSION = '1.8.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.8.0',
+    date: '2026-05-29',
+    releasedAt: '2026-05-29T18:00:00+02:00',
+    title: 'Elvira, mall-bibliotek, tydligare granskning och ny systemstatus',
+    summary:
+      'Ett samlat lyft efter genomgången med Linnea: mail-assistenten heter nu Elvira och har fått ett eget mall-bibliotek där ni ser exakt vilka sparade exempel varje svar bygger på. Insikter delas upp per assistent, Granskningssidan förklarar vad den gör, och en ny Systemstatus-sida visar vad som är online och när allt senast uppdaterades.',
+    highlights: [
+      'Mail-assistenten heter nu Elvira (chatten heter fortsatt ELvis) — namnen syns i menyn, sidhuvuden och i Insikter så det är lätt att hålla isär de två AI-assistenterna.',
+      'Nytt "Mallar"-bibliotek i Elvira: alla stilexempel ni sparat listas på ett ställe, med hur många mailsvar som faktiskt byggt på varje mall och när den senast användes. Så ni kan följa upp att era tillägg verkligen tillämpas.',
+      'Varje genererat mailsvar visar nu om det byggde på en tidigare inlagd mall — med vilken mall och hur lik den var. Direkt koppling mellan det ni lär Elvira och det hon levererar.',
+      'Insikter är uppdelad i två flikar: ELvis (chatt) och Elvira (mail). Slipp blanda ihop frågor till chatten med mail-statistiken.',
+      'Elvira-fliken i Insikter har en egen feedback-ström: senaste tummen upp/ner på mailsvar, med kommentarerna synliga så ni ser vad som kan förbättras.',
+      'Granskningssidan har fått en "Så funkar granskningen"-panel som i klartext förklarar vad nattaudit och användarrättelser är, var ärendena kommer ifrån och vad knapparna gör.',
+      'Helt ny Systemstatus-sida: live-koll av att databas, Claude, embeddings och backend är online — plus när kunskapsbasen, webb-crawlen och nattgranskningen senast kördes.',
+      'Webbsidan el-kretsen.se crawlas om automatiskt varje måndag morgon så kunskapsbasen hålls färsk när sajten uppdateras.',
+      'Systemstatus har manuella körknappar (admin): crawla om sajten, kör nattgranskningen eller drift-kollen direkt istället för att vänta på schemat.',
+      'Ny flik "Kunskapsluckor" i Granskning: gör om obesvarade frågor till färdiga utkast på kunskapskällor som du verifierar och lägger till med ett klick. AI:n hittar aldrig på fakta — det som saknas markeras som "att komplettera".',
+      'Säkerhet: bara inloggade administratörer kan lägga till källor i kunskapsbasen (tidigare var de endpointarna öppna).',
+      'Avgifts-kalkylatorn och Avgifts-duellen är borttagna eftersom de inte användes.',
+    ],
+  },
   {
     version: '1.7.0',
     date: '2026-05-12',

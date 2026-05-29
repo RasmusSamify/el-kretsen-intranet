@@ -48,6 +48,12 @@ export interface MailAssistantRequest {
   creativity?: MailCreativity;
 }
 
+export interface UsedTemplate {
+  id: string;
+  similarity: number;
+  preview: string;
+}
+
 export interface MailAssistantResponse {
   reply: string;
   summary: string;
@@ -55,6 +61,7 @@ export interface MailAssistantResponse {
   gaps: string[];
   language: 'sv' | 'en';
   logId: string | null;
+  usedTemplates: UsedTemplate[];
 }
 
 export async function mailAssistant(
@@ -134,46 +141,6 @@ export async function submitFeedback(
   }
 }
 
-export interface FeeBreakdown {
-  code: string;
-  productName: string;
-  unitFee: number;
-  feeUnit: 'kr/st' | 'kr/kg';
-  totalFee: number;
-}
-
-export interface FeeResponse {
-  matched: boolean;
-  reasoning: string;
-  primary: FeeBreakdown | null;
-  green: FeeBreakdown | null;
-  citations: string[];
-  warning: string | null;
-}
-
-export async function calculateFee(req: {
-  productDescription: string;
-  quantity: number;
-  unit: 'st' | 'kg';
-}): Promise<FeeResponse> {
-  const res = await fetch('/api/fee-calculator', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    let message = `HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message);
-  }
-  return res.json();
-}
-
 export interface IngestUrlResponse {
   ok: true;
   source: string;
@@ -185,7 +152,7 @@ export interface IngestUrlResponse {
 export async function ingestUrl(url: string): Promise<IngestUrlResponse> {
   const res = await fetch('/api/ingest-url', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: await authHeader() },
     body: JSON.stringify({ url }),
   });
 
@@ -213,7 +180,7 @@ export interface IngestFileResponse {
 export async function ingestFile(filename: string, content: string): Promise<IngestFileResponse> {
   const res = await fetch('/api/ingest-file', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: await authHeader() },
     body: JSON.stringify({ filename, content }),
   });
   if (!res.ok) {
@@ -318,6 +285,147 @@ export async function submitMailTraining(req: SubmitMailTrainingRequest): Promis
     throw new Error(m);
   }
   return res.json();
+}
+
+// ---------- Systemstatus + schemalagd crawl ----------
+
+export interface SystemServiceStatus {
+  key: string;
+  label: string;
+  ok: boolean;
+  latency_ms: number | null;
+  detail: string;
+}
+
+export interface CrawlHeartbeat {
+  completed_at: string;
+  started_at: string;
+  total: number;
+  ok: number;
+  failed: number;
+  skipped: number;
+  chunks: number;
+}
+
+export interface SystemStatusResponse {
+  checked_at: string;
+  services: SystemServiceStatus[];
+  facts: {
+    kb: { source_count: number; chunk_count: number; last_kb_update: string | null };
+    crawl: {
+      last_completed: CrawlHeartbeat | null;
+      fallback_last_website_update: string | null;
+      in_progress: { done: number; total: number } | null;
+    };
+    audit: { last_run: string | null; review_pending: number; scheduled: boolean };
+    drift: { last_check: string | null };
+  };
+}
+
+export async function systemStatus(): Promise<SystemStatusResponse> {
+  const res = await fetch('/api/system-status', {
+    method: 'GET',
+    headers: { Authorization: await authHeader() },
+  });
+  if (!res.ok) {
+    let m = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) m = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(m);
+  }
+  return res.json();
+}
+
+export interface TriggerCrawlResponse {
+  action?: string;
+  processed?: number;
+  offset?: number;
+  total?: number;
+  completed?: boolean;
+  idle?: boolean;
+}
+
+async function postJob<T>(path: string, body: object): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: await authHeader() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let m = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b.error) m = b.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(m);
+  }
+  return res.json() as Promise<T>;
+}
+
+export function triggerCrawl(action: 'start' | 'advance' = 'start'): Promise<TriggerCrawlResponse> {
+  return postJob<TriggerCrawlResponse>('/api/scheduled-crawl', { action });
+}
+
+export interface AuditBatchResult {
+  completed: boolean;
+  batch_offset_next: number;
+  chunks_total: number;
+  chunks_processed: number;
+  pairs_checked: number;
+  contradictions_found: number;
+}
+
+export function runAuditBatch(): Promise<AuditBatchResult> {
+  // Ingen offset → funktionen fortsätter från sparad position
+  return postJob<AuditBatchResult>('/api/kb-audit-contradictions', {});
+}
+
+export interface DriftBatchResult {
+  completed: boolean;
+  batch_offset_next: number;
+  sources_checked: number;
+  drift_found: number;
+  errors: number;
+}
+
+export function runDriftBatch(): Promise<DriftBatchResult> {
+  return postJob<DriftBatchResult>('/api/kb-detect-drift', {});
+}
+
+// ---------- Kunskapslucke-stängaren ----------
+
+export interface GapDraft {
+  title: string;
+  draft: string;
+  needs: string[];
+  usedSources: string[];
+  contextFound: number;
+}
+
+export function draftGap(question: string, gapsText?: string | null): Promise<GapDraft> {
+  return postJob<GapDraft>('/api/close-gap', {
+    action: 'draft',
+    question,
+    gaps_text: gapsText ?? null,
+  });
+}
+
+export function commitGap(
+  id: string,
+  filename: string,
+  content: string,
+): Promise<{ ok: true; filename: string; chunks: number }> {
+  return postJob('/api/close-gap', { action: 'commit', id, filename, content });
+}
+
+export function dismissGap(id: string): Promise<{ ok: true }> {
+  return postJob('/api/close-gap', { action: 'dismiss', id });
 }
 
 // ---------- Admin-operationer (kräver admin-email i ADMIN_EMAILS) ----------

@@ -1,5 +1,6 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from './_shared/auth';
 
 interface AuditRequest {
   batch_size?: number;
@@ -69,14 +70,13 @@ export default async (req: Request) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders() });
   }
 
-  // Cron-secret: skyddar mot att externa klienter triggar audit
+  // Auth: cron-secret (schemalagt jobb) ELLER admin-JWT (manuell körning från Systemstatus)
   const cronSecret = process.env.CRON_SECRET;
   const providedSecret = req.headers.get('x-cron-secret');
-  if (!cronSecret) {
-    return json({ error: 'CRON_SECRET not configured on server' }, 500);
-  }
-  if (providedSecret !== cronSecret) {
-    return json({ error: 'Forbidden' }, 403);
+  const cronOk = !!cronSecret && providedSecret === cronSecret;
+  if (!cronOk) {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
   }
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -98,11 +98,23 @@ export default async (req: Request) => {
     }
   }
   const batchSize = Math.max(1, Math.min(500, body.batch_size ?? 50));
-  const offset = Math.max(0, body.offset ?? 0);
 
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Manuell admin-körning skickar ingen offset → fortsätt från sparad position
+  let offset: number;
+  if (typeof body.offset === 'number') {
+    offset = Math.max(0, body.offset);
+  } else {
+    const { data: st } = await supabase
+      .from('kb_audit_state')
+      .select('value')
+      .eq('key', 'contradiction_offset')
+      .maybeSingle();
+    offset = Math.max(0, Number((st?.value as { next_offset?: number })?.next_offset ?? 0));
+  }
 
   // Audit jobbar mot kb_chunks_v2 large-nivå — det är där ELvis hämtar
   // kontexten från, så motsägelser hittas på samma textnivå som RAG-svaren.
@@ -347,7 +359,7 @@ function parseEmbedding(raw: unknown): number[] | null {
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, x-cron-secret',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-cron-secret',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }

@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, Check, Copy, Flag, GraduationCap, Languages, Mail, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert, Wand2 } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ArrowRight, Check, Clock, Copy, FileText, Flag, GraduationCap, Languages, Library, Link2, Mail, PenLine, RotateCcw, Sparkles, ThumbsDown, ThumbsUp, TriangleAlert, Wand2 } from 'lucide-react';
 import { Button, Card, IconTile, Spinner } from '@/components/ui';
 import { mailAssistant, submitAnswerFeedback, type MailAssistantResponse, type MailCreativity } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
+import { cn, formatDate } from '@/lib/utils';
 import { MailTrainingModal } from '@/components/features/mail/MailTrainingModal';
+
+type MailTab = 'compose' | 'templates';
 
 const CREATIVITY_STORAGE_KEY = 'mail-assistant-creativity';
 
@@ -16,6 +19,7 @@ const CREATIVITY_OPTIONS: Array<{ value: MailCreativity; label: string; descript
 
 export function MailAssistantPage() {
   const { session } = useAuth();
+  const [tab, setTab] = useState<MailTab>('compose');
   const [customerEmail, setCustomerEmail] = useState('');
   const [language, setLanguage] = useState<'sv' | 'en'>('sv');
   const [creativity, setCreativity] = useState<MailCreativity>(() => {
@@ -122,9 +126,9 @@ export function MailAssistantPage() {
           <div className="flex items-center gap-4">
             <Mail size={30} strokeWidth={1.5} className="text-ink-800" />
             <div>
-              <h1 className="text-display text-3xl text-ink-900 leading-none">Mail-assistent</h1>
+              <h1 className="text-display text-3xl text-ink-900 leading-none">Elvira</h1>
               <p className="text-[12px] font-semibold text-ink-400 mt-1">
-                Klistra in ett kundmail · AI:n genererar färdigt svar på svenska eller engelska · grundat i kunskapsbasen
+                Mail-assistenten · klistra in ett kundmail så skriver Elvira ett färdigt svar grundat i kunskapsbasen
               </p>
             </div>
           </div>
@@ -134,6 +138,13 @@ export function MailAssistantPage() {
           </div>
         </header>
 
+        <div className="flex">
+          <MailTabs value={tab} onChange={setTab} />
+        </div>
+
+        {tab === 'templates' ? (
+          <MailTemplatesView />
+        ) : (
         <div className="grid grid-cols-12 gap-5">
           {/* Input — wider */}
           <div className="col-span-12 lg:col-span-5 xl:col-span-5">
@@ -251,6 +262,40 @@ export function MailAssistantPage() {
                           AI:s sammanfattning
                         </p>
                         <p className="text-[13.5px] text-ink-800 leading-relaxed">{result.summary}</p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {result.usedTemplates.length > 0 && (
+                  <Card variant="glass" className="p-5 border-emerald-100 bg-emerald-50/30">
+                    <div className="flex items-start gap-3">
+                      <IconTile icon={<Link2 size={14} strokeWidth={2.25} />} tone="success" size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700 mb-1">
+                          Byggde på {result.usedTemplates.length}{' '}
+                          {result.usedTemplates.length === 1 ? 'mall' : 'mallar'} du lagt in
+                        </p>
+                        <p className="text-[12px] text-ink-600 leading-relaxed mb-2.5">
+                          Elvira tog ton och struktur från följande sparade stilexempel — fakta kom
+                          fortfarande från kunskapsbasen.
+                        </p>
+                        <ul className="space-y-1.5">
+                          {result.usedTemplates.map((t) => (
+                            <li
+                              key={t.id}
+                              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-emerald-100"
+                            >
+                              <FileText size={13} strokeWidth={2} className="text-emerald-600 shrink-0" />
+                              <span className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate">
+                                {t.preview || 'Sparat stilexempel'}…
+                              </span>
+                              <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 tabular-nums">
+                                {Math.round(t.similarity * 100)} % lik
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
                   </Card>
@@ -390,8 +435,211 @@ export function MailAssistantPage() {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function MailTabs({ value, onChange }: { value: MailTab; onChange: (v: MailTab) => void }) {
+  const options: Array<{ value: MailTab; label: string; icon: ReactNode }> = [
+    { value: 'compose', label: 'Skriv svar', icon: <PenLine size={14} strokeWidth={2} /> },
+    { value: 'templates', label: 'Mallar', icon: <Library size={14} strokeWidth={2} /> },
+  ];
+  return (
+    <div className="inline-flex items-center gap-0.5 p-1 rounded-xl bg-ink-100/60 border border-ink-100 shadow-inner-soft">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          className={cn(
+            'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-all whitespace-nowrap',
+            value === o.value ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800',
+          )}
+        >
+          {o.icon}
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+interface MailTemplateRow {
+  id: string;
+  customer_email: string;
+  correct_reply: string;
+  language: 'sv' | 'en';
+  user_note: string | null;
+  created_at: string;
+  usage_count: number;
+  last_used: string | null;
+}
+
+function MailTemplatesView() {
+  const [rows, setRows] = useState<MailTemplateRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc('list_mail_templates');
+      if (error) setError(error.message);
+      else setRows((data ?? []) as MailTemplateRow[]);
+      setLoading(false);
+    })();
+  }, []);
+
+  const totalUses = rows.reduce((sum, r) => sum + Number(r.usage_count), 0);
+  const usedCount = rows.filter((r) => Number(r.usage_count) > 0).length;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size={26} className="text-brand-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <Card variant="glass" className="p-5">
+        <div className="flex items-start gap-3">
+          <IconTile icon={<Library size={14} strokeWidth={2.25} />} tone="brand" size="sm" />
+          <div className="flex-1">
+            <h2 className="font-bold text-ink-900 text-[15px] leading-none">
+              Alla stilexempel ({rows.length})
+            </h2>
+            <p className="text-[12px] font-semibold text-ink-400 mt-1.5 leading-relaxed">
+              Varje gång någon sparar sitt eget svar som stilexempel hamnar det här. Elvira
+              använder de mest liknande exemplen som mall för ton och struktur. Kolumnen{' '}
+              <strong className="text-ink-600">Använd</strong> visar hur många mailsvar som faktiskt
+              byggt på varje mall — så ni ser att tillagda ändringar tillämpas.
+            </p>
+            {rows.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                <StatChip label={`${usedCount} av ${rows.length} mallar har använts`} />
+                <StatChip label={`${totalUses} mailsvar byggda på mallar totalt`} />
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {error && (
+        <Card variant="glass" className="p-5 border-red-200 bg-red-50/40">
+          <p className="text-[13px] text-red-700 font-medium">Kunde inte hämta mallar: {error}</p>
+        </Card>
+      )}
+
+      {!error && rows.length === 0 ? (
+        <Card variant="glass" className="p-12 text-center">
+          <IconTile icon={<GraduationCap size={20} strokeWidth={2} />} tone="neutral" size="lg" />
+          <h3 className="text-display text-2xl text-ink-900 mt-4 mb-2">Inga mallar än</h3>
+          <p className="text-[13px] text-ink-500 max-w-md mx-auto leading-relaxed">
+            När du genererat ett svar i <strong>Skriv svar</strong> kan du klicka{' '}
+            <strong>Spara ditt eget svar som stilexempel</strong> för att lära Elvira din ton. De
+            sparade mallarna listas här.
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <MailTemplateCard key={row.id} row={row} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 border border-brand-100 text-[11px] font-bold text-brand-700">
+      {label}
+    </span>
+  );
+}
+
+function MailTemplateCard({ row }: { row: MailTemplateRow }) {
+  const [open, setOpen] = useState(false);
+  const used = Number(row.usage_count) > 0;
+
+  return (
+    <Card variant="glass" className="overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start gap-3 flex-wrap">
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0',
+              used
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                : 'bg-ink-100 text-ink-500 border border-ink-200',
+            )}
+          >
+            <Link2 size={11} strokeWidth={2.5} />
+            Använd {row.usage_count}×
+          </span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-ink-50 border border-ink-100 text-[10px] font-bold uppercase tracking-wider text-ink-500 shrink-0">
+            {row.language === 'sv' ? 'Svenska' : 'English'}
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 inline-flex items-center gap-1">
+            <Clock size={11} strokeWidth={2} />
+            Tillagd {formatDate(row.created_at, { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          {row.last_used && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 inline-flex items-center gap-1">
+              · senast använd{' '}
+              {formatDate(row.last_used, { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="ml-auto text-[11px] font-bold text-brand-600 hover:text-brand-800 transition-colors shrink-0"
+          >
+            {open ? 'Dölj' : 'Visa helt'}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3.5">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400 mb-1.5">
+              Kundmail (trigger)
+            </p>
+            <p
+              className={cn(
+                'text-[12.5px] text-ink-600 leading-relaxed whitespace-pre-wrap',
+                !open && 'line-clamp-3',
+              )}
+            >
+              {row.customer_email}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400 mb-1.5">
+              Linneas svar (stilen Elvira lär sig)
+            </p>
+            <p
+              className={cn(
+                'text-[12.5px] text-ink-800 leading-relaxed whitespace-pre-wrap',
+                !open && 'line-clamp-3',
+              )}
+            >
+              {row.correct_reply}
+            </p>
+          </div>
+        </div>
+
+        {row.user_note && open && (
+          <div className="mt-3 p-3 rounded-xl bg-ink-50/70 border border-ink-100">
+            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400 mb-1">
+              Intern kommentar
+            </p>
+            <p className="text-[12.5px] text-ink-600 leading-relaxed">{row.user_note}</p>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 

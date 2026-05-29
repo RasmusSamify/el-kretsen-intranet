@@ -21,6 +21,12 @@ function temperatureForCreativity(c: MailAssistantRequest['creativity']): number
   }
 }
 
+interface UsedTemplate {
+  id: string;
+  similarity: number;
+  preview: string;
+}
+
 interface MailAssistantResponse {
   reply: string;
   summary: string;
@@ -28,6 +34,7 @@ interface MailAssistantResponse {
   gaps: string[];
   language: 'sv' | 'en';
   logId: string | null;
+  usedTemplates: UsedTemplate[];
 }
 
 const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
@@ -171,6 +178,14 @@ export default async (req: Request) => {
     similarity: number;
   }>;
 
+  // Vilka mallar (stilexempel) som faktiskt påverkade detta svar — loggas och
+  // returneras så att Linnea ser att tillagda mallar tillämpas.
+  const usedTemplates: UsedTemplate[] = examples.map((ex) => ({
+    id: ex.id,
+    similarity: ex.similarity,
+    preview: ex.customer_email.replace(/\s+/g, ' ').trim().slice(0, 90),
+  }));
+
   const examplesBlock = examples.length === 0
     ? ''
     : '\n\n<stilexempel>\n' +
@@ -264,6 +279,7 @@ export default async (req: Request) => {
       sources_count: sourceFiles.length,
       tokens_in: tokensIn,
       tokens_out: tokensOut,
+      used_training_ids: usedTemplates.map((t) => t.id),
     })
     .select('id')
     .single();
@@ -275,6 +291,7 @@ export default async (req: Request) => {
     sourceFiles,
     language: lang,
     logId: logRow?.id ?? null,
+    usedTemplates,
   };
 
   return json(payload, 200);
