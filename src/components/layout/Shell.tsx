@@ -1,25 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { AlertTriangle, ArrowLeftRight, BarChart3, Wand2, Calculator, Library, Mail, Trophy } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, Wand2, Library, Mail, NotebookPen, Trophy } from 'lucide-react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { Header } from './Header';
+import { useAdmin } from '@/hooks/useAdmin';
 import { cn } from '@/lib/utils';
 
 const items: SidebarItem[] = [
   { to: '/', label: 'Insikter', icon: BarChart3 },
   { to: '/ai-analys', label: 'ELvis', icon: Wand2 },
-  { to: '/mail', label: 'Mail-assistent', icon: Mail, badge: 'NY' },
-  { to: '/kalkylator', label: 'Avgifts-kalkylator', icon: Calculator, badge: 'NY' },
-  { to: '/kunskapsbas', label: 'Kunskapsbas', icon: Library, badge: 'NY' },
-  { to: '/granskning', label: 'Granskning', icon: AlertTriangle, badge: 'NY' },
+  { to: '/mail', label: 'Elvira', icon: Mail },
+  { to: '/kunskapsbas', label: 'Kunskapsbas', icon: Library },
+  { to: '/granskning', label: 'Granskning', icon: AlertTriangle },
+  { to: '/status', label: 'Systemstatus', icon: Activity, badge: 'NY' },
+  { to: '/loggbok', label: 'Loggbok', icon: NotebookPen, badge: 'NY', adminOnly: true },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
-  { to: '/duellen', label: 'Avgifts-duellen', icon: ArrowLeftRight, badge: 'NY' },
 ];
 
 const STORAGE_KEY = 'elvis-sidebar-collapsed';
 const HEADER_HEIGHT = 68;
 
 export function Shell() {
+  const { isAdmin } = useAdmin();
+  const visibleItems = items.filter((item) => !item.adminOnly || isAdmin);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof localStorage === 'undefined') return false;
     return localStorage.getItem(STORAGE_KEY) === 'true';
@@ -40,7 +43,7 @@ export function Shell() {
 
       {/* Sidebar — starts below header */}
       <Sidebar
-        items={items}
+        items={visibleItems}
         collapsed={collapsed}
         onToggle={() => setCollapsed((c) => !c)}
         topOffset={HEADER_HEIGHT}

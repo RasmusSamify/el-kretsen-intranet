@@ -3,11 +3,11 @@ import { LoginPage } from '@/pages/LoginPage';
 import { AIPage } from '@/pages/AIPage';
 import { KretskampenPage } from '@/pages/KretskampenPage';
 import { MailAssistantPage } from '@/pages/MailAssistantPage';
-import { FeeCalculatorPage } from '@/pages/FeeCalculatorPage';
 import { InsightsPage } from '@/pages/InsightsPage';
-import { FeeDuelPage } from '@/pages/FeeDuelPage';
 import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { GranskningPage } from '@/pages/GranskningPage';
+import { StatusPage } from '@/pages/StatusPage';
+import { LoggbokPage } from '@/pages/LoggbokPage';
 import { Shell } from '@/components/layout/Shell';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -28,11 +28,11 @@ export default function App() {
         <Route path="/" element={<InsightsPage />} />
         <Route path="/ai-analys" element={<AIPage />} />
         <Route path="/mail" element={<MailAssistantPage />} />
-        <Route path="/kalkylator" element={<FeeCalculatorPage />} />
         <Route path="/kretskampen" element={<KretskampenPage />} />
-        <Route path="/duellen" element={<FeeDuelPage />} />
         <Route path="/kunskapsbas" element={<KnowledgeBasePage />} />
         <Route path="/granskning" element={<GranskningPage />} />
+        <Route path="/status" element={<StatusPage />} />
+        <Route path="/loggbok" element={<LoggbokPage />} />
         <Route path="/insikter" element={<Navigate to="/" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

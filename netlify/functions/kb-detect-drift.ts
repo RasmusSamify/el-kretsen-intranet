@@ -1,6 +1,7 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { parse } from 'node-html-parser';
+import { requireAdmin } from './_shared/auth';
 
 interface DriftRequest {
   batch_size?: number;
@@ -40,10 +41,14 @@ export default async (req: Request) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders() });
   }
 
+  // Auth: cron-secret (schemalagt) ELLER admin-JWT (manuell körning från Systemstatus)
   const cronSecret = process.env.CRON_SECRET;
   const providedSecret = req.headers.get('x-cron-secret');
-  if (!cronSecret) return json({ error: 'CRON_SECRET not configured' }, 500);
-  if (providedSecret !== cronSecret) return json({ error: 'Forbidden' }, 403);
+  const cronOk = !!cronSecret && providedSecret === cronSecret;
+  if (!cronOk) {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+  }
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,11 +65,23 @@ export default async (req: Request) => {
     }
   }
   const batchSize = Math.max(1, Math.min(20, body.batch_size ?? 3));
-  const offset = Math.max(0, body.offset ?? 0);
 
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Manuell admin-körning skickar ingen offset → fortsätt från sparad position
+  let offset: number;
+  if (typeof body.offset === 'number') {
+    offset = Math.max(0, body.offset);
+  } else {
+    const { data: st } = await supabase
+      .from('kb_audit_state')
+      .select('value')
+      .eq('key', 'drift_offset')
+      .maybeSingle();
+    offset = Math.max(0, Number((st?.value as { next_offset?: number })?.next_offset ?? 0));
+  }
 
   // Hämta distinkta URL-källor (source_category='website') sorterade på filename
   // för deterministisk paginering.
@@ -279,7 +296,7 @@ function sampleDiffs(oldText: string, newText: string): { sampleRemoved: string;
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, x-cron-secret',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-cron-secret',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }

@@ -2,6 +2,7 @@ import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { parse } from 'node-html-parser';
 import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
+import { requireAdmin } from './_shared/auth';
 
 interface IngestRequest {
   url: string;
@@ -23,6 +24,16 @@ export default async (req: Request) => {
   }
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders() });
+  }
+
+  // Auth: admin-JWT (UI lägger till URL-källa) ELLER intern cron-secret (scheduled-crawl).
+  // Skyddar kunskapsbasen mot att vem som helst injicerar innehåll via URL.
+  const cronSecret = process.env.CRON_SECRET;
+  const provided = req.headers.get('x-cron-secret');
+  const cronOk = !!cronSecret && provided === cronSecret;
+  if (!cronOk) {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
   }
 
   const voyageKey = process.env.VOYAGE_API_KEY;

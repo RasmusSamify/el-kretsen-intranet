@@ -1,24 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
   ChevronRight,
   Clock,
   ExternalLink,
   EyeOff,
   FileText,
+  Info,
+  Moon,
   RefreshCw,
   Search,
   Sparkles,
   Undo2,
+  UserCheck,
   X,
 } from 'lucide-react';
 import { Button, Card, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { cn, formatDate } from '@/lib/utils';
 import { CorrectionsList } from '@/components/features/kb/CorrectionsList';
+import { GapsView } from '@/components/features/kb/GapsView';
 
-type GranskningView = 'contradictions' | 'corrections';
+type GranskningView = 'contradictions' | 'corrections' | 'gaps';
 
 type ReviewStatus = 'pending' | 'resolved' | 'ignored';
 
@@ -196,9 +201,14 @@ export function GranskningPage() {
             options={[
               { value: 'contradictions', label: 'Motsägelser (audit)' },
               { value: 'corrections', label: 'Användarrättelser' },
+              { value: 'gaps', label: 'Kunskapsluckor' },
             ]}
           />
         </div>
+
+        {view !== 'gaps' && <GranskningExplainer view={view} />}
+
+        {view === 'gaps' && <GapsView />}
 
         {view === 'corrections' && <CorrectionsList />}
 
@@ -310,6 +320,144 @@ export function GranskningPage() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+const EXPLAINER_STORAGE_KEY = 'granskning-explainer-open';
+
+function GranskningExplainer({ view }: { view: GranskningView }) {
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof localStorage === 'undefined') return true;
+    return localStorage.getItem(EXPLAINER_STORAGE_KEY) !== 'false';
+  });
+
+  const toggle = () => {
+    setOpen((o) => {
+      const next = !o;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(EXPLAINER_STORAGE_KEY, String(next));
+      }
+      return next;
+    });
+  };
+
+  return (
+    <Card variant="glass" className="overflow-hidden">
+      <button
+        onClick={toggle}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-ink-50/50 transition-colors"
+        aria-expanded={open}
+      >
+        <span className="w-9 h-9 rounded-xl bg-brand-50 border border-brand-100 inline-flex items-center justify-center shrink-0">
+          <Info size={16} strokeWidth={2} className="text-brand-600" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-ink-900 text-[14px] leading-none">Så funkar granskningen</h3>
+          <p className="text-[11.5px] font-semibold text-ink-400 mt-1">
+            Vad de här ärendena är, var de kommer ifrån och hur du hanterar dem
+          </p>
+        </div>
+        <ChevronDown
+          size={18}
+          strokeWidth={2}
+          className={cn('shrink-0 text-ink-400 transition-transform', open && 'rotate-180')}
+        />
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 pt-1 border-t border-ink-100 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+            <ExplainerBlock
+              icon={<Moon size={15} strokeWidth={2} />}
+              tone="brand"
+              active={view === 'contradictions'}
+              title="Motsägelser (nattlig audit)"
+            >
+              Varje natt (03:15) går ett automatiskt jobb igenom kunskapsbasen i omgångar. Det
+              plockar stycken som <strong>liknar varandra men inte är identiska</strong> och låter
+              AI:n (Claude) avgöra om de faktiskt <strong>säger emot varandra</strong> — t.ex. två
+              olika datum eller avgifter för samma sak. Hittade par hamnar här med en{' '}
+              <strong>severity 1–5</strong> (5 = kritisk) och AI:ns motivering. En full genomgång av
+              hela basen tar ett par veckor, sen börjar den om så att nya och ändrade texter fångas.
+            </ExplainerBlock>
+
+            <ExplainerBlock
+              icon={<UserCheck size={15} strokeWidth={2} />}
+              tone="amber"
+              active={view === 'corrections'}
+              title="Användarrättelser"
+            >
+              När en medarbetare läser ett ELvis-svar och tycker att det pekar på{' '}
+              <strong>fel källa</strong>, en <strong>föråldrad källa</strong> eller att svaret{' '}
+              <strong>saknas i kunskapsbasen</strong>, kan hen flagga det direkt i chatten. De
+              flaggorna samlas här så att du kan följa upp och rätta källan.
+            </ExplainerBlock>
+          </div>
+
+          <div className="rounded-xl bg-ink-50/70 border border-ink-100 px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-wider text-ink-500 mb-1.5">
+              Vad du gör här
+            </p>
+            <ul className="text-[12.5px] text-ink-700 leading-relaxed space-y-1">
+              <li className="flex items-start gap-2">
+                <Check size={13} strokeWidth={2.5} className="text-emerald-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Åtgärdad</strong> — du har rättat texten i Kunskapsbasen så att
+                  motsägelsen är borta.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <EyeOff size={13} strokeWidth={2.5} className="text-ink-500 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Ignorera</strong> — paret är inte en riktig motsägelse (t.ex. två giltiga
+                  fall som bara liknar varandra). Försvinner från listan men kan öppnas igen.
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ExplainerBlock({
+  icon,
+  tone,
+  active,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  tone: 'brand' | 'amber';
+  active: boolean;
+  title: string;
+  children: ReactNode;
+}) {
+  const toneCls =
+    tone === 'brand'
+      ? 'bg-brand-50 border-brand-100 text-brand-600'
+      : 'bg-amber-50 border-amber-100 text-amber-600';
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-4 transition-colors',
+        active ? 'border-ink-200 bg-white shadow-card' : 'border-ink-100 bg-white/50',
+      )}
+    >
+      <div className="flex items-center gap-2.5 mb-2">
+        <span className={cn('w-8 h-8 rounded-lg inline-flex items-center justify-center border', toneCls)}>
+          {icon}
+        </span>
+        <h4 className="font-bold text-ink-900 text-[13px] leading-tight">{title}</h4>
+        {active && (
+          <span className="ml-auto text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-ink-900 text-white">
+            Visas nu
+          </span>
+        )}
+      </div>
+      <p className="text-[12.5px] text-ink-600 leading-relaxed">{children}</p>
     </div>
   );
 }
