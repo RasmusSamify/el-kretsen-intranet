@@ -111,7 +111,7 @@ export function InsightsPage() {
             'id, question_text, top_match_filename, top_match_similarity, created_at, notified, outcome, gaps_text, error_message',
           )
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(50),
         supabase.rpc('list_kb_sources'),
         supabase.from('mail_assistant_logs').select('id', { count: 'exact', head: true }),
         supabase
@@ -322,7 +322,7 @@ function ElvisInsights({
             {unanswered.length === 0 ? (
               <EmptyState text="Inga obesvarade frågor än. ELvis klarar alla frågor med nuvarande kunskapsbas." />
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-2 max-h-[560px] overflow-y-auto pr-1 -mr-1">
                 {unanswered.map((row) => (
                   <li
                     key={row.id}
