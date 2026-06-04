@@ -73,11 +73,62 @@ export default async (req: Request) => {
 
   const seed = Date.now();
 
-  // Korta förklaringar → räcker med ett stramt tak. Håller även genereringstiden
-  // nere så vi klarar Netlifys 26s-gräns.
-  const maxTokens = Math.min(count * 350 + 500, 8000);
+  // Latensen skalar med antal frågor (~1,4s/fråga). För att hålla oss tryggt under
+  // Netlifys 26s-tak delar vi upp större rundor i parallella anrop som körs samtidigt.
+  const batchSizes = count <= 5 ? [count] : [Math.ceil(count / 2), Math.floor(count / 2)];
 
-  const claudeRes = await fetch(ANTHROPIC_URL, {
+  const results = await Promise.allSettled(
+    batchSizes.map((n, i) => generateBatch(kb, catLabel, n, i, seed, apiKey)),
+  );
+
+  const collected: Question[] = [];
+  let lastError = '';
+  for (const r of results) {
+    if (r.status === 'fulfilled') collected.push(...r.value);
+    else lastError = r.reason instanceof Error ? r.reason.message : String(r.reason);
+  }
+
+  // Dedupa på frågetext (parallella anrop kan överlappa), validera, blanda
+  // svarsalternativen (rätt svar inte alltid uppe till vänster) och kapa till count.
+  const seen = new Set<string>();
+  const cleanQuestions: Question[] = [];
+  for (const q of collected) {
+    if (!isValidQuestion(q)) continue;
+    const key = q.question.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    cleanQuestions.push(shuffleAnswers(q));
+  }
+
+  if (cleanQuestions.length === 0) {
+    return json(
+      { error: { message: lastError || 'Inga giltiga frågor kunde genereras — försök igen.' } },
+      502,
+    );
+  }
+
+  return json({ questions: cleanQuestions.slice(0, count) }, 200);
+};
+
+/**
+ * Genererar en delmängd frågor i ett Claude-anrop. Anropas parallellt med olika
+ * partition/variant så att två samtidiga anrop täcker olika delar av basen.
+ */
+async function generateBatch(
+  kb: string,
+  catLabel: string,
+  n: number,
+  variant: number,
+  seed: number,
+  apiKey: string,
+): Promise<Question[]> {
+  const maxTokens = Math.min(n * 350 + 500, 8000);
+  const variantHint =
+    variant === 0
+      ? 'Plocka frågor brett från kunskapsbasen.'
+      : 'Plocka frågor från ANDRA delar av kunskapsbasen än de mest uppenbara, för variation.';
+
+  const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -99,46 +150,24 @@ export default async (req: Request) => {
       messages: [
         {
           role: 'user',
-          content: `SESSION: ${seed}. Skapa ${count} flervalsfrågor om: ${catLabel}.`,
+          content: `SESSION: ${seed} PARTITION: ${variant}. Skapa ${n} flervalsfrågor om: ${catLabel}. ${variantHint}`,
         },
       ],
     }),
   });
 
-  if (!claudeRes.ok) {
-    const errText = await claudeRes.text();
-    return json({ error: { message: `Claude API ${claudeRes.status}: ${errText}` } }, 502);
+  if (!res.ok) {
+    throw new Error(`Claude API ${res.status}: ${await res.text()}`);
   }
 
-  const claudeData = (await claudeRes.json()) as {
-    content?: Array<{ type: string; text?: string }>;
-  };
-
-  const text = claudeData.content?.find((c) => c.type === 'text')?.text ?? '';
-
-  let questions: Question[];
-  try {
-    const parsed = JSON.parse(extractJsonObject(text)) as { questions?: Question[] };
-    if (!parsed.questions || !Array.isArray(parsed.questions)) {
-      throw new Error('Saknar "questions"-array i Claude-svaret');
-    }
-    questions = parsed.questions;
-  } catch (e) {
-    return json(
-      { error: { message: `Kunde inte tolka Claude-svar som JSON: ${(e as Error).message}` } },
-      502,
-    );
+  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  const text = data.content?.find((c) => c.type === 'text')?.text ?? '';
+  const parsed = JSON.parse(extractJsonObject(text)) as { questions?: Question[] };
+  if (!parsed.questions || !Array.isArray(parsed.questions)) {
+    throw new Error('Saknar "questions"-array i Claude-svaret');
   }
-
-  // Behåll bara välformade frågor och blanda svarsalternativen så att rätt svar
-  // inte hamnar på samma position varje gång (Claude lägger ofta rätt svar först).
-  const cleanQuestions = questions.filter(isValidQuestion).map(shuffleAnswers);
-  if (cleanQuestions.length === 0) {
-    return json({ error: { message: 'Inga giltiga frågor kunde genereras — försök igen.' } }, 502);
-  }
-
-  return json({ questions: cleanQuestions }, 200);
-};
+  return parsed.questions;
+}
 
 /** Plockar ut JSON-objektet ur ett svar som kan ha markdown-staket eller text runt om. */
 function extractJsonObject(text: string): string {
