@@ -70,6 +70,10 @@ export default async (req: Request) => {
 
   const seed = Date.now();
 
+  // Långa förklaringar (särskilt Teknik/Juridik med lagcitat) sprängde det gamla
+  // taket på 4000 → avhuggen JSON → parse-fel. Skala taket med antal frågor.
+  const maxTokens = Math.min(count * 600 + 800, 16000);
+
   const claudeRes = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
@@ -79,7 +83,7 @@ export default async (req: Request) => {
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 4000,
+      max_tokens: maxTokens,
       temperature: 0.7,
       system: [
         { type: 'text', text: SYSTEM_INSTRUCTIONS },
@@ -108,11 +112,10 @@ export default async (req: Request) => {
   };
 
   const text = claudeData.content?.find((c) => c.type === 'text')?.text ?? '';
-  const cleaned = text.replace(/```json|```/g, '').trim();
 
   let questions: Question[];
   try {
-    const parsed = JSON.parse(cleaned) as { questions?: Question[] };
+    const parsed = JSON.parse(extractJsonObject(text)) as { questions?: Question[] };
     if (!parsed.questions || !Array.isArray(parsed.questions)) {
       throw new Error('Saknar "questions"-array i Claude-svaret');
     }
@@ -124,8 +127,51 @@ export default async (req: Request) => {
     );
   }
 
-  return json({ questions }, 200);
+  // Behåll bara välformade frågor och blanda svarsalternativen så att rätt svar
+  // inte hamnar på samma position varje gång (Claude lägger ofta rätt svar först).
+  const cleanQuestions = questions.filter(isValidQuestion).map(shuffleAnswers);
+  if (cleanQuestions.length === 0) {
+    return json({ error: { message: 'Inga giltiga frågor kunde genereras — försök igen.' } }, 502);
+  }
+
+  return json({ questions: cleanQuestions }, 200);
 };
+
+/** Plockar ut JSON-objektet ur ett svar som kan ha markdown-staket eller text runt om. */
+function extractJsonObject(text: string): string {
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  const first = cleaned.indexOf('{');
+  const last = cleaned.lastIndexOf('}');
+  if (first === -1 || last === -1 || last <= first) return cleaned;
+  return cleaned.slice(first, last + 1);
+}
+
+function isValidQuestion(q: Question): boolean {
+  return (
+    !!q &&
+    typeof q.question === 'string' &&
+    Array.isArray(q.answers) &&
+    q.answers.length === 4 &&
+    q.answers.every((a) => typeof a === 'string' && a.length > 0) &&
+    Number.isInteger(q.correct) &&
+    q.correct >= 0 &&
+    q.correct <= 3
+  );
+}
+
+/** Fisher–Yates-blandning av svarsalternativ, med "correct"-index ommappat. */
+function shuffleAnswers(q: Question): Question {
+  const order = q.answers.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return {
+    ...q,
+    answers: order.map((i) => q.answers[i]),
+    correct: order.indexOf(q.correct),
+  };
+}
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(Math.max(n, min), max);

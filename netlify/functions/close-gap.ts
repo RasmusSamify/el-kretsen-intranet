@@ -2,6 +2,7 @@ import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from './_shared/auth';
 import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
+import { checkSourceForContradictions } from './_shared/contradictions';
 
 /**
  * Kunskapslucke-stängaren. Tre actions (alla admin):
@@ -65,12 +66,23 @@ export default async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // ---------- DISMISS ----------
+  // ---------- DISMISS (luckan är inte relevant för oss) ----------
   if (body.action === 'dismiss') {
     if (!body.id) return json({ error: 'id krävs' }, 400);
     const { error } = await admin
       .from('ai_unanswered')
       .update({ gap_status: 'dismissed', resolved_at: new Date().toISOString(), resolved_by: auth.user.id })
+      .eq('id', body.id);
+    if (error) return json({ error: error.message }, 502);
+    return json({ ok: true }, 200);
+  }
+
+  // ---------- RESOLVE (luckan är åtgärdad på annat sätt, utan ny källa) ----------
+  if (body.action === 'resolve') {
+    if (!body.id) return json({ error: 'id krävs' }, 400);
+    const { error } = await admin
+      .from('ai_unanswered')
+      .update({ gap_status: 'resolved', resolved_at: new Date().toISOString(), resolved_by: auth.user.id })
       .eq('id', body.id);
     if (error) return json({ error: error.message }, 502);
     return json({ ok: true }, 200);
@@ -103,6 +115,15 @@ export default async (req: Request) => {
           resolved_source: normalised,
         })
         .eq('id', id);
+
+      // Direktkoll: säger den nya källan emot något befintligt? Hamnar i Granskning
+      // direkt istället för att vänta på nattsvepet. Best-effort — bryt aldrig ingest.
+      try {
+        await checkSourceForContradictions(admin, anthropicKey, normalised, { timeBudgetMs: 10_000 });
+      } catch {
+        /* best-effort */
+      }
+
       return json({ ok: true, filename: normalised, chunks: result.largeChunks }, 200);
     } catch (e) {
       if (e instanceof IngestError) return json({ error: e.message }, e.status);

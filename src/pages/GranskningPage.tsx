@@ -374,12 +374,15 @@ function GranskningExplainer({ view }: { view: GranskningView }) {
               active={view === 'contradictions'}
               title="Motsägelser (nattlig audit)"
             >
-              Varje natt (03:15) går ett automatiskt jobb igenom kunskapsbasen i omgångar. Det
-              plockar stycken som <strong>liknar varandra men inte är identiska</strong> och låter
-              AI:n (Claude) avgöra om de faktiskt <strong>säger emot varandra</strong> — t.ex. två
-              olika datum eller avgifter för samma sak. Hittade par hamnar här med en{' '}
-              <strong>severity 1–5</strong> (5 = kritisk) och AI:ns motivering. En full genomgång av
-              hela basen tar ett par veckor, sen börjar den om så att nya och ändrade texter fångas.
+              När du <strong>lägger till eller ändrar en källa</strong> kontrolleras den direkt mot
+              resten av kunskapsbasen — säger den emot något befintligt dyker paret upp här inom
+              minuter. Utöver det går ett automatiskt jobb varje natt (03:15) igenom hela basen i
+              omgångar och fångar äldre kombinationer som glidit isär. Båda plockar stycken som{' '}
+              <strong>liknar varandra men inte är identiska</strong> och låter AI:n (Claude) avgöra
+              om de faktiskt <strong>säger emot varandra</strong> — t.ex. två olika datum eller
+              avgifter för samma sak. Hittade par hamnar här med en <strong>severity 1–5</strong>{' '}
+              (5 = kritisk) och AI:ns motivering. Nattsvepets fulla varv tar ett par veckor, sen
+              börjar det om.
             </ExplainerBlock>
 
             <ExplainerBlock

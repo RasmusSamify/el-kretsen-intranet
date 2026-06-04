@@ -1,6 +1,17 @@
 import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from './_shared/auth';
+import {
+  analyseContradiction,
+  AUDIT_CATEGORIES,
+  insertReviewPair,
+  MATCH_COUNT,
+  MAX_CANDIDATES_PER_CHUNK,
+  MIN_QUALITY,
+  parseEmbedding,
+  SIMILARITY_HIGH,
+  SIMILARITY_LOW,
+} from './_shared/contradictions';
 
 interface AuditRequest {
   batch_size?: number;
@@ -34,31 +45,10 @@ interface MatchedChunk {
   similarity: number;
 }
 
-interface Verdict {
-  contradiction: boolean;
-  severity: number;
-  reasoning: string;
-}
-
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
-
-const SIMILARITY_LOW = 0.75;
-const SIMILARITY_HIGH = 0.95;
-const MAX_CANDIDATES_PER_CHUNK = 5;
-const MATCH_COUNT = 10;
-
-// Audit fokuserar på primärkällor — lagar och interna dokument.
-// Webbsidor (el-kretsen.se) är sekundära och har mycket noise.
-const AUDIT_CATEGORIES = ['law', 'internal'];
-const MIN_QUALITY = 40;
-
 // Respektera Netlifys 26s-tak — bryt vid 22s så vi hinner skriva state + respons
 const TIME_BUDGET_MS = 22_000;
 // Anthropic-anrop kan parallelliseras. 8 samtidiga gånger 1-2s = 2s per grupp.
 const CLAUDE_CONCURRENCY = 8;
-
-const CONTRADICTION_PROMPT = `Du analyserar två textstycken från El-Kretsens kunskapsbas (EU Battery Regulation, WEEE-direktivet, svensk miljölagstiftning, producentansvar, förpackningsavgifter). Avgör om de säger emot varandra på ett sätt som skulle ge motstridiga svar till användare. Fokusera på faktiska motsägelser: olika datum, belopp, tröskelvärden, ansvarsfördelning, procedurer. Ignorera stilistiska skillnader och olika detaljnivå. Svara ENDAST med giltig JSON: {"contradiction": boolean, "severity": 1-5, "reasoning": "svensk text, max 2 meningar"}. Severity 5 = direkta lagkrav som motsäger varandra. Severity 1 = marginella formuleringsskillnader.`;
 
 export default async (req: Request) => {
   const startedAt = Date.now();
@@ -232,29 +222,14 @@ export default async (req: Request) => {
         const verdict = verdicts[j];
         if (!verdict || !verdict.contradiction) continue;
 
-        // Normalisera ordning (chunk med lägre uuid först) för att matcha unique idx
-        const [chunkA, chunkB] = chunk.id < other.id ? [chunk, other] : [other, chunk];
-
-        // Om paret är internal↔law = drift (intern dokumentation har glidit
-        // från aktuell lagtext) snarare än en contradiction mellan två lagar.
-        const otherCategory = metaMap.get(other.id)?.source_category;
-        const cats = [chunk.source_category, otherCategory].sort().join(':');
-        const issueType = cats === 'internal:law' ? 'drift' : 'contradiction';
-
-        const { error: insertError } = await supabase.from('kb_review_queue').insert(
-          {
-            chunk_a_id: chunkA.id,
-            chunk_b_id: chunkB.id,
-            issue_type: issueType,
-            severity: Math.max(1, Math.min(5, Math.round(verdict.severity))),
-            similarity: other.similarity.toFixed(3),
-            ai_reasoning: verdict.reasoning,
-            status: 'pending',
-          },
-          { count: undefined },
+        const otherCategory = metaMap.get(other.id)?.source_category ?? 'internal';
+        const inserted = await insertReviewPair(
+          supabase,
+          { id: chunk.id, source_category: chunk.source_category },
+          { id: other.id, similarity: other.similarity, source_category: otherCategory },
+          verdict,
         );
-        // Unique-constraint-violation (23505) betyder att paret redan finns — OK.
-        if (!insertError) contradictionsFound++;
+        if (inserted) contradictionsFound++;
       }
     }
 
@@ -292,69 +267,6 @@ export default async (req: Request) => {
 
   return json(response, 200);
 };
-
-async function analyseContradiction(
-  a: ChunkRow,
-  b: MatchedChunk,
-  anthropicKey: string,
-): Promise<Verdict | null> {
-  const userContent = `Stycke A (${a.filename}, stycke ${a.chunk_index + 1}):
-"""
-${a.text}
-"""
-
-Stycke B (${b.filename}, stycke ${b.chunk_index + 1}):
-"""
-${b.text}
-"""
-
-Semantisk likhet: ${b.similarity.toFixed(3)}
-
-Returnera JSON enligt instruktion.`;
-
-  try {
-    const res = await fetch(ANTHROPIC_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 300,
-        temperature: 0,
-        system: CONTRADICTION_PROMPT,
-        messages: [{ role: 'user', content: userContent }],
-      }),
-    });
-
-    if (!res.ok) return null;
-    const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
-    const raw = data.content?.find((c) => c.type === 'text')?.text ?? '';
-    const jsonText = raw.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(jsonText) as Verdict;
-    if (typeof parsed.contradiction !== 'boolean') return null;
-    if (typeof parsed.severity !== 'number') parsed.severity = 1;
-    if (typeof parsed.reasoning !== 'string') parsed.reasoning = '';
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function parseEmbedding(raw: unknown): number[] | null {
-  if (Array.isArray(raw)) return raw as number[];
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed as number[];
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
 
 function corsHeaders() {
   return {

@@ -428,6 +428,10 @@ export function dismissGap(id: string): Promise<{ ok: true }> {
   return postJob('/api/close-gap', { action: 'dismiss', id });
 }
 
+export function resolveGap(id: string): Promise<{ ok: true }> {
+  return postJob('/api/close-gap', { action: 'resolve', id });
+}
+
 // ---------- Loggbok (möten/samtal + feedback, admin-only) ----------
 
 export interface MeetingLog {

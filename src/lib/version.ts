@@ -17,9 +17,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.9.0';
+export const CURRENT_VERSION = '1.10.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.10.0',
+    date: '2026-06-04',
+    releasedAt: '2026-06-04T12:00:00+02:00',
+    title: 'Direktkoll av motsägelser + rättelser i Kretskampen och Kunskapsluckor',
+    summary:
+      'Efter Linneas feedback: nya och ändrade källor kontrolleras nu mot resten av kunskapsbasen direkt vid uppladdning, så motsägelser syns inom minuter istället för att vänta på nattgranskningen. Dessutom tre rättelser i Kretskampen och Kunskapsluckor.',
+    highlights: [
+      'Granskning: när du lägger till eller ändrar en källa kollas den genast mot befintligt innehåll — säger den emot något hamnar paret i Granskning inom minuter, istället för att vänta tills nattsvepet (som tar ett par veckor) når dit.',
+      'Kretskampen: rätt svarsalternativ placeras nu slumpmässigt istället för alltid högst upp till vänster.',
+      'Kretskampen: kategorierna Teknik och Juridik fungerar igen — de kunde tidigare ge ett tekniskt felmeddelande när frågor med långa förklaringar blev avhuggna.',
+      'Kunskapsluckor: två tydliga val utöver "Skapa utkast" — "Markera åtgärdad" när luckan redan hanterats, och "Inte relevant" när frågan inte rör er.',
+    ],
+  },
   {
     version: '1.9.0',
     date: '2026-05-30',

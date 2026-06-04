@@ -2,6 +2,7 @@ import type { Config } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
 import { requireAdmin } from './_shared/auth';
+import { checkSourceForContradictions } from './_shared/contradictions';
 
 interface IngestFileRequest {
   filename: string;
@@ -74,6 +75,20 @@ export default async (req: Request) => {
       { filename: normalisedName, title: normalisedName, source_category: 'internal' },
       { onConflict: 'filename', ignoreDuplicates: false },
     );
+
+    // Direktkoll mot befintlig kunskapsbas: en ny källa som motsäger annat innehåll
+    // hamnar i Granskning direkt, istället för att vänta på nattsvepet (kan ta veckor).
+    // Best-effort med tidsbudget — bryter aldrig ingest-svaret.
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      try {
+        await checkSourceForContradictions(supabase, anthropicKey, normalisedName, {
+          timeBudgetMs: 10_000,
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
 
     // "chunks" i UI = large chunks (logiska stycken som Claude får som kontext).
     // Small chunks är searcher-noder och döljs här för enkelhet.

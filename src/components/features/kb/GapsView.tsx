@@ -13,7 +13,7 @@ import { Button, Card, IconTile, Modal, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { cn, formatDate } from '@/lib/utils';
-import { commitGap, dismissGap, draftGap, type GapDraft } from '@/lib/api';
+import { commitGap, dismissGap, draftGap, resolveGap, type GapDraft } from '@/lib/api';
 
 interface GapRow {
   id: string;
@@ -49,10 +49,10 @@ export function GapsView() {
     load();
   }, []);
 
-  const dismiss = async (row: GapRow) => {
+  const runAction = async (row: GapRow, fn: (id: string) => Promise<unknown>) => {
     setActing(row.id);
     try {
-      await dismissGap(row.id);
+      await fn(row.id);
       await load();
     } catch (e) {
       alert((e as Error).message);
@@ -79,9 +79,11 @@ export function GapsView() {
               Öppna kunskapsluckor ({rows.length})
             </h2>
             <p className="text-[12px] font-semibold text-ink-400 mt-1.5 leading-relaxed">
-              Frågor ELvis inte kunde besvara fullt. Skapa ett AI-utkast grundat i befintlig
-              kunskapsbas, verifiera mot källa, och lägg till det — så stängs luckan.
-              {!isAdmin && ' Endast admin kan skapa utkast och lägga till källor.'}
+              Frågor ELvis inte kunde besvara fullt. <strong>Skapa utkast</strong> bygger ett
+              AI-utkast grundat i kunskapsbasen att verifiera och lägga till. Är luckan redan
+              hanterad väljer du <strong>Markera åtgärdad</strong>; rör frågan inte oss väljer du{' '}
+              <strong>Inte relevant</strong>.
+              {!isAdmin && ' Endast admin kan hantera luckor.'}
             </p>
           </div>
         </div>
@@ -142,23 +144,36 @@ export function GapsView() {
                 </div>
 
                 {isAdmin && (
-                  <div className="mt-3.5 pt-3 border-t border-ink-100 flex items-center gap-2">
+                  <div className="mt-3.5 pt-3 border-t border-ink-100 flex items-center gap-2 flex-wrap">
                     <Button
                       size="sm"
                       leftIcon={<Wand2 size={14} strokeWidth={2} />}
                       onClick={() => setActive(row)}
+                      disabled={acting === row.id}
                     >
                       Skapa utkast
                     </Button>
                     <Button
                       size="sm"
+                      variant="secondary"
+                      leftIcon={<CheckCircle2 size={14} strokeWidth={2} />}
+                      onClick={() => runAction(row, resolveGap)}
+                      disabled={acting === row.id}
+                      title="Luckan är redan hanterad eller besvarad på annat sätt"
+                    >
+                      Markera åtgärdad
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="ghost"
                       leftIcon={<X size={14} strokeWidth={2} />}
-                      onClick={() => dismiss(row)}
+                      onClick={() => runAction(row, dismissGap)}
                       disabled={acting === row.id}
+                      title="Frågan är inte relevant för oss"
                     >
-                      Avfärda
+                      Inte relevant
                     </Button>
+                    {acting === row.id && <Spinner size={14} className="text-ink-400" />}
                   </div>
                 )}
               </Card>

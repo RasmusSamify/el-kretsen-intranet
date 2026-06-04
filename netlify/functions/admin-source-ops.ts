@@ -2,6 +2,7 @@ import type { Config } from '@netlify/functions';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { IngestError, replaceSourceInV2 } from './_shared/ingestV2';
 import { reconstructSource } from './_shared/hierarchicalChunker';
+import { checkSourceForContradictions } from './_shared/contradictions';
 
 type Admin = SupabaseClient;
 
@@ -157,6 +158,17 @@ async function handleUpdate(
       { filename, title: filename, source_category: sourceCategory },
       { onConflict: 'filename', ignoreDuplicates: false },
     );
+
+    // Direktkoll: en uppdaterad källa kan börja säga emot annat innehåll. Flagga
+    // direkt i Granskning istället för att vänta på nattsvepet. Best-effort.
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      try {
+        await checkSourceForContradictions(admin, anthropicKey, filename, { timeBudgetMs: 10_000 });
+      } catch {
+        /* best-effort */
+      }
+    }
 
     return json({ ok: true, filename, chunks: result.largeChunks }, 200);
   } catch (e) {
