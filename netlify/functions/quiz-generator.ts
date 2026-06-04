@@ -13,7 +13,10 @@ interface Question {
 }
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-sonnet-4-6';
+// Haiku 4.5: quizet är en intern kunskapstävling (ej compliance-kritisk rådgivning).
+// Sonnet hann inte generera 10 frågor med långa förklaringar (särskilt Juridik) inom
+// Netlifys 26s-tak → 504. Haiku är väsentligt snabbare och fullt tillräcklig här.
+const CLAUDE_MODEL = 'claude-haiku-4-5';
 
 const KB_URL =
   'https://jnwatbnkdzuyhqmcerej.supabase.co/storage/v1/object/sign/Quiz%20dokument/Elkretsen_Kunskapsbas_Samlad_Quiz.txt?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9hMDg2ZWVkMy1mZDdhLTQ0NWYtOTY5OS1iMDViNDE1NDI5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJRdWl6IGRva3VtZW50L0Vsa3JldHNlbl9LdW5za2Fwc2Jhc19TYW1sYWRfUXVpei50eHQiLCJpYXQiOjE3NzI2NTI2NzYsImV4cCI6NDkyNjI1MjY3Nn0.3zkcFjaJmwLPFEoWa9sJx15eq2xil9NiteRPb76mtKQ';
@@ -31,7 +34,7 @@ const SYSTEM_INSTRUCTIONS = `Du genererar flervalsfrågor på SVENSKA från en i
 Krav på varje fråga:
 - Exakt 4 svarsalternativ.
 - Exakt ett rätt svar (index 0–3 i "correct").
-- "explanation" ska kort förklara varför det rätta svaret är rätt, grundat i kunskapsbasen.
+- "explanation": EN kort mening (max ~25 ord) som förklarar varför rätt svar är rätt, grundat i kunskapsbasen. Var koncis — inga långa lagcitat.
 - Skriv distraktorer som är rimliga men entydigt felaktiga.
 
 Svara ENDAST med giltig JSON i exakt detta format, utan markdown, utan kommentar, utan text före eller efter:
@@ -70,9 +73,9 @@ export default async (req: Request) => {
 
   const seed = Date.now();
 
-  // Långa förklaringar (särskilt Teknik/Juridik med lagcitat) sprängde det gamla
-  // taket på 4000 → avhuggen JSON → parse-fel. Skala taket med antal frågor.
-  const maxTokens = Math.min(count * 600 + 800, 16000);
+  // Korta förklaringar → räcker med ett stramt tak. Håller även genereringstiden
+  // nere så vi klarar Netlifys 26s-gräns.
+  const maxTokens = Math.min(count * 350 + 500, 8000);
 
   const claudeRes = await fetch(ANTHROPIC_URL, {
     method: 'POST',

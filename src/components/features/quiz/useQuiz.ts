@@ -8,11 +8,23 @@ async function generateQuestions(categoryId: string, count: number): Promise<Que
     body: JSON.stringify({ categoryId, count }),
   });
 
-  const data = await res.json();
-  if (!res.ok || data.error) {
-    throw new Error(data.error?.message ?? `Quiz-generator ${res.status}`);
+  // Läs som text först — vid timeout/serverfel kan svaret vara en HTML-sida,
+  // inte JSON. Då vill vi visa ett begripligt meddelande, inte "Unexpected token".
+  const raw = await res.text();
+  let data: { questions?: Question[]; error?: { message?: string } } | null = null;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    if (res.status === 504 || res.status === 408) {
+      throw new Error('Det tog för lång tid att skapa frågorna. Försök igen om en stund.');
+    }
+    throw new Error(`Kunde inte skapa frågor (fel ${res.status}). Försök igen.`);
   }
-  return data.questions as Question[];
+
+  if (!res.ok || data?.error) {
+    throw new Error(data?.error?.message ?? `Quiz-generator ${res.status}`);
+  }
+  return (data?.questions ?? []) as Question[];
 }
 
 export type QuizScreen = 'home' | 'loading' | 'quiz' | 'result' | 'leaderboard';

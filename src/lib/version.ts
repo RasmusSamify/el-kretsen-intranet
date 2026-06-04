@@ -17,9 +17,21 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.10.0';
+export const CURRENT_VERSION = '1.10.1';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.10.1',
+    date: '2026-06-04',
+    releasedAt: '2026-06-04T16:00:00+02:00',
+    title: 'Kretskampen: Teknik och Juridik laddar nu snabbt',
+    summary:
+      'Kategorierna Teknik och Juridik kunde ge ett tekniskt fel när frågorna tog för lång tid att skapa. Frågorna genereras nu betydligt snabbare och får plats inom tidsgränsen.',
+    highlights: [
+      'Kretskampen genererar frågor med en snabbare AI-modell och kortare förklaringar — Teknik och Juridik timeout:ar inte längre.',
+      'Skulle något ändå ta för lång tid visas nu ett begripligt meddelande med möjlighet att försöka igen, istället för ett tekniskt felmeddelande.',
+    ],
+  },
   {
     version: '1.10.0',
     date: '2026-06-04',
