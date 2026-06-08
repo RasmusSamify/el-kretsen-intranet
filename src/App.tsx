@@ -9,6 +9,7 @@ import { GranskningPage } from '@/pages/GranskningPage';
 import { StatusPage } from '@/pages/StatusPage';
 import { LoggbokPage } from '@/pages/LoggbokPage';
 import { RoadmapPage } from '@/pages/RoadmapPage';
+import { KunskapsbasForslagPage } from '@/pages/KunskapsbasForslagPage';
 import { Shell } from '@/components/layout/Shell';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/granskning" element={<GranskningPage />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/loggbok" element={<LoggbokPage />} />
+        <Route path="/kunskapsbas-forslag" element={<KunskapsbasForslagPage />} />
         <Route path="/pa-gang" element={<RoadmapPage />} />
         <Route path="/insikter" element={<Navigate to="/" replace />} />
       </Route>

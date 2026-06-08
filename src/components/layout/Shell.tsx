@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Activity, AlertTriangle, BarChart3, Wand2, Library, Mail, NotebookPen, Rocket, Trophy } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, Wand2, Library, Mail, NotebookPen, Rocket, Trophy, Lightbulb } from 'lucide-react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { Header } from './Header';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -14,6 +14,7 @@ const items: SidebarItem[] = [
   { to: '/granskning', label: 'Granskning', icon: AlertTriangle },
   { to: '/status', label: 'Systemstatus', icon: Activity, badge: 'NY' },
   { to: '/loggbok', label: 'Loggbok', icon: NotebookPen, badge: 'NY', adminOnly: true },
+  { to: '/kunskapsbas-forslag', label: 'KB-förslag', icon: Lightbulb, badge: 'NY', adminOnly: true },
   { to: '/kretskampen', label: 'Kretskampen', icon: Trophy },
   { to: '/pa-gang', label: 'På gång', icon: Rocket, badge: 'NY' },
 ];
