@@ -12,7 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
-export const CONTRA_MODEL = 'claude-sonnet-4-20250514';
+export const CONTRA_MODEL = 'claude-sonnet-4-6';
 
 export const SIMILARITY_LOW = 0.75;
 export const SIMILARITY_HIGH = 0.95;

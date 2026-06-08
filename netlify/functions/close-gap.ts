@@ -15,7 +15,7 @@ import { checkSourceForContradictions } from './_shared/contradictions';
 const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const EMBEDDING_MODEL = 'voyage-3';
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 const MATCH_COUNT = 10;
 
 const DRAFT_SYSTEM = `Du hjälper El-kretsen att fylla kunskapsluckor i en intern kunskapsbas om producentansvar, batterier, WEEE, avgifter och compliance. Du får en FRÅGA som AI-assistenten inte kunde besvara, samt KONTEXT som redan finns i kunskapsbasen.

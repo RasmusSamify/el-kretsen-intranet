@@ -32,7 +32,7 @@ const VOYAGE_RERANK_URL = 'https://api.voyageai.com/v1/rerank';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const EMBEDDING_MODEL = 'voyage-3';
 const RERANK_MODEL = 'rerank-2.5';
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Hybrid match → wide retrieval, rerank cherry-picks the most relevant ones
 // med en cross-encoder. Total kostnad per query ökar marginellt (~$0.0002),
 // men kvaliteten på det Claude ser blir märkbart bättre.

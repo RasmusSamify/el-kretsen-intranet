@@ -12,7 +12,7 @@ import { requireAdmin } from './_shared/auth';
  */
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
 export default async (req: Request) => {
   if (req.method === 'OPTIONS') {

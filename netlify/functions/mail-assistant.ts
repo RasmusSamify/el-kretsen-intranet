@@ -40,7 +40,7 @@ interface MailAssistantResponse {
 const VOYAGE_EMBEDDING_URL = 'https://api.voyageai.com/v1/embeddings';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const EMBEDDING_MODEL = 'voyage-3';
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 const MATCH_COUNT = 12;
 
 const SYSTEM_PROMPT_SV = `Du är El-kretsens interna mail-assistent. Din uppgift är att hjälpa El-kretsens medarbetare att svara på inkommande kundmail om producentansvar, batterier, WEEE, avgifter och compliance.
