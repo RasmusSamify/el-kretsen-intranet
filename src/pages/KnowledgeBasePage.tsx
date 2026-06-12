@@ -13,6 +13,7 @@ import {
   Link2,
   Pencil,
   Scale,
+  ScanSearch,
   Search,
   ShieldCheck,
   Sparkles,
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/useAdmin';
 import { AddSourceModal } from '@/components/features/ai/AddSourceModal';
 import { AddFileModal } from '@/components/features/kb/AddFileModal';
+import { CrawlSiteModal } from '@/components/features/kb/CrawlSiteModal';
 import { EditSourceModal } from '@/components/features/kb/EditSourceModal';
 import { DeleteSourceDialog } from '@/components/features/kb/DeleteSourceDialog';
 
@@ -55,6 +57,7 @@ export function KnowledgeBasePage() {
   const [query, setQuery] = useState('');
   const [addUrlOpen, setAddUrlOpen] = useState(false);
   const [addFileOpen, setAddFileOpen] = useState(false);
+  const [crawlOpen, setCrawlOpen] = useState(false);
   const [editSource, setEditSource] = useState<SourceRow | null>(null);
   const [deleteSource, setDeleteSource] = useState<SourceRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -142,6 +145,16 @@ export function KnowledgeBasePage() {
                 </p>
               </div>
               <div className="flex gap-2">
+                {isAdmin && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<ScanSearch size={14} strokeWidth={1.75} />}
+                    onClick={() => setCrawlOpen(true)}
+                  >
+                    Crawla sajt
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   size="sm"
@@ -241,6 +254,11 @@ export function KnowledgeBasePage() {
         <AddFileModal
           open={addFileOpen}
           onClose={() => setAddFileOpen(false)}
+          onAdded={() => setRefreshKey((k) => k + 1)}
+        />
+        <CrawlSiteModal
+          open={crawlOpen}
+          onClose={() => setCrawlOpen(false)}
           onAdded={() => setRefreshKey((k) => k + 1)}
         />
         <EditSourceModal

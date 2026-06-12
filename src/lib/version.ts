@@ -17,9 +17,23 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.10.1';
+export const CURRENT_VERSION = '1.11.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.11.0',
+    date: '2026-06-12',
+    releasedAt: '2026-06-12T14:30:00+02:00',
+    title: 'Crawla hela webbplatser till kunskapsbasen',
+    summary:
+      'Ni kan nu lägga in en hel webbplats på en gång istället för en länk i taget. Systemet hittar alla undersidor, visar dem som en lista att bocka i och ur, och indexerar bara det ni väljer — så basen hålls kurerad och ni bestämmer alltid vad som kommer in.',
+    highlights: [
+      'Ny "Crawla sajt"-knapp i Kunskapsbasen: ange en webbplats så hittar systemet alla undersidor via sajtens sitemap.',
+      'Allt är förbockat från start — bocka ur det som inte ska in (t.ex. nyhetsarkiv), eller begränsa till en viss sökväg. Bara ikryssade sidor indexeras.',
+      'Läget "Klistra in lista": har ni redan exakta länkar (t.ex. specifika vägledningssidor eller EU-förordningar) klistrar ni bara in dem rad för rad.',
+      'Live-förlopp under indexeringen visar hur många sidor som lyckats och vilka som inte kunde läsas (oftast JavaScript-renderat innehåll).',
+    ],
+  },
   {
     version: '1.10.1',
     date: '2026-06-04',

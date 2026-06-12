@@ -170,6 +170,39 @@ export async function ingestUrl(url: string): Promise<IngestUrlResponse> {
   return res.json();
 }
 
+export interface DiscoveredUrl {
+  url: string;
+  path: string;
+}
+
+export interface CrawlDiscoverResponse {
+  ok: true;
+  origin: string;
+  host: string;
+  fromSitemap: boolean;
+  total: number;
+  urls: DiscoveredUrl[];
+}
+
+export async function crawlDiscover(url: string, scope?: string | null): Promise<CrawlDiscoverResponse> {
+  const res = await fetch('/api/crawl-discover', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: await authHeader() },
+    body: JSON.stringify({ url, scope: scope ?? null }),
+  });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export interface IngestFileResponse {
   ok: true;
   source: string;
