@@ -17,9 +17,22 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.11.0';
+export const CURRENT_VERSION = '1.12.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.12.0',
+    date: '2026-06-12',
+    releasedAt: '2026-06-12T17:00:00+02:00',
+    title: 'Tydligare källor: avdelningar, direktlänkar och gruppering per webbplats',
+    summary:
+      'Tre förbättringar för att hitta och lita på rätt källa: märk interna dokument med avdelning, klicka dig direkt till rätt avsnitt i en källa, och se webbkällor grupperade per webbplats.',
+    highlights: [
+      'Interna dokument kan nu märkas med avdelning (Ekonomi, Marknad, Information, Transport, Övrigt) och grupperas automatiskt efter den — lättare att hitta rätt dokument.',
+      'När ELvis hänvisar till en källa kan du klicka "Öppna källan" i referensrutan och komma direkt till sidan — i Chrome och Edge ända ner till rätt avsnitt. Interna dokument visar stället direkt i rutan.',
+      'Kunskapsbasen grupperar nu webbkällor per webbplats (t.ex. naturvardsverket.se, kunskapsrummet.se) i stället för att lägga allt under en gemensam rubrik. Lagkällor får en våg-ikon.',
+    ],
+  },
   {
     version: '1.11.0',
     date: '2026-06-12',

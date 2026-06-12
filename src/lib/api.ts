@@ -544,3 +544,11 @@ export async function adminDeleteSource(
 ): Promise<{ ok: true; filename: string; chunks_removed: number }> {
   return adminRequest({ action: 'delete', filename }, token);
 }
+
+export async function adminSetDepartment(
+  filename: string,
+  department: string | null,
+  token: string,
+): Promise<{ ok: true; filename: string; department: string | null }> {
+  return adminRequest({ action: 'set-department', filename, department }, token);
+}

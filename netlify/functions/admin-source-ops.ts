@@ -19,7 +19,12 @@ interface DeleteRequest {
   action: 'delete';
   filename: string;
 }
-type AdminRequest = GetRequest | UpdateRequest | DeleteRequest;
+interface SetDepartmentRequest {
+  action: 'set-department';
+  filename: string;
+  department: string | null;
+}
+type AdminRequest = GetRequest | UpdateRequest | DeleteRequest | SetDepartmentRequest;
 
 const MAX_CONTENT_BYTES = 1_500_000;
 
@@ -87,10 +92,38 @@ export default async (req: Request) => {
       return handleUpdate(admin, voyageKey, body.filename, body.content);
     case 'delete':
       return handleDelete(admin, body.filename);
+    case 'set-department':
+      return handleSetDepartment(admin, body.filename, body.department);
     default:
       return json({ error: 'Unknown action' }, 400);
   }
 };
+
+async function handleSetDepartment(
+  admin: Admin,
+  filename: string,
+  department: string | null,
+): Promise<Response> {
+  const dep = (department ?? '').trim() || null;
+
+  // Försök uppdatera befintlig metadata-rad först.
+  const { data, error } = await admin
+    .from('kb_sources')
+    .update({ department: dep, updated_at: new Date().toISOString() })
+    .eq('filename', filename)
+    .select('filename');
+  if (error) return json({ error: `Kunde inte spara avdelning: ${error.message}` }, 502);
+
+  // Saknas metadata-rad (källa finns bara i chunks) — skapa en.
+  if (!data || data.length === 0) {
+    const { error: insError } = await admin
+      .from('kb_sources')
+      .insert({ filename, title: filename, source_category: 'internal', department: dep });
+    if (insError) return json({ error: `Kunde inte spara avdelning: ${insError.message}` }, 502);
+  }
+
+  return json({ ok: true, filename, department: dep }, 200);
+}
 
 async function handleGet(admin: Admin, filename: string): Promise<Response> {
   // Läs large-chunks från v2 — det är den fulla originaltexten ordnad i logiska stycken.

@@ -7,10 +7,16 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, ChevronUp, FileText, Sparkles, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, FileText, Sparkles, X } from 'lucide-react';
 import type { Citation } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { findBestMatchSentence, snippetAround, type Sentence } from '@/lib/chunkHighlight';
+import {
+  findBestMatchSentence,
+  snippetAround,
+  splitSentences,
+  type Sentence,
+} from '@/lib/chunkHighlight';
+import { buildSourceUrl } from '@/lib/sourceLink';
 
 interface CitationChipProps {
   citation: Citation;
@@ -89,6 +95,14 @@ export function CitationChip({ citation, index, claimText }: CitationChipProps) 
     return findBestMatchSentence(citation.text, claimText);
   }, [citation.text, claimText]);
 
+  // Djuplänk till källan: webbsidor öppnas vid rätt avsnitt via text-fragment
+  // (bygger på den mest relevanta meningen, annars chunkens första mening).
+  // Interna dokument saknar publik URL → null.
+  const sourceUrl = useMemo(() => {
+    const snippet = highlight?.text ?? splitSentences(citation.text)[0]?.text ?? null;
+    return buildSourceUrl(citation.filename, snippet);
+  }, [citation.filename, citation.text, highlight]);
+
   const displayName = citation.filename.replace(/\.[^/.]+$/, '');
 
   return (
@@ -147,6 +161,39 @@ export function CitationChip({ citation, index, claimText }: CitationChipProps) 
                   <X size={14} strokeWidth={2.5} />
                 </button>
               </div>
+
+              {sourceUrl ? (
+                <a
+                  href={sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="group/link flex items-center justify-between gap-2 px-4 py-2.5 bg-brand-50 hover:bg-brand-100 transition-colors border-b border-brand-100"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[11.5px] font-bold text-brand-700 truncate">
+                      Öppna källan{highlight ? ' vid rätt avsnitt' : ''}
+                    </span>
+                    {highlight && (
+                      <span className="block text-[10px] font-semibold text-brand-500/80">
+                        Hoppa till avsnitt funkar bäst i Chrome eller Edge
+                      </span>
+                    )}
+                  </span>
+                  <ExternalLink
+                    size={13}
+                    strokeWidth={2.25}
+                    className="text-brand-500 group-hover/link:text-brand-700 transition-colors shrink-0"
+                  />
+                </a>
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-2 bg-ink-50 border-b border-ink-100">
+                  <FileText size={12} strokeWidth={2} className="text-ink-400 shrink-0" />
+                  <span className="text-[11px] font-semibold text-ink-500">
+                    Internt dokument · avsnittet visas nedan
+                  </span>
+                </div>
+              )}
 
               {highlight && !expanded ? (
                 <SnippetView citation={citation} highlight={highlight} />

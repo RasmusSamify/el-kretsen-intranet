@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   BookOpen,
+  Building2,
   ChevronRight,
   ExternalLink,
   FileText,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { adminSetDepartment } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/useAdmin';
 import { AddSourceModal } from '@/components/features/ai/AddSourceModal';
@@ -33,20 +35,59 @@ import { DeleteSourceDialog } from '@/components/features/kb/DeleteSourceDialog'
 interface SourceRow {
   filename: string;
   chunk_count: number;
+  department?: string | null;
 }
 
-type GroupId = 'laws' | 'elkretsen' | 'internal';
+/** Föreslagna avdelningar/ämnen för interna dokument. Fri text i databasen —
+ *  listan är bara snabbval; be om fler så lägger vi till dem. */
+const DEPARTMENTS = ['Ekonomi', 'Marknad', 'Information', 'Transport', 'Övrigt'] as const;
+const UNCATEGORIZED = 'Ej kategoriserad';
 
-function classify(filename: string): GroupId {
-  if (!filename.includes('/') && !filename.includes('.com') && !filename.includes('.eu') && !filename.includes('.se'))
-    return 'internal';
-  if (filename.startsWith('www.el-kretsen.se') || filename.startsWith('el-kretsen.se')) return 'elkretsen';
-  return 'laws';
+/** Gruppera interna dokument per avdelning i en bestämd ordning:
+ *  kända avdelningar först, ev. egna därefter, "Ej kategoriserad" sist. */
+function groupByDepartment(items: SourceRow[]): Array<{ dept: string; key: string; items: SourceRow[] }> {
+  const map = new Map<string, SourceRow[]>();
+  for (const s of items) {
+    const key = s.department?.trim() || UNCATEGORIZED;
+    (map.get(key) ?? map.set(key, []).get(key)!).push(s);
+  }
+  const known = DEPARTMENTS.filter((d) => map.has(d));
+  const custom = [...map.keys()]
+    .filter((k) => k !== UNCATEGORIZED && !DEPARTMENTS.includes(k as (typeof DEPARTMENTS)[number]))
+    .sort((a, b) => a.localeCompare(b, 'sv'));
+  const order = [...known, ...custom, ...(map.has(UNCATEGORIZED) ? [UNCATEGORIZED] : [])];
+  return order.map((dept) => ({ dept, key: dept, items: map.get(dept)! }));
+}
+
+/** Internt dokument = saknar "/" och domän-markör (annars en webbkälla). */
+function isInternalSource(filename: string): boolean {
+  return (
+    !filename.includes('/') &&
+    !filename.includes('.se') &&
+    !filename.includes('.eu') &&
+    !filename.includes('.com') &&
+    !filename.includes('.org') &&
+    !filename.includes('.net')
+  );
+}
+
+/** Värd-delen av ett webb-filnamn ("www.naturvardsverket.se/...") → "www.naturvardsverket.se". */
+function hostOf(filename: string): string {
+  return filename.split('/')[0];
+}
+
+/** Snyggare etikett för en domän — strippar "www.". */
+function hostLabel(host: string): string {
+  return host.replace(/^www\./, '');
+}
+
+/** Kända lag/myndighets-domäner får en våg-ikon istället för glob. */
+function isLawDomain(host: string): boolean {
+  return /riksdagen\.se|eur-lex|europa\.eu|lagrummet|notisum|svenskforfattningssamling/i.test(host);
 }
 
 function displayName(src: SourceRow) {
-  const g = classify(src.filename);
-  if (g === 'internal') return src.filename.replace(/\.[^/.]+$/, '');
+  if (isInternalSource(src.filename)) return src.filename.replace(/\.[^/.]+$/, '');
   return src.filename.split('/').slice(1).join('/').replace(/[-_]/g, ' ').trim() || src.filename;
 }
 
@@ -61,11 +102,16 @@ export function KnowledgeBasePage() {
   const [editSource, setEditSource] = useState<SourceRow | null>(null);
   const [deleteSource, setDeleteSource] = useState<SourceRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [openGroups, setOpenGroups] = useState<Record<GroupId, boolean>>({
-    laws: false,
-    elkretsen: false,
-    internal: false,
-  });
+  const [savingDept, setSavingDept] = useState<Set<string>>(new Set());
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   useEffect(() => {
     let mounted = true;
@@ -83,15 +129,57 @@ export function KnowledgeBasePage() {
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q ? sources.filter((s) => s.filename.toLowerCase().includes(q)) : sources;
-    return {
-      laws: filtered.filter((s) => classify(s.filename) === 'laws'),
-      elkretsen: filtered.filter((s) => classify(s.filename) === 'elkretsen'),
-      internal: filtered.filter((s) => classify(s.filename) === 'internal'),
-    };
+    const internal = filtered.filter((s) => isInternalSource(s.filename));
+    const web = filtered.filter((s) => !isInternalSource(s.filename));
+
+    // Gruppera webbkällor per domän — varje sajt får sin egen grupp.
+    const byHost = new Map<string, SourceRow[]>();
+    for (const s of web) {
+      const h = hostOf(s.filename);
+      (byHost.get(h) ?? byHost.set(h, []).get(h)!).push(s);
+    }
+    // Ordning: el-kretsen.se först, sedan störst först, sedan alfabetiskt.
+    const domains = [...byHost.entries()]
+      .map(([host, items]) => ({ host, label: hostLabel(host), items }))
+      .sort((a, b) => {
+        const aEl = a.host.includes('el-kretsen.se') ? 0 : 1;
+        const bEl = b.host.includes('el-kretsen.se') ? 0 : 1;
+        if (aEl !== bEl) return aEl - bEl;
+        if (b.items.length !== a.items.length) return b.items.length - a.items.length;
+        return a.label.localeCompare(b.label, 'sv');
+      });
+
+    return { internal, domains };
   }, [sources, query]);
 
   const totalChunks = sources.reduce((n, s) => n + s.chunk_count, 0);
-  const filteredCount = grouped.laws.length + grouped.elkretsen.length + grouped.internal.length;
+  const webSourcesAll = sources.filter((s) => !isInternalSource(s.filename));
+  const domainCountAll = new Set(webSourcesAll.map((s) => hostOf(s.filename))).size;
+  const internalCountAll = sources.length - webSourcesAll.length;
+  const filteredCount =
+    grouped.internal.length + grouped.domains.reduce((n, d) => n + d.items.length, 0);
+
+  const handleSetDepartment = async (src: SourceRow, department: string | null) => {
+    const prev = src.department ?? null;
+    if (prev === department) return;
+    // Optimistisk uppdatering — slår tillbaka vid fel.
+    setSources((list) => list.map((s) => (s.filename === src.filename ? { ...s, department } : s)));
+    setSavingDept((s) => new Set(s).add(src.filename));
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error('Inte inloggad');
+      await adminSetDepartment(src.filename, department, token);
+    } catch {
+      setSources((list) => list.map((s) => (s.filename === src.filename ? { ...s, department: prev } : s)));
+    } finally {
+      setSavingDept((s) => {
+        const next = new Set(s);
+        next.delete(src.filename);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
@@ -125,8 +213,8 @@ export function KnowledgeBasePage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatPill label="Totalt källor" value={sources.length} />
           <StatPill label="Chunks indexerade" value={totalChunks} />
-          <StatPill label="Lagtexter & förordningar" value={sources.filter((s) => classify(s.filename) === 'laws').length} />
-          <StatPill label="Interna dokument" value={sources.filter((s) => classify(s.filename) === 'internal').length} />
+          <StatPill label="Webbplatser" value={domainCountAll} />
+          <StatPill label="Interna dokument" value={internalCountAll} />
         </div>
 
         {/* Two-column: sources list + instructions */}
@@ -208,35 +296,34 @@ export function KnowledgeBasePage() {
               </p>
             ) : (
               <div className="flex-1 space-y-2.5 -mx-1 px-1 overflow-y-auto">
-                <Group
-                  label="Lagtexter & förordningar"
-                  icon={<Scale size={13} strokeWidth={1.75} />}
-                  items={grouped.laws}
-                  open={!!query || openGroups.laws}
-                  onToggle={() => setOpenGroups((g) => ({ ...g, laws: !g.laws }))}
-                  isAdmin={isAdmin}
-                  onEdit={setEditSource}
-                  onDelete={setDeleteSource}
-                />
-                <Group
-                  label="el-kretsen.se"
-                  icon={<Globe size={13} strokeWidth={1.75} />}
-                  items={grouped.elkretsen}
-                  open={!!query || openGroups.elkretsen}
-                  onToggle={() => setOpenGroups((g) => ({ ...g, elkretsen: !g.elkretsen }))}
-                  isAdmin={isAdmin}
-                  onEdit={setEditSource}
-                  onDelete={setDeleteSource}
-                />
-                <Group
-                  label="Interna dokument"
-                  icon={<FileText size={13} strokeWidth={1.75} />}
+                {grouped.domains.map((d) => (
+                  <Group
+                    key={d.host}
+                    label={d.label}
+                    icon={
+                      isLawDomain(d.host) ? (
+                        <Scale size={13} strokeWidth={1.75} />
+                      ) : (
+                        <Globe size={13} strokeWidth={1.75} />
+                      )
+                    }
+                    items={d.items}
+                    open={!!query || openGroups.has(d.host)}
+                    onToggle={() => toggleGroup(d.host)}
+                    isAdmin={isAdmin}
+                    onEdit={setEditSource}
+                    onDelete={setDeleteSource}
+                  />
+                ))}
+                <InternalGroup
                   items={grouped.internal}
-                  open={!!query || openGroups.internal}
-                  onToggle={() => setOpenGroups((g) => ({ ...g, internal: !g.internal }))}
+                  open={!!query || openGroups.has('internal')}
+                  onToggle={() => toggleGroup('internal')}
                   isAdmin={isAdmin}
                   onEdit={setEditSource}
                   onDelete={setDeleteSource}
+                  onSetDepartment={handleSetDepartment}
+                  savingDept={savingDept}
                 />
               </div>
             )}
@@ -329,9 +416,8 @@ function Group({
       {open && (
         <ul className="border-t border-ink-100 divide-y divide-ink-100">
           {items.map((src) => {
-            const group = classify(src.filename);
-            const isUrl = group !== 'internal';
-            const isEditable = group === 'internal';
+            const isUrl = !isInternalSource(src.filename);
+            const isEditable = !isUrl;
             const href = isUrl ? `https://${src.filename}` : null;
             return (
               <li key={src.filename}>
@@ -397,6 +483,160 @@ function Group({
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+function InternalGroup({
+  items,
+  open,
+  onToggle,
+  isAdmin,
+  onEdit,
+  onDelete,
+  onSetDepartment,
+  savingDept,
+}: {
+  items: SourceRow[];
+  open: boolean;
+  onToggle: () => void;
+  isAdmin: boolean;
+  onEdit: (src: SourceRow) => void;
+  onDelete: (src: SourceRow) => void;
+  onSetDepartment: (src: SourceRow, department: string | null) => void;
+  savingDept: Set<string>;
+}) {
+  if (items.length === 0) return null;
+  const sections = groupByDepartment(items);
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-ink-50 transition-colors"
+      >
+        <ChevronRight
+          size={14}
+          strokeWidth={2}
+          className={cn('text-ink-400 transition-transform duration-200', open && 'rotate-90')}
+        />
+        <span className="text-ink-500">
+          <FileText size={13} strokeWidth={1.75} />
+        </span>
+        <span className="flex-1 text-left text-[13px] font-bold text-ink-800">Interna dokument</span>
+        <span className="text-[11px] font-bold text-ink-400 tabular-nums">{items.length}</span>
+      </button>
+      {open && (
+        <div className="border-t border-ink-100">
+          {sections.map((section) => (
+            <div key={section.key}>
+              <div className="flex items-center gap-2 px-4 py-2 bg-ink-50/60 border-b border-ink-100">
+                <Building2 size={11} strokeWidth={2} className="text-ink-400" />
+                <span className="flex-1 text-[10px] font-bold uppercase tracking-wider text-ink-500">
+                  {section.dept}
+                </span>
+                <span className="text-[10px] font-bold text-ink-400 tabular-nums">{section.items.length}</span>
+              </div>
+              <ul className="divide-y divide-ink-100">
+                {section.items.map((src) => (
+                  <li key={src.filename}>
+                    <div className="group/row flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50 transition-colors">
+                      <FileText size={12} strokeWidth={1.75} className="text-ink-500 shrink-0" />
+                      <span
+                        className="flex-1 min-w-0 text-[12.5px] font-semibold text-ink-700 truncate"
+                        title={src.filename}
+                      >
+                        {displayName(src)}
+                      </span>
+                      {isAdmin && (
+                        <DepartmentSelect
+                          value={src.department ?? null}
+                          saving={savingDept.has(src.filename)}
+                          onChange={(dep) => onSetDepartment(src, dep)}
+                        />
+                      )}
+                      <span className="shrink-0 text-[10px] font-bold text-ink-400 tabular-nums">
+                        {src.chunk_count} chunks
+                      </span>
+                      {isAdmin && (
+                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(src);
+                            }}
+                            className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-900 transition-colors"
+                            title="Redigera innehåll"
+                            aria-label={`Redigera ${src.filename}`}
+                          >
+                            <Pencil size={12} strokeWidth={1.75} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(src);
+                            }}
+                            className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-700 transition-colors"
+                            title="Ta bort källa"
+                            aria-label={`Ta bort ${src.filename}`}
+                          >
+                            <Trash2 size={12} strokeWidth={1.75} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DepartmentSelect({
+  value,
+  saving,
+  onChange,
+}: {
+  value: string | null;
+  saving: boolean;
+  onChange: (department: string | null) => void;
+}) {
+  // Visa ev. egen (icke-listad) avdelning som ett val så den inte tappas bort.
+  const options =
+    value && !DEPARTMENTS.includes(value as (typeof DEPARTMENTS)[number])
+      ? [...DEPARTMENTS, value]
+      : [...DEPARTMENTS];
+  return (
+    <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+      <select
+        value={value ?? ''}
+        disabled={saving}
+        onChange={(e) => onChange(e.target.value || null)}
+        aria-label="Avdelning"
+        className={cn(
+          'appearance-none cursor-pointer rounded-md border bg-white pl-2 pr-6 py-1 text-[11px] font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-ink-100',
+          value ? 'border-brand-200 text-brand-700' : 'border-ink-200 text-ink-400',
+          saving && 'opacity-50',
+        )}
+      >
+        <option value="">{UNCATEGORIZED}</option>
+        {options.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+      <ChevronRight
+        size={11}
+        strokeWidth={2.5}
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 rotate-90 text-ink-400"
+      />
     </div>
   );
 }
