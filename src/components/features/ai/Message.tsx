@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils';
 interface MessageProps {
   message: ChatMessage;
   question?: string;
+  /** True medan detta (sista) assistent-svar fortfarande strömmas in. */
+  isStreaming?: boolean;
 }
 
-export function Message({ message, question }: MessageProps) {
+export function Message({ message, question, isStreaming }: MessageProps) {
   const isUser = message.role === 'user';
   const isUngrounded = !isUser && message.grounded === false;
   const [correctionOpen, setCorrectionOpen] = useState(false);
@@ -38,7 +40,7 @@ export function Message({ message, question }: MessageProps) {
         {isUser ? (
           <span className="whitespace-pre-wrap">{message.content}</span>
         ) : (
-          <MessageContent text={message.content} citations={message.citations} />
+          <MessageContent text={message.content} citations={message.citations} streaming={isStreaming} />
         )}
 
         {!isUser && message.sourceFiles && message.sourceFiles.length > 0 && (
@@ -55,7 +57,7 @@ export function Message({ message, question }: MessageProps) {
           </div>
         )}
 
-        {!isUser && question && (
+        {!isUser && question && !isStreaming && (
           <div className="mt-2 -mb-1 flex justify-end">
             <button
               type="button"

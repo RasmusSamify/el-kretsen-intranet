@@ -7,7 +7,13 @@ interface AISearchRequest {
   query: string;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   attachedFileContent?: string | null;
+  /** När true strömmas svaret token-för-token som NDJSON i stället för en JSON-respons.
+   *  Innehållet är identiskt (samma retrieval, temperature 0) — bara leveranssättet skiljer. */
+  stream?: boolean;
 }
+
+/** Markör som Claude avslutar svaret med. Måste döljas i den strömmade texten. */
+const FOLLOWUP_OPEN = '<följdfrågor';
 
 interface Citation {
   id: string;
@@ -261,6 +267,19 @@ export default async (req: Request) => {
         supabaseUrl,
         serviceKey: supabaseServiceKey,
       });
+      if (body.stream) {
+        return streamResponse(async (write) => {
+          write({ type: 'delta', text: NO_MATCH_RESPONSE });
+          write({
+            type: 'done',
+            answer: NO_MATCH_RESPONSE,
+            citations: [],
+            sourceFiles: [],
+            grounded: false,
+            suggestedFollowUps: [],
+          });
+        });
+      }
       return json(
         {
           answer: NO_MATCH_RESPONSE,
@@ -295,6 +314,120 @@ export default async (req: Request) => {
       ...body.conversationHistory.map((m) => ({ role: m.role, content: m.content })),
       { role: 'user' as const, content: userContent },
     ];
+
+    // Vy #2 — strömma svaret token-för-token. Samma anrop men stream:true; vi
+    // vidarebefordrar den synliga texten löpande, döljer <följdfrågor>-blocket,
+    // och skickar citations/källor/grounded/följdfrågor i ett avslutande done-event.
+    if (body.stream) {
+      return streamResponse(async (write) => {
+       try {
+        const claudeStream = await fetch(ANTHROPIC_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: CLAUDE_MODEL,
+            max_tokens: 1400,
+            temperature: 0,
+            system: SYSTEM_PROMPT,
+            messages: apiMessages,
+            stream: true,
+          }),
+        });
+
+        if (!claudeStream.ok || !claudeStream.body) {
+          const errText = await claudeStream.text().catch(() => '');
+          throw new Error(`Claude API error (${claudeStream.status}): ${errText}`);
+        }
+
+        let raw = '';
+        let sentVisible = 0;
+        const reader = claudeStream.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuf = '';
+
+        const flushVisible = (final: boolean) => {
+          const idx = raw.indexOf(FOLLOWUP_OPEN);
+          let visibleEnd: number;
+          if (idx !== -1) {
+            visibleEnd = idx; // följdfrågor-blocket börjar → dölj allt därifrån
+          } else if (final) {
+            visibleEnd = raw.length;
+          } else {
+            // Håll tillbaka en svans som kan vara en halv markör delad över deltas.
+            visibleEnd = Math.max(sentVisible, raw.length - (FOLLOWUP_OPEN.length - 1));
+          }
+          if (visibleEnd > sentVisible) {
+            write({ type: 'delta', text: raw.slice(sentVisible, visibleEnd) });
+            sentVisible = visibleEnd;
+          }
+        };
+
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          sseBuf += decoder.decode(value, { stream: true });
+          const lines = sseBuf.split('\n');
+          sseBuf = lines.pop() ?? '';
+          for (const line of lines) {
+            const l = line.trim();
+            if (!l.startsWith('data:')) continue;
+            const payload = l.slice(5).trim();
+            if (!payload || payload === '[DONE]') continue;
+            let evt: { type?: string; delta?: { type?: string; text?: string } };
+            try {
+              evt = JSON.parse(payload);
+            } catch {
+              continue;
+            }
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta' && evt.delta.text) {
+              raw += evt.delta.text;
+              flushVisible(false);
+            }
+          }
+        }
+        flushVisible(true);
+
+        const { answer, suggestedFollowUps } = extractFollowUps(raw);
+        const referencedFiles = extractReferencedFiles(answer, chunks);
+        const { outcome, gaps } = classifyAnswer(answer);
+        if (outcome !== 'answered') {
+          await logQuestionOutcome({
+            question: query,
+            outcome,
+            supabaseUrl,
+            serviceKey: supabaseServiceKey,
+            topFilename: chunks[0]?.filename ?? null,
+            topSimilarity: chunks[0]?.similarity ?? null,
+            gapsText: gaps,
+          });
+        }
+
+        write({
+          type: 'done',
+          answer,
+          citations,
+          sourceFiles: referencedFiles,
+          grounded: outcome === 'answered',
+          suggestedFollowUps,
+        });
+       } catch (e) {
+         // Logga som icke-stream-grenen så frågan finns kvar i Insikter vid API-fel.
+         await logQuestionOutcome({
+           question: query,
+           outcome: 'error',
+           supabaseUrl,
+           serviceKey: supabaseServiceKey,
+           errorMessage: (e as Error).message,
+         });
+         throw e; // streamResponse skickar ett {type:'error'}-event till klienten
+       }
+      });
+    }
 
     const claudeRes = await fetch(ANTHROPIC_URL, {
       method: 'POST',
@@ -594,6 +727,33 @@ function corsHeaders() {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
+}
+
+/** Bygg ett NDJSON-strömmat svar (en JSON-rad per event). `producer` får en
+ *  `write`-funktion; kastar den ett fel skickas ett {type:'error'}-event innan
+ *  strömmen stängs så klienten alltid får ett tydligt slut. */
+function streamResponse(producer: (write: (obj: unknown) => void) => Promise<void>): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const write = (obj: unknown) => controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'));
+      try {
+        await producer(write);
+      } catch (e) {
+        write({ type: 'error', message: (e as Error).message ?? 'Okänt strömningsfel' });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      ...corsHeaders(),
+    },
+  });
 }
 
 function json(body: unknown, status: number) {

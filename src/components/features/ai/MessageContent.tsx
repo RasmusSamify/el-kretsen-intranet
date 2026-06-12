@@ -8,14 +8,26 @@ const CITATION_REGEX = /\[källa:\s*([^,\]]+?)(?:,\s*stycke\s*(\d+))?\]/gi;
 interface MessageContentProps {
   text: string;
   citations?: Citation[];
+  /** Visa en blinkande markör efter texten medan svaret strömmas in. */
+  streaming?: boolean;
 }
 
-export function MessageContent({ text, citations = [] }: MessageContentProps) {
-  const parsed = useMemo(() => parseWithCitations(text, citations), [text, citations]);
+export function MessageContent({ text, citations = [], streaming = false }: MessageContentProps) {
+  const parsed = useMemo(
+    () => parseWithCitations(text, citations, streaming),
+    [text, citations, streaming],
+  );
   return <div className="prose-chat">{parsed}</div>;
 }
 
-function parseWithCitations(text: string, citations: Citation[]): ReactNode[] {
+const StreamCursor = () => (
+  <span
+    aria-hidden
+    className="inline-block w-[2px] h-[1.05em] ml-0.5 -mb-[2px] bg-brand-500 animate-pulse align-middle"
+  />
+);
+
+function parseWithCitations(text: string, citations: Citation[], streaming: boolean): ReactNode[] {
   const blocks = splitBlocks(text);
   const citationIndex = new Map<string, { citation: Citation; number: number }>();
   let nextNumber = 1;
@@ -27,7 +39,12 @@ function parseWithCitations(text: string, citations: Citation[]): ReactNode[] {
     }
   }
 
-  return blocks.map((block, i) => renderBlock(block, i, citations, citationIndex, text));
+  const nodes = blocks.map((block, i) =>
+    renderBlock(block, i, citations, citationIndex, text, streaming && i === blocks.length - 1),
+  );
+  // Inga block ännu (allra första token) → visa bara markören så bubblan inte är tom.
+  if (streaming && blocks.length === 0) nodes.push(<StreamCursor key="cursor" />);
+  return nodes;
 }
 
 function citationKey(filename: string, chunkIndex: number): string {
@@ -112,25 +129,32 @@ function renderBlock(
   citations: Citation[],
   index: Map<string, { citation: Citation; number: number }>,
   fullText: string,
+  withCursor: boolean,
 ): ReactNode {
+  const cursor = withCursor ? <StreamCursor key="cursor" /> : null;
   switch (block.type) {
     case 'h2':
       return (
         <h3 key={key} className="text-[15px] font-bold text-ink-900 mt-4 mb-2 first:mt-0 border-b border-ink-100 pb-1.5">
           {renderInline(block.text, citations, index, fullText)}
+          {cursor}
         </h3>
       );
     case 'h3':
       return (
         <h4 key={key} className="text-[13px] font-bold text-ink-800 mt-3 mb-1.5 first:mt-0">
           {renderInline(block.text, citations, index, fullText)}
+          {cursor}
         </h4>
       );
     case 'ul':
       return (
         <ul key={key} className="list-disc pl-5 my-2 space-y-1 text-[14px] marker:text-brand-400">
           {block.items.map((item, i) => (
-            <li key={i}>{renderInline(item, citations, index, fullText)}</li>
+            <li key={i}>
+              {renderInline(item, citations, index, fullText)}
+              {i === block.items.length - 1 ? cursor : null}
+            </li>
           ))}
         </ul>
       );
@@ -138,7 +162,10 @@ function renderBlock(
       return (
         <ol key={key} className="list-decimal pl-5 my-2 space-y-1 text-[14px] marker:text-brand-500 marker:font-bold">
           {block.items.map((item, i) => (
-            <li key={i}>{renderInline(item, citations, index, fullText)}</li>
+            <li key={i}>
+              {renderInline(item, citations, index, fullText)}
+              {i === block.items.length - 1 ? cursor : null}
+            </li>
           ))}
         </ol>
       );
@@ -146,6 +173,7 @@ function renderBlock(
       return (
         <p key={key} className="text-[14px] text-ink-800 leading-relaxed my-2 first:mt-0 last:mb-0">
           {renderInline(block.text, citations, index, fullText)}
+          {cursor}
         </p>
       );
   }

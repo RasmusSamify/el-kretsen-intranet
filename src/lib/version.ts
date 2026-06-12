@@ -17,9 +17,22 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.12.1';
+export const CURRENT_VERSION = '1.13.0';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.13.0',
+    date: '2026-06-12',
+    releasedAt: '2026-06-12T20:30:00+02:00',
+    title: 'Se ELvis skriva svaret i realtid',
+    summary:
+      'Ni kan nu välja hur ELvis-svaren visas: "Direkt" där svaret skrivs ut rad för rad medan det skapas, eller "Hela" där ni får hela svaret på en gång som tidigare. Valet finns som en liten brytare i chatt-huvudet och kommer ihåg sig per webbläsare.',
+    highlights: [
+      'Ny brytare "Direkt / Hela" uppe i ELvis-chatten. "Direkt" (förvalt) visar svaret medan det skrivs — som när någon skriver i realtid. "Hela" väntar tills svaret är klart och visar det på en gång, precis som förut.',
+      'Källhänvisningar, källor och förslag på följdfrågor dyker upp precis som vanligt när svaret är färdigskrivet — inget av det försvinner i direkt-läget.',
+      'Svaret är exakt detsamma i båda lägena — samma källor, samma faktagrundning. Bara sättet det visas på skiljer, så compliance påverkas inte.',
+    ],
+  },
   {
     version: '1.12.1',
     date: '2026-06-12',

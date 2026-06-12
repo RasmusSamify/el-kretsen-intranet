@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Eraser, Sparkles } from 'lucide-react';
+import { AlignLeft, Eraser, Sparkles, Zap } from 'lucide-react';
 import { Card, Button, IconTile, TypingDots } from '@/components/ui';
 import { CURRENT_VERSION } from '@/lib/version';
 import { useAIChat } from '@/hooks/useAIChat';
+import { cn } from '@/lib/utils';
 import { Message } from './Message';
 import { Composer } from './Composer';
 import { WelcomeState } from './WelcomeState';
@@ -10,9 +11,11 @@ import { SidePanel } from './SidePanel';
 import { FollowUpChips } from './FollowUpChips';
 
 export function AIChat() {
-  const { messages, streaming, send, clear } = useAIChat();
+  const { messages, streaming, answerMode, setAnswerMode, send, clear } = useAIChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingPromptRef = useRef<string | null>(null);
+  const lastMessage = messages[messages.length - 1];
+  const waitingForFirstToken = streaming && (!lastMessage || lastMessage.role === 'user');
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -46,6 +49,7 @@ export function AIChat() {
               Tvåstegs hierarkisk sök · Förslag på följdfrågor · Källhänvisningar · Rättelser
             </p>
           </div>
+          <AnswerModeToggle mode={answerMode} onChange={setAnswerMode} disabled={streaming} />
           {messages.length > 0 && (
             <Button
               variant="ghost"
@@ -67,9 +71,17 @@ export function AIChat() {
               {messages.map((m, i) => {
                 const prev = i > 0 ? messages[i - 1] : null;
                 const question = m.role === 'assistant' && prev?.role === 'user' ? prev.content : undefined;
-                return <Message key={m.id} message={m} question={question} />;
+                const isLast = i === messages.length - 1;
+                return (
+                  <Message
+                    key={m.id}
+                    message={m}
+                    question={question}
+                    isStreaming={streaming && isLast && m.role === 'assistant'}
+                  />
+                );
               })}
-              {streaming && (
+              {waitingForFirstToken && (
                 <div className="flex gap-3 animate-fade-in">
                   <IconTile size="sm" tone="brand" icon={<Sparkles size={14} strokeWidth={2.25} />} />
                   <div className="px-5 py-4 rounded-2xl rounded-bl-md bg-white border border-ink-100 shadow-card">
@@ -93,5 +105,48 @@ export function AIChat() {
 
       <SidePanel onPickPrompt={handleQuickPrompt} />
     </>
+  );
+}
+
+function AnswerModeToggle({
+  mode,
+  onChange,
+  disabled,
+}: {
+  mode: 'stream' | 'wait';
+  onChange: (mode: 'stream' | 'wait') => void;
+  disabled?: boolean;
+}) {
+  const options = [
+    { id: 'stream' as const, label: 'Direkt', icon: Zap, title: 'Se ELvis skriva svaret rad för rad' },
+    { id: 'wait' as const, label: 'Hela', icon: AlignLeft, title: 'Vänta tills hela svaret är klart' },
+  ];
+  return (
+    <div
+      role="group"
+      aria-label="Svarsvisning"
+      className="hidden sm:inline-flex items-center gap-0.5 p-0.5 rounded-xl bg-ink-100/70 border border-ink-100"
+    >
+      {options.map(({ id, label, icon: Icon, title }) => {
+        const active = mode === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            title={title}
+            aria-pressed={active}
+            disabled={disabled}
+            onClick={() => onChange(id)}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+              active ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-500 hover:text-ink-800',
+            )}
+          >
+            <Icon size={12} strokeWidth={2.5} />
+            <span>{label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

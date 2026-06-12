@@ -40,6 +40,85 @@ export async function aiSearch(req: AISearchRequest): Promise<AISearchResponse> 
   return res.json();
 }
 
+export interface AISearchStreamMeta {
+  answer: string;
+  citations: Citation[];
+  sourceFiles: string[];
+  grounded: boolean;
+  suggestedFollowUps: string[];
+}
+
+export interface AISearchStreamCallbacks {
+  /** Anropas löpande med ny synlig text (token-för-token). */
+  onDelta: (text: string) => void;
+  /** Anropas en gång när svaret är klart, med citations/källor/följdfrågor. */
+  onDone: (meta: AISearchStreamMeta) => void;
+}
+
+/** Strömmad variant av aiSearch (Vy #2). Läser NDJSON-strömmen rad för rad och
+ *  matar onDelta/onDone. Innehållet är identiskt med aiSearch — bara levererat
+ *  i takt med att ELvis skriver. */
+export async function aiSearchStream(
+  req: AISearchRequest,
+  cb: AISearchStreamCallbacks,
+): Promise<void> {
+  const res = await fetch('/api/ai-search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: await authHeader(),
+    },
+    body: JSON.stringify({ ...req, stream: true }),
+  });
+
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI-sökning misslyckades (${res.status}): ${text}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let done: AISearchStreamMeta | null = null;
+
+  const handleLine = (line: string) => {
+    const l = line.trim();
+    if (!l) return;
+    let evt: { type?: string; text?: string; message?: string } & Partial<AISearchStreamMeta>;
+    try {
+      evt = JSON.parse(l);
+    } catch {
+      return;
+    }
+    if (evt.type === 'delta' && typeof evt.text === 'string') {
+      cb.onDelta(evt.text);
+    } else if (evt.type === 'done') {
+      done = {
+        answer: evt.answer ?? '',
+        citations: evt.citations ?? [],
+        sourceFiles: evt.sourceFiles ?? [],
+        grounded: evt.grounded ?? false,
+        suggestedFollowUps: evt.suggestedFollowUps ?? [],
+      };
+    } else if (evt.type === 'error') {
+      throw new Error(evt.message || 'Strömningsfel');
+    }
+  };
+
+  for (;;) {
+    const { value, done: streamDone } = await reader.read();
+    if (streamDone) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop() ?? '';
+    for (const line of lines) handleLine(line);
+  }
+  if (buf.trim()) handleLine(buf);
+
+  if (!done) throw new Error('Strömmen avslutades utan komplett svar.');
+  cb.onDone(done);
+}
+
 export type MailCreativity = 'saklig' | 'balanserad' | 'personlig';
 
 export interface MailAssistantRequest {
