@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Building2,
   ChevronRight,
   ExternalLink,
   FileText,
@@ -14,11 +15,14 @@ import {
 import { Button, Card, IconTile, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
-
-interface SourceRow {
-  filename: string;
-  chunk_count: number;
-}
+import {
+  displayName,
+  groupByDepartment,
+  groupSources,
+  isInternalSource,
+  isLawDomain,
+  type SourceRow,
+} from '@/lib/kbSources';
 
 interface SourcesListProps {
   refreshKey: number;
@@ -26,51 +30,19 @@ interface SourcesListProps {
   embedded?: boolean;
 }
 
-type GroupId = 'laws' | 'elkretsen' | 'internal';
-
-interface Group {
-  id: GroupId;
-  label: string;
-  icon: typeof Scale;
-  items: SourceRow[];
-}
-
-function classifySource(filename: string): GroupId {
-  if (!filename.includes('/') && !filename.includes('.com') && !filename.includes('.eu') && !filename.includes('.se'))
-    return 'internal';
-  if (filename.startsWith('www.el-kretsen.se') || filename.startsWith('el-kretsen.se')) return 'elkretsen';
-  // riksdagen, eur-lex, environment.ec.europa.eu, etc.
-  return 'laws';
-}
-
-function isUrlSource(filename: string): boolean {
-  return classifySource(filename) !== 'internal';
-}
-
-function sourceDisplay(src: SourceRow): { name: string; href: string | null } {
-  const group = classifySource(src.filename);
-  if (group === 'internal') {
-    return { name: src.filename.replace(/\.[^/.]+$/, ''), href: null };
-  }
-  // URL-based: collapse www.el-kretsen.se/path-segment to a short readable name
-  const first = src.filename.split('/')[0];
-  const rest = src.filename.slice(first.length);
-  const niceRest = rest.replace(/^\//, '').replace(/[-_]/g, ' ').trim();
-  return {
-    name: niceRest || first,
-    href: `https://${src.filename}`,
-  };
-}
-
 export function SourcesList({ refreshKey, onAdd, embedded }: SourcesListProps) {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [openGroups, setOpenGroups] = useState<Record<GroupId, boolean>>({
-    laws: false,
-    elkretsen: false,
-    internal: false,
-  });
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   useEffect(() => {
     let mounted = true;
@@ -85,35 +57,15 @@ export function SourcesList({ refreshKey, onAdd, embedded }: SourcesListProps) {
     };
   }, [refreshKey]);
 
-  const groups = useMemo<Group[]>(() => {
+  const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = q
-      ? sources.filter((s) => s.filename.toLowerCase().includes(q))
-      : sources;
-    return [
-      {
-        id: 'laws',
-        label: 'Lagtexter & förordningar',
-        icon: Scale,
-        items: filtered.filter((s) => classifySource(s.filename) === 'laws'),
-      },
-      {
-        id: 'elkretsen',
-        label: 'el-kretsen.se',
-        icon: Globe,
-        items: filtered.filter((s) => classifySource(s.filename) === 'elkretsen'),
-      },
-      {
-        id: 'internal',
-        label: 'Interna dokument',
-        icon: FileText,
-        items: filtered.filter((s) => classifySource(s.filename) === 'internal'),
-      },
-    ];
+    const filtered = q ? sources.filter((s) => s.filename.toLowerCase().includes(q)) : sources;
+    return groupSources(filtered);
   }, [sources, query]);
 
   const totalCount = sources.length;
-  const filteredCount = groups.reduce((n, g) => n + g.items.length, 0);
+  const filteredCount =
+    grouped.internal.length + grouped.domains.reduce((n, d) => n + d.items.length, 0);
 
   const header = (
     <div className="flex items-center gap-3 mb-4">
@@ -162,22 +114,25 @@ export function SourcesList({ refreshKey, onAdd, embedded }: SourcesListProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto -mx-1 px-1">
-        {groups.every((g) => g.items.length === 0) ? (
+        {filteredCount === 0 ? (
           <p className="text-xs text-ink-400 text-center py-6 font-medium">Inga källor matchar "{query}".</p>
         ) : (
           <div className="space-y-2.5">
-            {groups.map((g) =>
-              g.items.length === 0 ? null : (
-                <GroupBlock
-                  key={g.id}
-                  group={g}
-                  open={!!query || openGroups[g.id]}
-                  onToggle={() =>
-                    setOpenGroups((curr) => ({ ...curr, [g.id]: !curr[g.id] }))
-                  }
-                />
-              ),
-            )}
+            {grouped.domains.map((d) => (
+              <DomainBlock
+                key={d.host}
+                label={d.label}
+                icon={isLawDomain(d.host) ? Scale : Globe}
+                items={d.items}
+                open={!!query || openGroups.has(d.host)}
+                onToggle={() => toggleGroup(d.host)}
+              />
+            ))}
+            <InternalBlock
+              items={grouped.internal}
+              open={!!query || openGroups.has('internal')}
+              onToggle={() => toggleGroup('internal')}
+            />
           </div>
         )}
       </div>
@@ -201,16 +156,55 @@ export function SourcesList({ refreshKey, onAdd, embedded }: SourcesListProps) {
   );
 }
 
-function GroupBlock({
-  group,
+function SourceRowItem({ src }: { src: SourceRow }) {
+  const isUrl = !isInternalSource(src.filename);
+  const href = isUrl ? `https://${src.filename}` : null;
+  const IconCmp = isUrl ? Link2 : FileText;
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 hover:bg-ink-50 transition-colors">
+      <IconCmp
+        size={11}
+        strokeWidth={2.25}
+        className={cn(isUrl ? 'text-brand-500' : 'text-ink-400', 'shrink-0')}
+      />
+      <span
+        className="flex-1 min-w-0 text-[11.5px] font-semibold text-ink-700 truncate"
+        title={src.filename}
+      >
+        {displayName(src)}
+      </span>
+      <span className="shrink-0 text-[10px] font-bold text-ink-400 tabular-nums">
+        {src.chunk_count}
+      </span>
+      {href && (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ink-300 hover:text-brand-500 transition-colors shrink-0"
+          aria-label="Öppna källan"
+        >
+          <ExternalLink size={11} strokeWidth={2.25} />
+        </a>
+      )}
+    </div>
+  );
+}
+
+function DomainBlock({
+  label,
+  icon: Icon,
+  items,
   open,
   onToggle,
 }: {
-  group: Group;
+  label: string;
+  icon: typeof Globe;
+  items: SourceRow[];
   open: boolean;
   onToggle: () => void;
 }) {
-  const Icon = group.icon;
+  if (items.length === 0) return null;
   return (
     <div className="rounded-xl border border-ink-100 bg-white overflow-hidden">
       <button
@@ -224,48 +218,72 @@ function GroupBlock({
           className={cn('text-ink-400 transition-transform duration-200', open && 'rotate-90')}
         />
         <Icon size={13} strokeWidth={2.25} className="text-brand-500" />
-        <span className="flex-1 text-left text-[12px] font-bold text-ink-800">{group.label}</span>
-        <span className="text-[10px] font-bold text-ink-400 tabular-nums">{group.items.length}</span>
+        <span className="flex-1 text-left text-[12px] font-bold text-ink-800 truncate">{label}</span>
+        <span className="text-[10px] font-bold text-ink-400 tabular-nums">{items.length}</span>
       </button>
 
       {open && (
         <ul className="border-t border-ink-100 divide-y divide-ink-100 animate-fade-in">
-          {group.items.map((src) => {
-            const { name, href } = sourceDisplay(src);
-            const IconCmp = isUrlSource(src.filename) ? Link2 : FileText;
-            return (
-              <li key={src.filename}>
-                <div className="flex items-center gap-2 px-3 py-2 hover:bg-ink-50 transition-colors">
-                  <IconCmp
-                    size={11}
-                    strokeWidth={2.25}
-                    className={cn(isUrlSource(src.filename) ? 'text-brand-500' : 'text-ink-400', 'shrink-0')}
-                  />
-                  <span
-                    className="flex-1 min-w-0 text-[11.5px] font-semibold text-ink-700 truncate"
-                    title={src.filename}
-                  >
-                    {name}
-                  </span>
-                  <span className="shrink-0 text-[10px] font-bold text-ink-400 tabular-nums">
-                    {src.chunk_count}
-                  </span>
-                  {href && (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-ink-300 hover:text-brand-500 transition-colors shrink-0"
-                      aria-label="Öppna källan"
-                    >
-                      <ExternalLink size={11} strokeWidth={2.25} />
-                    </a>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+          {items.map((src) => (
+            <li key={src.filename}>
+              <SourceRowItem src={src} />
+            </li>
+          ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+function InternalBlock({
+  items,
+  open,
+  onToggle,
+}: {
+  items: SourceRow[];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (items.length === 0) return null;
+  const sections = groupByDepartment(items);
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-ink-50 transition-colors"
+      >
+        <ChevronRight
+          size={14}
+          strokeWidth={2.5}
+          className={cn('text-ink-400 transition-transform duration-200', open && 'rotate-90')}
+        />
+        <FileText size={13} strokeWidth={2.25} className="text-brand-500" />
+        <span className="flex-1 text-left text-[12px] font-bold text-ink-800">Interna dokument</span>
+        <span className="text-[10px] font-bold text-ink-400 tabular-nums">{items.length}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-ink-100 animate-fade-in">
+          {sections.map((section) => (
+            <div key={section.key}>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-ink-50/60 border-b border-ink-100">
+                <Building2 size={10} strokeWidth={2.25} className="text-ink-400" />
+                <span className="flex-1 text-[9.5px] font-bold uppercase tracking-wider text-ink-500">
+                  {section.dept}
+                </span>
+                <span className="text-[9.5px] font-bold text-ink-400 tabular-nums">{section.items.length}</span>
+              </div>
+              <ul className="divide-y divide-ink-100">
+                {section.items.map((src) => (
+                  <li key={src.filename}>
+                    <SourceRowItem src={src} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

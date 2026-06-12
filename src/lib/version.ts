@@ -17,9 +17,21 @@ export interface ChangelogEntry {
   highlights: string[];
 }
 
-export const CURRENT_VERSION = '1.12.0';
+export const CURRENT_VERSION = '1.12.1';
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.12.1',
+    date: '2026-06-12',
+    releasedAt: '2026-06-12T19:00:00+02:00',
+    title: 'Källor-panelen i chatten matchar nu Kunskapsbasen',
+    summary:
+      'Källor-fliken bredvid ELvis-chatten visar nu källorna grupperade på exakt samma sätt som Kunskapsbas-sidan — per webbplats och per avdelning — i stället för den gamla indelningen i tre fasta högar.',
+    highlights: [
+      'Webbkällor grupperas per webbplats (t.ex. naturvardsverket.se, kunskapsrummet.se) i Källor-panelen, precis som i Kunskapsbasen. Lagkällor får en våg-ikon.',
+      'Interna dokument grupperas under sin avdelning (Ekonomi, Marknad, Information, Transport, Övrigt) även i chatt-panelen.',
+    ],
+  },
   {
     version: '1.12.0',
     date: '2026-06-12',
